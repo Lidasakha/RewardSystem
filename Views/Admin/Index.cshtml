@@ -1,0 +1,76 @@
+﻿@{
+    ViewData["Title"] = "Admin Paneli";
+    ViewData["Active"] = "Home";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background:#f0e6ff;"></div>
+        <div class="stat-info">
+            <div class="stat-num">@ViewBag.PendingArticles</div>
+            <div class="stat-label">Bekleyen Makale</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:#fff8e6;"></div>
+        <div class="stat-info">
+            <div class="stat-num">@ViewBag.PendingStudents</div>
+            <div class="stat-label">Bekleyen Öğrenci</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:#e6f7f0;"></div>
+        <div class="stat-info">
+            <div class="stat-num">@ViewBag.TotalActiveStudents</div>
+            <div class="stat-label">Aktif Öğrenci</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="dash-col">
+        <!-- Onay Bekleyen Makaleler -->
+        <div class="panel">
+            <div class="panel-head">
+                <span>Onay Bekleyen Son Makaleler</span>
+                <a href="/Admin/AdminYonetimi" class="see-all">Yönet →</a>
+            </div>
+            @if (ViewBag.RecentPendingArticles == null || !((List<RewardSystem.Models.Article>)ViewBag.RecentPendingArticles).Any())
+            {
+                <p class="empty" style="padding:20px; text-align:center; color:#6c7a89;">Onay bekleyen makale bulunmuyor.</p>
+            }
+            else 
+            {
+                @foreach (var a in (List<RewardSystem.Models.Article>)ViewBag.RecentPendingArticles)
+                {
+                    <div class="list-item">
+                        <div class="list-icon"></div>
+                        <div class="list-info">
+                            <div class="list-title">@a.Title</div>
+                            <div class="list-sub"> @a.User?.FullName —  @(a.Year ?? 0)</div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="dash-col">
+        <!-- Hızlı İşlemler -->
+        <div class="panel">
+            <div class="panel-head"><span>Hızlı İşlemler</span></div>
+            <div style="padding:15px; display:flex; flex-direction:column; gap:10px;">
+                <a href="/Admin/OnayBekleyenOgrenciler" class="btn-primary" style="text-align:center; text-decoration:none;"> Öğrenci Onay Sayfası</a>
+                <a href="/Admin/AdminYonetimi" class="btn-primary" style="background:#534AB7; text-align:center; text-decoration:none;"> Makale Değerlendirme</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; margin-top: 20px; }
+@@media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+.see-all { font-size: 12px; color: #d90429; text-decoration: none; font-weight: 600; }
+</style>
+

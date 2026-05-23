@@ -1,0 +1,239 @@
+@model List<RewardSystem.Models.User>
+@{
+    ViewData["Title"] = "Kullanıcı Yönetimi";
+    ViewData["Active"] = "KullaniciYonetimi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="panel">
+    <div class="panel-head">
+        <span>Admin & Yetkili Yönetimi</span>
+        <button class="btn-primary" onclick="toggleAddForm()">+ Yeni Yetkili Ekle</button>
+    </div>
+
+    @if (TempData["Hata"] != null) { <div class="alert alert-danger">@TempData["Hata"]</div> }
+    @if (TempData["Mesaj"] != null) { <div class="alert alert-success" style="background:#F0F4F8; color:#001F3F; border:1px solid #E3F2FD;">@TempData["Mesaj"]</div> }
+    @if (TempData["DebugMessage"] != null) { <div class="alert alert-info">@TempData["DebugMessage"]</div> }
+
+    <!-- Edit Form (Hidden by default) -->
+    <div id="editUserForm" class="add-form" style="display:none; margin-bottom:25px; padding:20px; background:#F0F4F8; border-radius:15px; border:1px solid #E3F2FD;">
+        <h3 style="margin-bottom:15px; color:#001F3F;">Yetkili Düzenle</h3>
+        <form asp-action="KullaniciDuzenle" method="post">
+            <input type="hidden" name="Id" id="editUserId" />
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="fg">
+                    <label>Ad Soyad</label>
+                    <input type="text" name="FullName" id="editFullName" class="form-input" required />
+                </div>
+                <div class="fg">
+                    <label>Kullanıcı Adı</label>
+                    <input type="text" name="Username" id="editUsername" class="form-input" required />
+                </div>
+                <div class="fg">
+                    <label>E-posta</label>
+                    <input type="email" name="Email" id="editEmail" class="form-input" required />
+                </div>
+                <div class="fg">
+                    <label>Rol</label>
+                    <select name="Role" id="editRole" class="form-input" required>
+                        <option value="admin">Yönetici (Admin)</option>
+                        <option value="superadmin">Süper Admin</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>Şifre (Değiştirmek istemiyorsanız boş bırakın)</label>
+                    <input type="password" name="rawPassword" class="form-input" placeholder="••••••••" />
+                </div>
+                <div class="fg">
+                    <label>Bölüm / Ünvan</label>
+                    <input type="text" name="Department" id="editDepartment" class="form-input" />
+                </div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <button type="submit" class="btn-primary" style="background:#001F3F; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Güncelle</button>
+                <button type="button" class="btn-secondary" onclick="closeEditForm()">Vazgeç</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Add Form (Hidden by default) -->
+    <div id="addUserForm" class="add-form" style="display:none; margin-bottom:25px; padding:20px; background:#F0F4F8; border-radius:15px; border:1px solid #E3F2FD;">
+        <h3 style="margin-bottom:15px; color:#001F3F;">Yeni Yetkili Tanımla</h3>
+        <form asp-action="KullaniciEkle" method="post">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="fg">
+                    <label>Ad Soyad</label>
+                    <input type="text" name="FullName" class="form-input" required placeholder="Örn: Dr. Ahmet Yılmaz" />
+                </div>
+                <div class="fg">
+                    <label>Kullanıcı Adı</label>
+                    <input type="text" name="Username" class="form-input" required placeholder="ayilmaz" />
+                </div>
+                <div class="fg">
+                    <label>E-posta</label>
+                    <input type="email" name="Email" class="form-input" required placeholder="ahmet@universite.edu.tr" />
+                </div>
+                <div class="fg">
+                    <label>Rol</label>
+                    <select name="Role" class="form-input" required>
+                        <option value="admin">Yönetici (Admin)</option>
+                        <option value="superadmin">Süper Admin</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>Şifre</label>
+                    <input type="password" name="rawPassword" class="form-input" required placeholder="••••••••" />
+                </div>
+                <div class="fg">
+                    <label>Bölüm / Ünvan</label>
+                    <input type="text" name="Department" class="form-input" placeholder="Örn: Bilgisayar Mühendisliği" />
+                </div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <button type="submit" class="btn-primary">Kaydet</button>
+                <button type="button" class="btn-secondary" onclick="toggleAddForm()">Vazgeç</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="pnd-toolbar" style="margin-bottom: 20px; display: flex; gap: 12px; align-items: center;">
+        <div class="pnd-search-box" style="flex: 1; display: flex; align-items: center; background: #fff; border: 1.5px solid #E3F2FD; border-radius: 12px; padding: 0 15px; transition: all 0.2s;">
+            <input type="text" id="userSearchInput" placeholder="İsim, kullanıcı adı veya e-posta ile ara..." oninput="filterUsers()" style="width: 100%; border: none; outline: none; padding: 12px 0; font-size: 13.5px; font-family: inherit; background: transparent;">
+        </div>
+        <div class="pnd-filter-box">
+            <select id="roleFilter" onchange="filterUsers()" style="padding: 12px 15px; border: 1.5px solid #E3F2FD; border-radius: 12px; outline: none; font-size: 13.5px; background: #fff; color: #001F3F; font-weight: 600; font-family: inherit; cursor: pointer;">
+                <option value="all">Tüm Roller</option>
+                <option value="admin">Admin</option>
+                <option value="superadmin">Süper Admin</option>
+            </select>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+        <table class="table" style="width: 100%; table-layout: fixed;">
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Ad Soyad</th>
+                    <th style="width: 35%;">E-posta</th>
+                    <th style="width: 15%;">Durum</th>
+                    <th style="width: 20%; text-align: right;">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                @foreach(var u in Model) {
+                    <tr class="kullanici-satir" data-id="@u.Id" data-fullname="@u.FullName" data-username="@u.Username" data-email="@u.Email" data-department="@u.Department" data-role="@u.Role.ToLower()" data-search="@u.FullName.ToLower() @u.Username.ToLower() @u.Email.ToLower() @u.Department?.ToLower()">
+                        <td style="white-space: nowrap;"><strong>@u.FullName</strong></td>
+                        <td style="word-break: break-all;">@u.Email</td>
+                        <td>
+                            <span class="status-active" style="color:#D32F2F;">Aktif</span>
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <button class="btn-action" style="background:#f1f5f9; color:#1a2b4c; border:1px solid #cbd5e1;" onclick="openEditForm(this)">Düzenle</button>
+                            <form asp-action="KullaniciSil" asp-route-id="@u.Id" method="post" style="display:inline;" class="delete-form">
+                            <button type="button" class="btn-action btn-reject" onclick="confirmDelete(this, '@u.FullName')">Sil</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div id="noUsersFound" style="display:none; text-align:center; padding:40px; color:#888; font-size:14px;">Eşleşen kullanıcı bulunamadı.</div>
+</div>
+
+<style>
+    .alert { padding:12px; border-radius:10px; margin-bottom:15px; font-size:14px; }
+    .alert-danger { background:#fee; color:#c00; border:1px solid #fcc; }
+    .alert-success { background:#eef6f1; color:#1a4731; border:1px solid #ddeee5; }
+    
+    .table { width:100%; border-collapse:collapse; }
+    .table th, .table td { padding:15px; text-align:left; border-bottom:1px solid #eee; font-size:14px; }
+    .table th { color:#888; font-weight:600; text-transform:uppercase; font-size:12px; letter-spacing:0.5px; }
+    
+    .fg label { display:block; font-size:13px; font-weight:600; color:#001F3F; margin-bottom:5px; }
+    .form-input { width:100%; padding:10px; border:1.5px solid #ddeee5; border-radius:8px; outline:none; font-family:inherit; }
+    .form-input:focus { border-color:#001F3F; }
+
+    .badge { padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700; text-transform:uppercase; }
+    .badge-super { background:#fff0c2; color:#856404; }
+    .badge-admin { background:#e2e3e5; color:#383d41; }
+    .badge-teacher { background:#d1ecf1; color:#0c5460; }
+    
+    .status-active { color:#28a745; font-weight:600; font-size:12px; }
+    
+    .btn-secondary { background:#eee; color:#333; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; }
+</style>
+
+<script>
+    function toggleAddForm() {
+        var form = document.getElementById('addUserForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        document.getElementById('editUserForm').style.display = 'none';
+    }
+
+    function openEditForm(btn) {
+        var tr = btn.closest('tr');
+        document.getElementById('editUserId').value = tr.getAttribute('data-id');
+        document.getElementById('editFullName').value = tr.getAttribute('data-fullname');
+        document.getElementById('editUsername').value = tr.getAttribute('data-username');
+        document.getElementById('editEmail').value = tr.getAttribute('data-email');
+        document.getElementById('editRole').value = tr.getAttribute('data-role');
+        document.getElementById('editDepartment').value = tr.getAttribute('data-department') || '';
+
+        document.getElementById('addUserForm').style.display = 'none';
+        document.getElementById('editUserForm').style.display = 'block';
+    }
+
+    function closeEditForm() {
+        document.getElementById('editUserForm').style.display = 'none';
+    }
+
+    function filterUsers() {
+        const query = document.getElementById('userSearchInput').value.toLowerCase().trim();
+        const roleFilterValue = document.getElementById('roleFilter').value.toLowerCase();
+        const rows = document.querySelectorAll('.kullanici-satir');
+        const noResults = document.getElementById('noUsersFound');
+        const table = document.querySelector('.table');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const searchData = row.getAttribute('data-search') || '';
+            const role = row.getAttribute('data-role') || '';
+            
+            const matchesSearch = searchData.includes(query);
+            const matchesRole = roleFilterValue === 'all' || role === roleFilterValue;
+
+            if (matchesSearch && matchesRole) {
+                row.style.display = 'table-row';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        table.style.display = visibleCount === 0 ? 'none' : '';
+    }
+    function confirmDelete(button, userName) {
+        Swal.fire({
+            title: 'Emin misiniz?',
+            text: userName + " adlı yetkiliyi silmek istediğinize emin misiniz?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#001F3F',
+            confirmButtonText: 'Evet, Sil!',
+            cancelButtonText: 'Vazgeç',
+            background: document.body.classList.contains('dark-mode') ? '#1a1a1a' : '#fff',
+            color: document.body.classList.contains('dark-mode') ? '#fff' : '#000'
+            }).then((result) => {
+            if (result.isConfirmed) {
+            // Forma ulaşıp gönderiyoruz
+            button.closest('form').submit();}
+        });
+    }
+    // Input odaklanma stilleri
+    document.styleSheets[0].insertRule('.pnd-search-box:focus-within { border-color: #001F3F !important; box-shadow: 0 0 0 3px rgba(0, 31, 63, 0.1); }', 0);
+    document.styleSheets[0].insertRule('#roleFilter:focus { border-color: #001F3F !important; box-shadow: 0 0 0 3px rgba(0, 31, 63, 0.1); }', 0);
+</script>

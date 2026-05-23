@@ -1,0 +1,103 @@
+﻿@model RewardSystem.Models.LoginViewModel
+@{ Layout = null; }
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap — Teşvik ve Ödüllendirme Sistemi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Sora',sans-serif;background:#f4f6f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+        body::before{content:'';position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(58,173,110,.09) 0%,transparent 70%);top:-200px;right:-200px;pointer-events:none}
+        body::after{content:'';position:fixed;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(240,192,64,.07) 0%,transparent 70%);bottom:-150px;left:-150px;pointer-events:none}
+        .wrap{width:100%;max-width:440px}
+        .brand{display:flex;flex-direction:column;align-items:center;margin-bottom:28px;text-align:center}
+        .brand-icon{width:68px;height:68px;background:#1a2b4c;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#ffffff;box-shadow:0 8px 32px rgba(26,43,76,.28);margin-bottom:16px}
+        .brand h1{font-size:19px;font-weight:700;color:#0a1128;letter-spacing:-.4px}
+        .brand p{font-size:13px;color:#6c7a89;margin-top:5px}
+        .card{background:#fff;border-radius:22px;padding:28px;border:1px solid #e2e8f0;box-shadow:0 4px 40px rgba(0,0,0,.07)}
+        .card h2{font-size:22px;font-weight:700;color:#0a1128;letter-spacing:-.6px;margin-bottom:5px}
+        .card>p{font-size:13.5px;color:#6c7a89;margin-bottom:24px}
+
+        .fg{margin-bottom:16px}
+        .fg label{display:block;font-size:13px;font-weight:600;color:#3d5a4a;margin-bottom:7px}
+        .iw{position:relative}
+        .iw .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+        .fg input{width:100%;padding:11px 14px 11px 36px;border:1.5px solid #e2e8f0;border-radius:11px;font-family:'Sora',sans-serif;font-size:14px;color:#0a1128;background:#fafcfb;outline:none}
+        .fg input:focus{border-color:#d90429;background:#fff;box-shadow:0 0 0 4px rgba(58,173,110,.1)}
+        .fg input::placeholder{color:#b5d0c0}
+        .opts{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;margin-top:-4px}
+        .rem{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#6c7a89;cursor:pointer}
+        .rem input{accent-color:#d90429}
+        .forgot a{font-size:12.5px;color:#111d33;text-decoration:none;font-weight:500}
+        .btn-login{width:100%;padding:13px;background:linear-gradient(135deg,#d90429,#9d021e);color:#fff;border:none;border-radius:11px;font-family:'Sora',sans-serif;font-size:14.5px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(26,43,76,.3)}
+        .btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(26,43,76,.4)}
+        .err{background:#fee;border:1px solid #fcc;border-radius:10px;padding:10px 14px;font-size:13px;color:#c00;margin-bottom:16px}
+        .footer{text-align:center;margin-top:20px;font-size:12px;color:#6c7a89}
+        @@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="brand">
+        <div class="brand-icon">TÖ</div>
+        <h1>Teşvik ve Ödüllendirme Sistemi</h1>
+        <p>Üniversite Başarı Platformu</p>
+    </div>
+    <div class="card">
+        <h2>Giriş Yap </h2>
+        <p>Lütfen kullanıcı adı ve şifrenizi girin.</p>
+
+        @if (ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="err">
+                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@err.ErrorMessage</div>
+                }
+            </div>
+        }
+        
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div style="background:#e6f4ea; border:1px solid #cce8d6; border-radius:10px; padding:10px 14px; font-size:13px; color:#1e4620; margin-bottom:16px;">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        <form asp-action="Giris" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="fg">
+                <label>Kullanıcı Adı</label>
+                <div class="iw">
+                    <span class="ic"></span>
+                    <input asp-for="Username" placeholder="Kullanıcı adınızı girin" autocomplete="username">
+                </div>
+            </div>
+            <div class="fg">
+                <label>Şifre</label>
+                <div class="iw">
+                    <span class="ic"></span>
+                    <input asp-for="Password" type="password" placeholder="Şifrenizi girin" autocomplete="current-password">
+                </div>
+            </div>
+            <div class="opts">
+                <label class="rem"><input asp-for="RememberMe" type="checkbox"> Beni Hatırla</label>
+                <div class="forgot"><a asp-action="SifremiUnuttum">Şifremi Unuttum?</a></div>
+            </div>
+            <button type="submit" class="btn-login">Giriş Yap →</button>
+            <div style="text-align:center; margin-top:15px;">
+                <span style="font-size:13px; color:#6c7a89;">Hesabınız yok mu?</span>
+                <a asp-action="KayitOl" style="font-size:13px; color:#111d33; text-decoration:none; font-weight:600;">Üye Ol</a>
+            </div>
+        </form>
+    </div>
+    <div class="footer">© 2025 Teşvik ve Ödüllendirme Sistemi · Üniversite</div>
+</div>
+
+</body>
+</html>
+

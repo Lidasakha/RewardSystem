@@ -1,0 +1,58 @@
+﻿@model List<RewardSystem.Models.Notification>
+@{
+    ViewData["Title"] = "Bildirimler";
+    ViewData["Active"] = "Bildirimler";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="panel">
+    <div class="panel-head">
+        <span>🔔 Bildirimler</span>
+        @if (Model.Any(b => !b.IsRead))
+        {
+            <span class="badge-red">@Model.Count(b => !b.IsRead) okunmamış</span>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div style="padding:48px 20px;text-align:center">
+            <div style="font-size:48px;margin-bottom:12px">🔔</div>
+            <div style="font-size:15px;font-weight:600;color:#3d5a4a;margin-bottom:6px">Bildirim yok</div>
+            <div style="font-size:13px;color:#6c7a89">Şu an için bildiriminiz bulunmuyor.</div>
+        </div>
+    }
+    else
+    {
+        @foreach (var b in Model)
+        {
+            <div class="bildirim-item @(b.IsRead ? "" : "okunmamis")">
+                <div class="bildirim-ikon">@(b.IsRead ? "🔔" : "🔴")</div>
+                <div class="bildirim-body">
+                    <div class="bildirim-mesaj">@b.Message</div>
+                    <div class="bildirim-tarih">@b.CreatedAt.ToString("dd MMMM yyyy HH:mm", new System.Globalization.CultureInfo("tr-TR"))</div>
+                </div>
+                @if (!b.IsRead)
+                {
+                    <form method="post" action="/Student/BildirimOku">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@b.Id">
+                        <button type="submit" class="btn-sm">Okundu</button>
+                    </form>
+                }
+            </div>
+        }
+    }
+</div>
+
+<style>
+.bildirim-item { display:flex; align-items:center; gap:14px; padding:14px 20px; border-bottom:1px solid #f8fafc; transition:background .15s; }
+.bildirim-item:last-child { border-bottom:none; }
+.bildirim-item.okunmamis { background:#ffffff; border-left:3px solid #d90429; }
+.bildirim-ikon { font-size:22px; flex-shrink:0; }
+.bildirim-body { flex:1; }
+.bildirim-mesaj { font-size:13.5px; font-weight:600; color:#0a1128; margin-bottom:3px; }
+.bildirim-tarih { font-size:11.5px; color:#b5d0c0; }
+.badge-red { background:#ffebeb; color:#c00; border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700; }
+</style>
+

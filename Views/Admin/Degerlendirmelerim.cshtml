@@ -1,0 +1,129 @@
+﻿@model List<RewardSystem.Models.ArticleTeacherAssignment>
+@{
+    ViewData["Title"] = "Değerlendirmelerim";
+    ViewData["Active"] = "Degerlendirmelerim";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    
+    var projeAtamalari = ViewBag.ProjeAtamalari as List<object>;
+    var patentAtamalari = ViewBag.PatentAtamalari as List<object>;
+}
+
+<div class="panel">
+    <div class="panel-head">
+        <span>Akademik Değerlendirmelerim</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" style="margin-top:15px; border-bottom:1px solid #ddd; display:flex; gap:20px; padding:0 15px;">
+        <button class="tab-btn active" onclick="showTab('makaleler')">Makaleler (@Model.Count)</button>
+        <button class="tab-btn" onclick="showTab('projeler')">Projeler (@projeAtamalari?.Count)</button>
+        <button class="tab-btn" onclick="showTab('patentler')">Patentler (@patentAtamalari?.Count)</button>
+    </div>
+
+    <!-- Tab Content: Makaleler -->
+    <div id="makaleler" class="tab-content" style="padding:15px; display:block;">
+        @if (!Model.Any())
+        {
+            <div class="empty-state" style="text-align:center; padding:40px 20px; color:#666;">
+                <div style="font-size:40px; margin-bottom:10px;"></div>
+                <h4>Makale Ataması Yok</h4>
+                <p>Şu anda değerlendirmeniz için atanmış bir makale bulunmuyor.</p>
+            </div>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Öğrenci</th>
+                        <th>Makale Başlığı</th>
+                        <th>Dosya</th>
+                        <th>Ağırlık</th>
+                        <th>Durum</th>
+                        <th>İşlem / Puan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model)
+                    {
+                        <tr>
+                            <td>@a.Article?.User?.FullName</td>
+                            <td>@a.Article?.Title</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(a.Article?.FilePath)) { <a href="@a.Article.FilePath" target="_blank" style="color:#1a5cb5; text-decoration:none;">İncele</a> }
+                                else { <span style="color:#999; font-size:12px;">Yok</span> }
+                            </td>
+                            <td>%@a.WeightPercentage</td>
+                            <td>
+                                @if (a.IsCompleted)
+                                {
+                                    <span style="color:#2d6a4f; font-weight:bold; background:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:12px;">Değerlendirildi</span>
+                                }
+                                else
+                                {
+                                    <span style="color:#b25f00; font-weight:bold; background:#fff8e6; padding:4px 8px; border-radius:4px; font-size:12px;">Bekliyor</span>
+                                }
+                            </td>
+                            <td>
+                                @if (a.IsCompleted)
+                                {
+                                    <span>Verilen Puan: <strong>@a.GivenScore</strong></span>
+                                }
+                                else
+                                {
+                                    <form asp-action="MakaleNotuVer" method="post" style="display:flex; gap:10px; align-items:center;">
+                                        <input type="hidden" name="makaleId" value="@a.ArticleId" />
+                                        <input type="number" name="puan" min="0" max="100" required placeholder="0-100" style="width:70px; padding:6px; border:1px solid #ccc; border-radius:5px;" />
+                                        <button type="submit" class="btn-primary" style="padding:6px 12px; font-size:13px;">Puanla</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <!-- Tab Content: Projeler -->
+    <div id="projeler" class="tab-content" style="padding:15px; display:none;">
+        <div class="empty-state" style="text-align:center; padding:40px 20px; color:#666;">
+            <div style="font-size:40px; margin-bottom:10px;">🚀</div>
+            <h4>Proje Ataması Yok</h4>
+            <p>Şu anda değerlendirmeniz için atanmış bir proje bulunmuyor.</p>
+        </div>
+    </div>
+
+    <!-- Tab Content: Patentler -->
+    <div id="patentler" class="tab-content" style="padding:15px; display:none;">
+        <div class="empty-state" style="text-align:center; padding:40px 20px; color:#666;">
+            <div style="font-size:40px; margin-bottom:10px;">💡</div>
+            <h4>Patent Ataması Yok</h4>
+            <p>Şu anda değerlendirmeniz için atanmış bir patent bulunmuyor.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.table { width:100%; border-collapse:collapse; margin-top:10px; }
+.table th, .table td { padding:12px; border-bottom:1px solid #eee; text-align:left; }
+.tab-btn { background:none; border:none; padding:10px 15px; cursor:pointer; font-size:14px; color:#555; font-weight:500; border-bottom:2px solid transparent; }
+.tab-btn.active { color:#184a32; border-bottom:2px solid #184a32; font-weight:bold; }
+.btn-primary { background:#184a32; color:#fff; border:none; border-radius:5px; cursor:pointer; }
+.btn-primary:hover { background:#123a26; }
+</style>
+
+<script>
+function showTab(tabId) {
+    // Hide all contents
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+    // Remove active from all buttons
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    
+    // Show target content
+    document.getElementById(tabId).style.display = 'block';
+    // Add active to clicked button
+    event.currentTarget.classList.add('active');
+}
+</script>
+

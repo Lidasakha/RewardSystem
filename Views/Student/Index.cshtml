@@ -1,0 +1,286 @@
+@model RewardSystem.Models.OgrenciDashboardViewModel
+@{
+    ViewData["Title"] = "Ana Sayfa";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var firstName = Model.Kullanici.FirstName ?? "Öğrenci";
+    var lastName  = Model.Kullanici.LastName  ?? "";
+    var initials  = (firstName.Length > 0 ? firstName[0].ToString() : "")
+                  + (lastName.Length  > 0 ? lastName[0].ToString()  : "");
+    var hour     = DateTime.Now.Hour;
+    var greeting = hour < 12 ? "Günaydın" : hour < 18 ? "İyi günler" : "İyi akşamlar";
+}
+<style>
+    :root { --blue: #185FA5; --blue-bg: #EBF3FB; --r: 14px; --gap: 20px; }
+    /* PAGE BODY */
+    .dash { display: flex; flex-direction: column; gap: var(--gap); }
+
+    /* WELCOME */
+    .welcome {
+        background: linear-gradient(135deg, #185FA5 0%, #0C447C 100%);
+        border-radius: var(--r); padding: 26px 30px; color: #fff;
+        display: flex; align-items: center; justify-content: space-between;
+        position: relative; overflow: hidden;
+    }
+    .welcome::before {
+        content: ''; position: absolute; top: -40px; right: -40px;
+        width: 180px; height: 180px; border-radius: 50%;
+        background: rgba(255,255,255,.06);
+    }
+    .welcome h2 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+    .welcome p  { font-size: 13.5px; color: rgba(255,255,255,.75); margin: 0; }
+    .puan-box   { text-align: right; z-index: 1; }
+    .puan-num   { font-size: 40px; font-weight: 800; line-height: 1; }
+    .puan-lbl   { font-size: 11.5px; color: rgba(255,255,255,.65); margin-top: 2px; }
+
+    /* STAT CARDS */
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: var(--gap); }
+    .sc {
+        background: #fff; border-radius: var(--r); padding: 18px;
+        border: 1px solid #E8EBF1;
+        display: flex; align-items: flex-start; gap: 12px;
+        transition: box-shadow .2s, transform .2s;
+    }
+    .sc:hover { box-shadow: 0 4px 18px rgba(0,0,0,.07); transform: translateY(-2px); }
+    .si {
+        width: 42px; height: 42px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 19px; flex-shrink: 0;
+    }
+    .si.b { background: #EBF3FB; color: #185FA5; }
+    .si.g { background: #EAF7F0; color: #1D9E75; }
+    .si.a { background: #FEF5E7; color: #BA7517; }
+    .si.p { background: #EEEDFE; color: #534AB7; }
+    .sc-num   { font-size: 24px; font-weight: 700; color: #1E2A3B; line-height: 1; }
+    .sc-lbl   { font-size: 12px; color: #8C99B5; margin-top: 3px; }
+    .sc-badge {
+        font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
+        margin-top: 5px; display: inline-block; background: #F1EFE8; color: #5F5E5A;
+    }
+
+    /* TWO COL */
+    .two { display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--gap); }
+
+    /* PANEL */
+    .panel { background: #fff; border-radius: var(--r); border: 1px solid #E8EBF1; overflow: hidden; }
+    .ph {
+        padding: 16px 18px; display: flex; align-items: center; justify-content: space-between;
+        border-bottom: 1px solid #F0F2F7;
+    }
+    .ph-title { font-size: 14px; font-weight: 700; color: #1E2A3B; display: flex; align-items: center; gap: 7px; }
+    .ph-title i { color: var(--blue); }
+    .ph-link { font-size: 12px; color: var(--blue); text-decoration: none; font-weight: 600; }
+    .ph-link:hover { text-decoration: underline; }
+
+    /* SUB ROWS */
+    .sub-row {
+        display: flex; align-items: center; gap: 11px;
+        padding: 12px 18px; border-bottom: 1px solid #F4F6FA; transition: background .15s;
+    }
+    .sub-row:last-child { border-bottom: none; }
+    .sub-row:hover      { background: #F8F9FC; }
+    .sub-icon {
+        width: 34px; height: 34px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .sub-icon.mk { background: #EBF3FB; color: #185FA5; }
+    .sub-icon.pr { background: #EAF7F0; color: #1D9E75; }
+    .sub-icon.bi { background: #FEF5E7; color: #BA7517; }
+    .sub-icon.pa { background: #EEEDFE; color: #534AB7; }
+    .sub-info    { flex: 1; min-width: 0; }
+    .sub-name {
+        font-size: 13px; font-weight: 600; color: #1E2A3B;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sub-meta  { font-size: 11px; color: #8C99B5; margin-top: 2px; }
+    .sbadge {
+        font-size: 10.5px; font-weight: 600; padding: 3px 8px;
+        border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+    }
+    .sbadge.bekliyor      { background: #FEF5E7; color: #854F0B; }
+    .sbadge.degerlendirme { background: #EBF3FB; color: #0C447C; }
+    .sbadge.onaylandi     { background: #EAF7F0; color: #085041; }
+    .sbadge.reddedildi    { background: #FCEBEB; color: #A32D2D; }
+
+    /* EMPTY */
+    .empty { padding: 32px 16px; text-align: center; color: #B4B2A9; font-size: 13px; }
+    .empty i { font-size: 32px; display: block; margin-bottom: 8px; opacity: .4; }
+
+    /* NOTIF ROWS */
+    .nr {
+        display: flex; align-items: flex-start; gap: 9px;
+        padding: 11px 16px; border-bottom: 1px solid #F4F6FA;
+        text-decoration: none; transition: background .15s;
+    }
+    .nr:last-child  { border-bottom: none; }
+    .nr:hover       { background: #F8F9FC; }
+    .nr.unread      { background: #EBF3FB; }
+    .nr.unread:hover { background: #DDE9F7; }
+    .nd   { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); margin-top: 5px; flex-shrink: 0; }
+    .nd-r { width: 7px; flex-shrink: 0; }
+    .nr-msg  { font-size: 12px; color: #3A4869; line-height: 1.4; }
+    .nr-time { font-size: 10.5px; color: #B4B2A9; margin-top: 2px; }
+
+    /* FOOTER */
+    .footer-inner {
+        background: #fff; border-radius: var(--r); border: 1px solid #E8EBF1;
+        padding: 18px; display: flex; align-items: center; gap: 14px;
+    }
+    .f-icon {
+        width: 38px; height: 38px; border-radius: 9px;
+        background: var(--blue-bg); color: var(--blue);
+        display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0;
+    }
+    .f-text { flex: 1; }
+    .f-text strong { font-size: 13px; color: #1E2A3B; display: block; }
+    .f-text span   { font-size: 11.5px; color: #8C99B5; }
+    .f-btn {
+        background: var(--blue); color: #fff; border: none;
+        padding: 8px 18px; border-radius: 8px; font-size: 13px;
+        font-weight: 600; cursor: pointer; text-decoration: none;
+        white-space: nowrap; transition: opacity .15s; display: inline-block;
+    }
+    .f-btn:hover { opacity: .88; color: #fff; }
+
+    @@media (max-width: 1100px) {
+        .stats { grid-template-columns: repeat(2,1fr); }
+        .two   { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 700px) {
+        .sidebar { display: none; }
+        .stats   { grid-template-columns: 1fr 1fr; }
+        .dash    { padding: 14px; }
+    }
+    @@media (max-width: 700px) {
+        .stats   { grid-template-columns: 1fr 1fr; }
+    }
+</style>
+<!-- DASH -->
+<div class="dash">
+    <!-- WELCOME -->
+    <div class="welcome">
+        <div>
+            <h2>@greeting, @firstName! 👋</h2>
+            <p>Akademik profilini ve çalışmalarını buradan takip edebilirsin.</p>
+        </div>
+        <div class="puan-box">
+            <div class="puan-num">@Model.AkademikPuan</div>
+            <div class="puan-lbl">Toplam Akademik Puan</div>
+        </div>
+    </div>
+    <!-- STATS -->
+    <div class="stats">
+        <div class="sc">
+            <div class="si b"><i class="ti ti-file-text"></i></div>
+            <div>
+                <div class="sc-num">@Model.MakaleSayisi</div>
+                <div class="sc-lbl">Makale</div>
+                <span class="sc-badge">Gönderilen</span>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="si g"><i class="ti ti-layout-kanban"></i></div>
+            <div>
+                <div class="sc-num">@Model.ProjeSayisi</div>
+                <div class="sc-lbl">Proje</div>
+                <span class="sc-badge">Gönderilen</span>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="si a"><i class="ti ti-speakerphone"></i></div>
+            <div>
+                <div class="sc-num">@Model.BildiriSayisi</div>
+                <div class="sc-lbl">Bildiri</div>
+                <span class="sc-badge">Gönderilen</span>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="si p"><i class="ti ti-certificate"></i></div>
+            <div>
+                <div class="sc-num">@Model.PatentSayisi</div>
+                <div class="sc-lbl">Patent</div>
+                <span class="sc-badge">Gönderilen</span>
+            </div>
+        </div>
+    </div>
+    <!-- SON ÇALIŞMALAR + BİLDİRİMLER -->
+    <div class="two">
+        <div class="panel">
+            <div class="ph">
+                <div class="ph-title"><i class="ti ti-clock-hour-4"></i> Son Çalışmalar</div>
+                <a class="ph-link" asp-controller="Student" asp-action="Akademik">Tümünü Gör →</a>
+            </div>
+            @if (!Model.SonGonderiler.Any())
+            {
+                <div class="empty">
+                    <i class="ti ti-inbox"></i>
+                    Henüz gönderilen çalışma bulunmuyor.
+                </div>
+            }
+            else
+            {
+                @foreach (var g in Model.SonGonderiler)
+                {
+                    var ic   = g.Tur switch { "Makale" => "mk", "Proje" => "pr", "Bildiri" => "bi", _ => "pa" };
+                    var icon = g.Tur switch { "Makale" => "ti-file-text", "Proje" => "ti-layout-kanban", "Bildiri" => "ti-speakerphone", _ => "ti-certificate" };
+                    var sc   = g.Status switch { "OnayBekliyor" => "bekliyor", "Degerlendirmede" => "degerlendirme", "Onaylandi" => "onaylandi", "Reddedildi" => "reddedildi", _ => "bekliyor" };
+                    var sl   = g.Status switch { "OnayBekliyor" => "Onay Bekliyor", "Degerlendirmede" => "Değerlendirmede", "Onaylandi" => "Onaylandı", "Reddedildi" => "Reddedildi", _ => g.Status };
+                    <div class="sub-row">
+                        <div class="sub-icon @ic"><i class="ti @icon"></i></div>
+                        <div class="sub-info">
+                            <div class="sub-name">@g.Baslik</div>
+                            <div class="sub-meta">
+                                @g.Tur • @(string.IsNullOrEmpty(g.TarihStr) ? g.Tarih.ToString("dd MMM yyyy") : g.TarihStr)
+                            </div>
+                        </div>
+                        <span class="sbadge @sc">@sl</span>
+                    </div>
+                }
+            }
+        </div>
+        <div class="panel">
+            <div class="ph">
+                <div class="ph-title">
+                    <i class="ti ti-bell"></i> Bildirimler
+                    @if (Model.OkunmamisSayisi > 0)
+                    {
+                        <span style="background:#E24B4A;color:#fff;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:20px;">
+                            @Model.OkunmamisSayisi yeni
+                        </span>
+                    }
+                </div>
+                <a class="ph-link" asp-controller="Student" asp-action="Bildirimler">Tümünü Gör →</a>
+            </div>
+            @if (!Model.Bildirimler.Any())
+            {
+                <div class="empty">
+                    <i class="ti ti-bell-off"></i>
+                    Yeni bildiriminiz bulunmuyor.
+                </div>
+            }
+            else
+            {
+                @foreach (var b in Model.Bildirimler)
+                {
+                    <a class="nr @(!b.IsRead ? "unread" : "")"
+                       asp-controller="Student" asp-action="BildirimOkundu" asp-route-id="@b.Id">
+                        @if (!b.IsRead) { <div class="nd"></div> } else { <div class="nd-r"></div> }
+                        <div>
+                            <div class="nr-msg">@b.Message</div>
+                            <div class="nr-time">@b.CreatedAt.ToString("dd MMM, HH:mm")</div>
+                        </div>
+                    </a>
+                }
+            }
+        </div>
+    </div>
+    <!-- FOOTER CTA -->
+    <div class="footer-inner">
+        <div class="f-icon"><i class="ti ti-send"></i></div>
+        <div class="f-text">
+            <strong>Yeni çalışma gönder</strong>
+            <span>Makale, proje, bildiri veya patent ekleyerek akademik puanını artır.</span>
+        </div>
+        <a class="f-btn" asp-controller="Student" asp-action="Akademik">Gönder →</a>
+    </div>
+</div>

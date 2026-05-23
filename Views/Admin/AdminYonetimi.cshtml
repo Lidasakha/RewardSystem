@@ -1,0 +1,246 @@
+@model List<RewardSystem.Models.Article>
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Admin Yönetimi";
+    ViewData["Active"] = "AdminYonetimi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var hocalar = ViewBag.Hocalar as List<RewardSystem.Models.User> ?? new();
+}
+
+<div class="panel">
+    <div class="panel-head">
+        <span>Onay Bekleyen Makaleler</span>
+    </div>
+
+    @if (TempData["Hata"] != null) { <div style="padding:10px; background:#fff0f0; color:#D32F2F; margin:10px; border-radius:8px; font-size:13px;">@TempData["Hata"]</div> }
+    @if (TempData["Mesaj"] != null) { <div style="padding:10px; background:#F0F4F8; color:#001F3F; margin:10px; border-radius:8px; font-size:13px;">@TempData["Mesaj"]</div> }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Öğrenci</th>
+                <th>Makale Başlığı</th>
+                <th>Dosya</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var m in Model) {
+                <tr>
+                    <td>@m.User?.FullName</td>
+                    <td>@m.Title</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" style="color:#1a5cb5; text-decoration:none;">İncele</a> }
+                        else { <span style="color:#999; font-size:12px;">Yok</span> }
+                    </td>
+                    <td>
+                        <button class="btn-primary" onclick="openAssignModal('@m.Id', '@(m.Title?.Replace("'", "\\'"))')">Hoca Ata</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Yeni Nesil Hoca Atama Modal -->
+<div id="assignModal" class="modal-assign-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999;">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div style="font-size:13px; color:var(--color-text-secondary); margin-bottom:4px;">Makale değerlendirmesi</div>
+                <h2 id="modalTitleDisplay">Hoca Atama</h2> 
+            </div>
+            <button type="button" class="close-btn" onclick="closeModal()" aria-label="Kapat">Kapat</button>
+        </div>
+
+        <div class="search-wrap">
+            <div class="search-box">
+                <i></i>
+                <input id="searchInput" type="text" placeholder="Hoca ara…" autocomplete="off" />
+            </div>
+        </div>
+
+        <div class="teacher-list" id="teacherList"></div>
+
+        <div class="selected-section">
+            <div class="selected-label">Seçilen hocalar</div>
+            <div class="selected-chips" id="chips">
+                <span class="empty-chips">Henüz seçim yapılmadı</span>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <div class="total-badge">Toplam: <span id="totalPct" class="warn">0%</span></div>
+            <form id="assignForm" asp-controller="Admin" asp-action="MakaleHocaAtama" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="modalMakaleId" name="makaleId" />
+                <div id="hiddenInputsContainer"></div> <!-- Dinamik inputlar buraya gelecek -->
+                <button type="button" class="btn-assign" id="assignBtn" disabled onclick="submitAssignForm()">Hoca ata</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const teachers = @Html.Raw(Json.Serialize(hocalar.Select(h => new { id = h.Id, name = h.FullName, title = h.UserType ?? "Öğretim Üyesi" })));
+let selected = [];
+
+function openAssignModal(id, title) {
+    document.getElementById('modalMakaleId').value = id;
+    document.getElementById('modalTitleDisplay').innerText = title;
+    document.getElementById('assignModal').style.display = 'flex';
+    selected = []; // Modal her açıldığında temizle
+    renderList();
+    renderChips();
+}
+
+function closeModal() {
+    document.getElementById('assignModal').style.display = 'none';
+}
+
+function initials(name) {
+    return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+function redistribute() {
+    if (selected.length === 0) return;
+    const base = Math.floor(100 / selected.length);
+    const rem = 100 - base * selected.length;
+    selected = selected.map((s, i) => ({ ...s, pct: base + (i < rem ? 1 : 0) }));
+}
+
+function renderList(filter = '') {
+    const list = document.getElementById('teacherList');
+    list.innerHTML = '';
+    const q = filter.toLowerCase();
+    let anyVisible = false;
+
+    teachers.forEach(t => {
+        if (q && !t.name.toLowerCase().includes(q)) return;
+        anyVisible = true;
+        const isSelected = selected.some(s => s.id === t.id);
+        const row = document.createElement('div');
+        row.className = 'teacher-row';
+        row.innerHTML = `
+            <div class="avatar">${initials(t.name)}</div>
+            <div style="flex:1">
+                <div class="teacher-name">${t.name}</div>
+                <div class="teacher-title">${t.title}</div>
+                </div> 
+                <div class="check ${isSelected ? 'active' : ''}"></div>
+        `;
+        row.addEventListener('click', () => toggleTeacher(t));
+        list.appendChild(row);
+    });
+
+    if (!anyVisible) {
+        list.innerHTML = '<div class="no-results">Sonuç bulunamadı</div>';
+    }
+}
+
+function renderChips() {
+    const chips = document.getElementById('chips');
+    const total = document.getElementById('totalPct');
+    const btn = document.getElementById('assignBtn');
+    
+    if (selected.length === 0) {
+        chips.innerHTML = '<span class="empty-chips">Henüz seçim yapılmadı</span>';
+        total.textContent = '0%';
+        total.className = 'warn';
+        btn.disabled = true;
+        return;
+    }
+
+    chips.innerHTML = '';
+    let sum = 0;
+    selected.forEach(s => {
+        sum += s.pct;
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerHTML = `<span>${s.name.split(' ')[0]}</span><span class="pct">${s.pct}%</span><button type="button" class="rm" onclick="removeTeacher(${s.id}, event)">×</button>`;
+        chips.appendChild(chip);
+    });
+
+    total.textContent = sum + '%';
+    total.className = sum === 100 ? 'ok' : 'warn';
+    btn.disabled = sum !== 100;
+}
+
+function toggleTeacher(t) {
+    if (selected.some(s => s.id === t.id)) {
+        selected = selected.filter(s => s.id !== t.id);
+    } else {
+        selected.push({ ...t, pct: 0 });
+    }
+    redistribute();
+    renderList(document.getElementById('searchInput').value);
+    renderChips();
+}
+
+function removeTeacher(id, e) {
+    e.stopPropagation();
+    selected = selected.filter(s => s.id !== id);
+    redistribute();
+    renderList(document.getElementById('searchInput').value);
+    renderChips();
+}
+
+function submitAssignForm() {
+    const container = document.getElementById('hiddenInputsContainer');
+    container.innerHTML = '';
+    
+    selected.forEach(s => {
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'hocaIds';
+        idInput.value = s.id;
+        
+        const pctInput = document.createElement('input');
+        pctInput.type = 'hidden';
+        pctInput.name = 'yuzdeler';
+        pctInput.value = s.pct;
+        
+        container.appendChild(idInput);
+        container.appendChild(pctInput);
+    });
+    
+    document.getElementById('assignForm').submit();
+}
+
+document.getElementById('searchInput').addEventListener('input', e => renderList(e.target.value));
+</script>
+
+<style>
+.table { width:100%; border-collapse:collapse; margin-top:10px; }
+.table th, .table td { padding:12px; border-bottom:1px solid #eee; text-align:left; }
+.btn-iptal { background:#eee; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; }
+
+/* Sizin hazırladığınız stiller */
+.modal-assign-overlay { background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.modal { background: #fff; border-radius: 12px; width: 100%; max-width: 520px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.modal-header { padding: 1.25rem 1.5rem 1rem; border-bottom: 0.5px solid #eee; display: flex; align-items: flex-start; justify-content: space-between; }
+.modal-header h2 { font-size: 16px; font-weight: 600; color: #333; }
+.close-btn { background: none; border: none; cursor: pointer; color: #999; font-size: 18px; }
+.search-wrap { padding: 1rem 1.5rem 0.75rem; }
+.search-box { display: flex; align-items: center; gap: 8px; background: #f5f5f5; border-radius: 8px; padding: 0 12px; }
+.search-box input { background: none; border: none; outline: none; padding: 9px 0; font-size: 14px; width: 100%; }
+.teacher-list { max-height: 260px; overflow-y: auto; padding: 0 1.5rem; }
+.teacher-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid #f0f0f0; cursor: pointer; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: #F0F4F8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #001F3F; }
+.teacher-name { font-size: 14px; color: #333; font-weight: 500; }
+.teacher-title { font-size: 11px; color: #777; }
+.check { width: 18px; height: 18px; border: 1.5px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: transparent; font-size: 12px; }
+.check.active { background: #D32F2F; border-color: #D32F2F; color: white; }
+.selected-section { padding: 0.75rem 1.5rem; border-top: 0.5px solid #eee; background: #fafafa; }
+.selected-label { font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.selected-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: flex; align-items: center; gap: 5px; background: #fff; border: 0.5px solid #ddd; border-radius: 20px; padding: 3px 10px; font-size: 12px; }
+.chip .pct { font-weight: 700; color: #D32F2F; margin-left: 4px; }
+.chip .rm { border: none; background: none; cursor: pointer; color: #cc0000; font-weight: bold; }
+.modal-footer { padding: 1rem 1.5rem; border-top: 0.5px solid #eee; display: flex; align-items: center; justify-content: space-between; }
+.total-badge { font-size: 13px; font-weight: 500; }
+.total-badge .ok { color: #001F3F; }
+.total-badge .warn { color: #b45309; }
+.btn-assign { background: #001F3F; color: white; border: none; padding: 9px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+.btn-assign:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>

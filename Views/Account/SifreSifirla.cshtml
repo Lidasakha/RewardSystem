@@ -1,0 +1,84 @@
+﻿@model RewardSystem.Models.ResetPasswordViewModel
+@{ Layout = null; }
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şifre Yenileme — Teşvik ve Ödüllendirme Sistemi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Sora',sans-serif;background:#f4f6f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+        body::before{content:'';position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(58,173,110,.09) 0%,transparent 70%);top:-200px;right:-200px;pointer-events:none}
+        body::after{content:'';position:fixed;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(240,192,64,.07) 0%,transparent 70%);bottom:-150px;left:-150px;pointer-events:none}
+        .wrap{width:100%;max-width:440px; margin-top:20px; z-index:1;}
+        .brand{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;text-align:center}
+        .brand-icon{width:60px;height:60px;background:#1a2b4c;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#ffffff;box-shadow:0 8px 32px rgba(26,43,76,.28);margin-bottom:12px}
+        .brand h1{font-size:18px;font-weight:700;color:#0a1128;letter-spacing:-.4px}
+        .card{background:#fff;border-radius:22px;padding:28px;border:1px solid #e2e8f0;box-shadow:0 4px 40px rgba(0,0,0,.07)}
+        .card h2{font-size:20px;font-weight:700;color:#0a1128;letter-spacing:-.6px;margin-bottom:5px}
+        .card>p{font-size:13.5px;color:#6c7a89;margin-bottom:20px}
+
+        .fg{margin-bottom:14px}
+        .fg label{display:block;font-size:13px;font-weight:600;color:#3d5a4a;margin-bottom:6px}
+        .iw{position:relative}
+        .iw .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
+        .fg input{width:100%;padding:10px 14px 10px 36px;border:1.5px solid #e2e8f0;border-radius:10px;font-family:'Sora',sans-serif;font-size:13.5px;color:#0a1128;background:#fafcfb;outline:none}
+        .fg input:focus{border-color:#d90429;background:#fff;box-shadow:0 0 0 4px rgba(58,173,110,.1)}
+        .fg input::placeholder{color:#b5d0c0}
+        .btn-login{width:100%;padding:12px;background:linear-gradient(135deg,#d90429,#9d021e);color:#fff;border:none;border-radius:10px;font-family:'Sora',sans-serif;font-size:14.5px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(26,43,76,.3); margin-top:10px;}
+        .btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(26,43,76,.4)}
+        .err{background:#fee;border:1px solid #fcc;border-radius:10px;padding:10px 14px;font-size:13px;color:#c00;margin-bottom:16px}
+        .footer{text-align:center;margin-top:20px;font-size:12px;color:#6c7a89; padding-bottom: 20px;}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="brand">
+        <div class="brand-icon">TÖ</div>
+        <h1>Teşvik ve Ödüllendirme Sistemi</h1>
+    </div>
+    <div class="card">
+        <h2>Yeni Şifre Belirle </h2>
+        <p>Lütfen yeni şifrenizi aşağıya giriniz.</p>
+
+        @if (ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="err">
+                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@err.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form asp-action="SifreSifirla" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Email" />
+            <input type="hidden" asp-for="Token" />
+
+            <div class="fg">
+                <label>Yeni Şifre</label>
+                <div class="iw">
+                    <span class="ic"></span>
+                    <input asp-for="Password" type="password" placeholder="Yeni şifrenizi girin" required>
+                </div>
+            </div>
+
+            <div class="fg">
+                <label>Şifre Tekrarı</label>
+                <div class="iw">
+                    <span class="ic"></span>
+                    <input asp-for="ConfirmPassword" type="password" placeholder="Şifrenizi tekrar girin" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-login">Şifremi Güncelle →</button>
+        </form>
+    </div>
+    <div class="footer">© 2025 Teşvik ve Ödüllendirme Sistemi · Üniversite</div>
+</div>
+</body>
+</html>
+

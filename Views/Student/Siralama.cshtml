@@ -1,0 +1,63 @@
+﻿@model List<RewardSystem.Models.RankingRow>
+@{
+    ViewData["Title"] = "Sıralama";
+    ViewData["Active"] = "Siralama";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var benimId = ViewBag.MyId as long? ?? 0;
+}
+
+<div class="panel">
+    <div class="panel-head">
+        <span>Bölüm Sıralaması</span>
+        <span style="font-size:12px;color:#6c7a89">@Model.Count öğrenci</span>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p class="empty">Henüz sıralama verisi yok.</p>
+    }
+    else
+    {
+        @foreach (var (s, i) in Model.Select((s, i) => (s, i)))
+        {
+            <div class="siralama-row @(s.User.Id == benimId ? "highlight" : "")">
+                <div class="siralama-no">
+                    @if (i == 0) { <span class="rank-no">1.</span> }
+                    else if (i == 1) { <span class="rank-no">2.</span> }
+                    else if (i == 2) { <span class="rank-no">3.</span> }
+                    else { <span class="rank-no">@(i+1)</span> }
+                </div>
+                <div class="siralama-avatar">@s.User.FullName[0]</div>
+                <div class="siralama-info">
+                    <div class="siralama-ad">
+                        @s.User.FullName
+                        @if (s.User.Id == benimId) { <span class="sen-badge">Sen</span> }
+                    </div>
+                    <div class="siralama-bolum">@(s.User.Department ?? "—")</div>
+                </div>
+                <div class="siralama-puan">
+                    <div class="puan-num">@s.Score</div>
+                    <div class="puan-label">Toplam Puan</div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+.siralama-row { display:flex; align-items:center; gap:14px; padding:14px 20px; border-bottom:1px solid #f8fafc; transition:background .15s; }
+.siralama-row:last-child { border-bottom:none; }
+.siralama-row:hover { background:#ffffff; }
+.siralama-row.highlight { background:#fef2f2; }
+.siralama-no { width:36px; text-align:center; flex-shrink:0; }
+.rank-no { font-size:16px; font-weight:700; color:#6c7a89; }
+.siralama-avatar { width:40px; height:40px; background:linear-gradient(135deg,#001F3F,#083358); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:16px; flex-shrink:0; }
+.siralama-info { flex:1; }
+.siralama-ad { font-size:14px; font-weight:700; color:#0a1128; display:flex; align-items:center; gap:8px; }
+.siralama-bolum { font-size:12px; color:#6c7a89; margin-top:2px; }
+.sen-badge { background:#D32F2F; color:#fff; border-radius:20px; padding:2px 8px; font-size:10px; font-weight:700; }
+.siralama-puan { text-align:center; flex-shrink:0; }
+.puan-num { font-size:20px; font-weight:800; color:#001F3F; }
+.puan-label { font-size:10px; color:#6c7a89; }
+</style>
+

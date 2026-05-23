@@ -1,0 +1,136 @@
+@model RewardSystem.Models.User
+@{
+    ViewData["Title"] = "Profil";
+    ViewData["Active"] = "Profil";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var roleDisplay = Model.UserType?.ToLower() switch
+    {
+        "ogrenci" => " Öğrenci",
+        "teacher" => "👨‍🏫 Öğretmen",
+        "admin" => "🛡️ Admin",
+        "superadmin" => "⚡ Süper Admin",
+        _ => " Kullanıcı"
+    };
+}
+
+<div class="pnd-profile-container">
+
+    @if (TempData["Mesaj"] != null)
+    {
+        <div class="pnd-alert pnd-alert-success">
+            <span class="pnd-alert-icon">✅</span>
+            <span>@TempData["Mesaj"]</span>
+            <button class="pnd-alert-close" onclick="this.parentElement.remove()">✕</button>
+        </div>
+    }
+
+    @if (TempData["Hata"] != null)
+    {
+        <div class="pnd-alert pnd-alert-danger">
+            <span class="pnd-alert-icon">❌</span>
+            <span>@TempData["Hata"]</span>
+            <button class="pnd-alert-close" onclick="this.parentElement.remove()">✕</button>
+        </div>
+    }
+
+    <!-- Section 1: Identity Information -->
+    <div class="pnd-card" id="identity">
+        <div class="pnd-card-header">
+            <h2 class="pnd-card-title">
+                <span></span> Kimlik Bilgileri
+            </h2>
+        </div>
+        
+        <div class="pnd-info-grid">
+            <div class="pnd-form-group">
+                <label>Ad Soyad</label>
+                <input type="text" class="pnd-form-control" value="@Model.FullName" readonly />
+            </div>
+            <div class="pnd-form-group">
+                <label>Kullanıcı Adı</label>
+                <input type="text" class="pnd-form-control" value="@Model.Username" readonly />
+            </div>
+            <div class="pnd-form-group">
+                <label>E-posta Adresi</label>
+                <input type="email" class="pnd-form-control" value="@(Model.Email ?? "Belirtilmemiş")" readonly />
+            </div>
+            <div class="pnd-form-group">
+                <label>Rol</label>
+                <input type="text" class="pnd-form-control" value="@roleDisplay" readonly />
+            </div>
+            <div class="pnd-form-group">
+                <label>Bölüm / Ünvan</label>
+                <input type="text" class="pnd-form-control" value="@(Model.Department ?? "Belirtilmemiş")" readonly />
+            </div>
+            @if (Model.UserType?.ToLower() == "ogrenci")
+            {
+                <div class="pnd-form-group">
+                    <label>Öğrenci Numarası</label>
+                    <input type="text" class="pnd-form-control" value="@(Model.StudentNumber ?? "Belirtilmemiş")" readonly />
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Section 2: Security Settings -->
+    <div class="pnd-card" id="security">
+        <div class="pnd-card-header">
+            <h2 class="pnd-card-title">
+                <span></span> Güvenlik Ayarları
+            </h2>
+        </div>
+
+        <form asp-action="ChangePassword" asp-controller="Profile" method="post">
+            @Html.AntiForgeryToken()
+            <div class="pnd-form-group" style="max-width: 400px;">
+                <label>Mevcut Şifre</label>
+                <div style="position: relative;">
+                    <input type="password" name="CurrentPassword" class="pnd-form-control" required placeholder="••••••••" style="padding-right: 40px;" />
+                    <i class="ti ti-eye" onclick="togglePassword(this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 18px;"></i>
+                </div>
+                @Html.ValidationMessage("CurrentPassword", new { @class = "text-danger" })
+            </div>
+            
+            <div class="pnd-form-group" style="max-width: 400px;">
+                <label>Yeni Şifre</label>
+                <div style="position: relative;">
+                    <input type="password" name="NewPassword" class="pnd-form-control" required placeholder="••••••••" style="padding-right: 40px;" />
+                    <i class="ti ti-eye" onclick="togglePassword(this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 18px;"></i>
+                </div>
+                @Html.ValidationMessage("NewPassword", new { @class = "text-danger" })
+            </div>
+            
+            <div class="pnd-form-group" style="max-width: 400px; margin-bottom: 24px;">
+                <label>Yeni Şifre (Tekrar)</label>
+                <div style="position: relative;">
+                    <input type="password" name="ConfirmNewPassword" class="pnd-form-control" required placeholder="••••••••" style="padding-right: 40px;" />
+                    <i class="ti ti-eye" onclick="togglePassword(this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 18px;"></i>
+                </div>
+                @Html.ValidationMessage("ConfirmNewPassword", new { @class = "text-danger" })
+            </div>
+
+            <button type="submit" class="pnd-btn">
+                <span>💾</span> Şifreyi Güncelle
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    function togglePassword(icon) {
+        // İkonun hemen öncesindeki input elementini buluyoruz
+        var input = icon.previousElementSibling;
+        
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove("ti-eye");
+            icon.classList.add("ti-eye-off"); // Tabler Icons kapalı göz ikonu
+        } else {
+            input.type = "password";
+            icon.classList.remove("ti-eye-off");
+            icon.classList.add("ti-eye"); // Tabler Icons açık göz ikonu
+        }
+    }
+</script>

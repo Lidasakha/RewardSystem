@@ -1,0 +1,323 @@
+﻿@model RewardSystem.Models.AkademikViewModel
+@{
+    ViewData["Title"] = "Akademik Panelim";
+    ViewData["Active"] = "Akademik";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon"></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Makaleler.Count</div>
+            <div class="kpi-label">Makale Sayısı</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon"></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Projeler.Count</div>
+            <div class="kpi-label">Proje Sayısı</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon"></div>
+        <div class="kpi-body">
+            <div class="kpi-value">@Model.Bildiriler.Count</div>
+            <div class="kpi-label">Bildiri Sayısı</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon"></div>
+        <div class="kpi-body">
+            @{
+                int akademikPuan = Model.Makaleler.Count * 100 + Model.Projeler.Count * 80 + Model.Bildiriler.Count * 40 + Model.Patentler.Count * 60;
+            }
+            <div class="kpi-value">@akademikPuan</div>
+            <div class="kpi-label">Akademik Puan</div>
+        </div>
+    </div>
+</div>
+
+<!-- Grafik -->
+<div class="panel" style="margin-bottom:20px;">
+    <div class="panel-head"><span>Yıllık Akademik Aktivite</span></div>
+    <div style="padding:20px;"> 
+        <div style="position:relative; height:300px;">
+            <canvas id="activityChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Sekmeli Akademik Çalışmalar --> 
+<div class="panel">
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="showTab('makaleler', this)">Makaleler (@Model.Makaleler.Count)</button>
+        <button class="tab-btn" onclick="showTab('projeler', this)">Projeler (@Model.Projeler.Count)</button>
+        <button class="tab-btn" onclick="showTab('bildiriler', this)">Bildiriler (@Model.Bildiriler.Count)</button>
+        <button class="tab-btn" onclick="showTab('patentler', this)">Patentler (@Model.Patentler.Count)</button>
+    </div>
+
+    <!-- Makaleler Tab -->
+    <div id="tab-makaleler" class="tab-content active">
+        @if (!Model.Makaleler.Any())
+        {
+            <div class="empty-state">Henüz makale eklenmemiş.</div>
+        }
+        else
+        {
+            @foreach (var m in Model.Makaleler)
+            {
+                <div class="activity-item">
+                    <div class="activity-icon" style="background:#f0e6ff;"></div>
+                    <div class="activity-content">
+                        <div class="activity-title">@m.Title</div>
+                        <div class="activity-desc">
+                            @if (!string.IsNullOrEmpty(m.Journal)) { <span>@m.Journal</span> }
+                            @if (m.Year.HasValue) { <span style="margin-left:10px;">@m.Year</span> }
+                            @if (!string.IsNullOrEmpty(m.DOI)) { <span style="margin-left:10px;">@m.DOI</span> }
+                            @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" style="margin-left:10px; color:#1a5cb5; text-decoration:none;">Dosyayı Gör</a> }
+                        </div>
+                        <div class="activity-status">
+                            @if (m.Status == "Onaylandi") {
+                                <span class="badge-green">Onaylandı</span> 
+                                @if (m.Score.HasValue) { <span class="badge-blue">@m.Score Puan</span> }
+                            }
+                            else if (m.Status == "Degerlendirmede") { <span class="badge-yellow">Değerlendirmede</span> }
+                            else { <span class="badge-gray">Onay Bekliyor</span> }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+        <!-- Makale Ekle Formu -->
+        <div class="add-form">
+            <div class="add-form-title">Yeni Makale Ekle</div>
+            <form method="post" asp-controller="Student" asp-action="MakaleEkle" enctype="multipart/form-data">
+                <div class="form-row">
+                    <input type="text" name="Title" placeholder="Makale Başlığı" required class="form-input" />
+                    <input type="text" name="Journal" placeholder="Dergi Adı" class="form-input" />
+                </div>
+                <div class="form-row">
+                    <input type="text" name="DOI" placeholder="DOI" class="form-input" />
+                    <input type="number" name="Year" placeholder="Yıl" class="form-input" style="max-width:120px;" />
+                    <input type="file" name="file" class="form-input" accept=".pdf,.doc,.docx,.jpg,.png" />
+                </div>
+                <button type="submit" class="btn-primary">Gönder</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Projeler Tab -->
+    <div id="tab-projeler" class="tab-content">
+        @if (!Model.Projeler.Any())
+        {
+            <div class="empty-state">Henüz proje eklenmemiş.</div>
+        }
+        else
+        {
+            @foreach (var p in Model.Projeler)
+            {
+                <div class="activity-item">
+                    <div class="activity-icon" style="background:#e6f7f0;"></div>
+                    <div class="activity-content">
+                        <div class="activity-title">@p.Title</div>
+                        <div class="activity-desc">
+                            @if (!string.IsNullOrEmpty(p.Description)) { <span>@p.Description</span> }
+                            @if (p.StartDate.HasValue) { <span style="margin-left:10px;">@p.StartDate.Value.ToString("dd.MM.yyyy")</span> }
+                            @if (!string.IsNullOrEmpty(p.FilePath)) { <a href="@p.FilePath" target="_blank" style="margin-left:10px; color:#1a5cb5; text-decoration:none;">Dosyayı Gör</a> }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="add-form">
+            <div class="add-form-title">Yeni Proje Ekle</div>
+            <form method="post" asp-controller="Student" asp-action="ProjeEkle" enctype="multipart/form-data">
+                <div class="form-row">
+                    <input type="text" name="Title" placeholder="Proje Başlığı" required class="form-input" />
+                    <input type="text" name="Description" placeholder="Açıklama" class="form-input" />
+                </div>
+                <div class="form-row">
+                    <input type="date" name="StartDate" class="form-input" />
+                    <input type="date" name="EndDate" class="form-input" />
+                    <input type="file" name="file" class="form-input" accept=".pdf,.doc,.docx,.jpg,.png" />
+                </div> 
+                <button type="submit" class="btn-primary">Gönder</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bildiriler Tab -->
+    <div id="tab-bildiriler" class="tab-content">
+        @if (!Model.Bildiriler.Any())
+        {
+            <div class="empty-state">Henüz bildiri eklenmemiş.</div>
+        }
+        else
+        {
+            @foreach (var b in Model.Bildiriler)
+            {
+                <div class="activity-item">
+                    <div class="activity-icon" style="background:#fff8e6;"></div>
+                    <div class="activity-content">
+                        <div class="activity-title">@b.Title</div>
+                        <div class="activity-desc">
+                            @if (!string.IsNullOrEmpty(b.Conference)) { <span>@b.Conference</span> }
+                            @if (b.Year.HasValue) { <span style="margin-left:10px;">@b.Year</span> }
+                            @if (!string.IsNullOrEmpty(b.FilePath)) { <a href="@b.FilePath" target="_blank" style="margin-left:10px; color:#1a5cb5; text-decoration:none;">Dosyayı Gör</a> }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="add-form">
+            <div class="add-form-title">Yeni Bildiri Ekle</div>
+            <form method="post" asp-controller="Student" asp-action="BildiriEkle" enctype="multipart/form-data">
+                <div class="form-row">
+                    <input type="text" name="Title" placeholder="Bildiri Başlığı" required class="form-input" />
+                    <input type="text" name="Conference" placeholder="Konferans Adı" class="form-input" />
+                </div>
+                <div class="form-row">
+                    <input type="number" name="Year" placeholder="Yıl" class="form-input" style="max-width:120px;" />
+                    <input type="file" name="file" class="form-input" accept=".pdf,.doc,.docx,.jpg,.png" />
+                </div>
+                <button type="submit" class="btn-primary">Gönder</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Patentler Tab -->
+    <div id="tab-patentler" class="tab-content">
+        @if (!Model.Patentler.Any())
+        {
+            <div class="empty-state">Henüz patent eklenmemiş.</div>
+        }
+        else
+        {
+            @foreach (var p in Model.Patentler)
+            {
+                <div class="activity-item">
+                    <div class="activity-icon" style="background:#e6f0ff;"></div>
+                    <div class="activity-content">
+                        <div class="activity-title">@p.Title</div>
+                        <div class="activity-desc">
+                            @if (!string.IsNullOrEmpty(p.PatentNumber)) { <span>@p.PatentNumber</span> }
+                            @if (p.Year.HasValue) { <span style="margin-left:10px;">@p.Year</span> }
+                            @if (!string.IsNullOrEmpty(p.FilePath)) { <a href="@p.FilePath" target="_blank" style="margin-left:10px; color:#1a5cb5; text-decoration:none;">Dosyayı Gör</a> }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="add-form">
+            <div class="add-form-title">Yeni Patent Ekle</div>
+            <form method="post" asp-controller="Student" asp-action="PatentEkle" enctype="multipart/form-data">
+                <div class="form-row">
+                    <input type="text" name="Title" placeholder="Patent Başlığı" required class="form-input" />
+                    <input type="text" name="PatentNumber" placeholder="Patent Numarası" class="form-input" />
+                </div>
+                <div class="form-row">
+                    <input type="number" name="Year" placeholder="Yıl" class="form-input" style="max-width:120px;" />
+                    <input type="file" name="file" class="form-input" accept=".pdf,.doc,.docx,.jpg,.png" />
+                </div>
+                <button type="submit" class="btn-primary">Gönder</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var makaleler = @Html.Raw(Json.Serialize(Model.Makaleler.Where(m => m.Year.HasValue).GroupBy(m => m.Year).Select(g => new { year = g.Key, count = g.Count() }).OrderBy(x => x.year)));
+    var projeler = @Html.Raw(Json.Serialize(Model.Projeler.Where(p => p.StartDate.HasValue).GroupBy(p => p.StartDate.Value.Year).Select(g => new { year = g.Key, count = g.Count() }).OrderBy(x => x.year)));
+
+    var allYears = [...new Set([...makaleler.map(x => x.year), ...projeler.map(x => x.year)])].sort();
+    if (allYears.length === 0) allYears = [new Date().getFullYear()];
+
+    var ctx = document.getElementById('activityChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: allYears.map(String),
+            datasets: [
+                {
+                    label: 'Makale',
+                    data: allYears.map(y => { var f = makaleler.find(x => x.year === y); return f ? f.count : 0; }),
+                    borderColor: '#534AB7',
+                    backgroundColor: 'rgba(83, 74, 183, 0.1)',
+                    borderWidth: 2, fill: true, tension: 0.4,
+                    pointRadius: 5, pointBackgroundColor: '#534AB7', pointBorderColor: '#fff', pointBorderWidth: 2
+                },
+                {
+                    label: 'Proje',
+                    data: allYears.map(y => { var f = projeler.find(x => x.year === y); return f ? f.count : 0; }),
+                    borderColor: '#1D9E75',
+                    backgroundColor: 'rgba(29, 158, 117, 0.1)',
+                    borderWidth: 2, fill: true, tension: 0.4,
+                    pointRadius: 5, pointBackgroundColor: '#1D9E75', pointBorderColor: '#fff', pointBorderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 13 }, usePointStyle: true } } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1, font: { size: 12 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 12 } } }
+            }
+        }
+    });
+});
+
+function showTab(tabName, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tabName).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+
+<style>
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi-card { background: #fff; border-radius: 14px; padding: 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.04); border: 1px solid #eee; }
+.kpi-icon { font-size: 28px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 12px; }
+.kpi-value { font-size: 26px; font-weight: 800; color: #001F3F; }
+.kpi-label { font-size: 12px; color: #6c7a89; font-weight: 600; margin-top: 2px; }
+
+.tab-bar { display: flex; gap: 0; border-bottom: 2px solid #eee; padding: 0 16px; background: #fafcfb; border-radius: 14px 14px 0 0; overflow-x: auto; }
+.tab-btn { background: none; border: none; padding: 14px 18px; font-size: 13px; font-weight: 600; color: #6c7a89; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; font-family: 'Sora', sans-serif; transition: all .2s; }
+.tab-btn:hover { color: #001F3F; }
+.tab-btn.active { color: #001F3F; border-bottom-color: #D32F2F; }
+
+.tab-content { display: none; padding: 16px; }
+.tab-content.active { display: block; }
+
+.activity-item { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f8fafc; }
+.activity-item:last-of-type { border-bottom: none; }
+.activity-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; background: #E3F2FD !important; }
+.activity-content { flex: 1; }
+.activity-title { font-size: 14px; font-weight: 600; color: #0a1128; margin-bottom: 4px; }
+.activity-desc { font-size: 12.5px; color: #6c7a89; }
+.activity-status { margin-top: 6px; }
+
+.badge-yellow { background: #fff8e6; color: #b58a00; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-gray { background: #f0f0f0; color: #666; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-blue { background: #e6f0ff; color: #1a5cb5; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+
+.empty-state { padding: 30px; text-align: center; color: #888; font-size: 14px; }
+
+.add-form { border-top: 2px solid #eee; padding: 16px 0 0; margin-top: 10px; }
+.add-form-title { font-size: 13px; font-weight: 700; color: #001F3F; margin-bottom: 12px; }
+.form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.form-input { flex: 1; min-width: 150px; padding: 10px 14px; border: 1.5px solid #E3F2FD; border-radius: 10px; font-family: 'Sora', sans-serif; font-size: 13px; color: #0a1128; background: #fafcfb; outline: none; box-sizing: border-box; }
+.form-input:focus { border-color: #001F3F; box-shadow: 0 0 0 3px rgba(0,31,63,.1); }
+</style>
+
