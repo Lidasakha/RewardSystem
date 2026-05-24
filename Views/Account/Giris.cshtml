@@ -1,13 +1,11 @@
 ﻿@model RewardSystem.Models.LoginViewModel
-@using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer Localizer
 @{ Layout = null; }
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>@Localizer["Login.Button"] — @Localizer["AppName"]</title>
+  <title>Giriş Yap — TÖS</title>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
   <style>
@@ -111,13 +109,13 @@
 <div class="wrap">
   <div class="brand">
     <div class="brand-logo">TÖ</div>
-    <h1>@Localizer["AppFullName"]</h1>
-    <p>@Localizer["AppDesc"]</p>
+    <h1>Teşvik ve Ödüllendirme Sistemi</h1>
+    <p>Üniversite Akademik Başarı Platformu</p>
   </div>
 
   <div class="card">
-    <div class="card-title">@Localizer["Login.Title"]</div>
-    <div class="card-sub">@Localizer["Login.Subtitle"]</div>
+    <div class="card-title">Hoş Geldiniz 👋</div>
+    <div class="card-sub">Devam etmek için hesabınıza giriş yapın.</div>
 
     @if (ViewData.ModelState.ErrorCount > 0)
     {
@@ -136,37 +134,37 @@
       @Html.AntiForgeryToken()
 
       <div class="fg">
-        <label>@Localizer["Login.Username"]</label>
+        <label>Kullanıcı Adı</label>
         <div class="input-wrap">
           <i class="ti ti-user"></i>
-          <input asp-for="Username" placeholder="@Localizer["Login.Username"]" autocomplete="username">
+          <input asp-for="Username" placeholder="Kullanıcı adınızı girin" autocomplete="username">
         </div>
       </div>
 
       <div class="fg">
-        <label>@Localizer["Login.Password"]</label>
+        <label>Şifre</label>
         <div class="input-wrap">
           <i class="ti ti-lock"></i>
-          <input asp-for="Password" type="password" placeholder="@Localizer["Login.Password"]" autocomplete="current-password">
+          <input asp-for="Password" type="password" placeholder="Şifrenizi girin" autocomplete="current-password">
         </div>
       </div>
 
       <div class="opts">
         <label class="rem">
-          <input asp-for="RememberMe" type="checkbox"> @Localizer["Login.Remember"]
+          <input asp-for="RememberMe" type="checkbox"> Beni Hatırla
         </label>
-        <div class="forgot"><a asp-action="SifremiUnuttum">@Localizer["Login.Forgot"]</a></div>
+        <div class="forgot"><a asp-action="SifremiUnuttum">Şifremi Unuttum?</a></div>
       </div>
 
       <button type="submit" class="btn-submit">
-        <i class="ti ti-login"></i> @Localizer["Login.Button"]
+        <i class="ti ti-login"></i> Giriş Yap
       </button>
     </form>
 
-    <div class="divider">@Localizer["Login.Or"]</div>
+    <div class="divider">veya</div>
 
     <div class="reg-link">
-      @Localizer["Login.NoAccount"] <a asp-action="KayitOl">@Localizer["Login.Register"]</a>
+      Hesabınız yok mu? <a asp-action="KayitOl">Üye Ol</a>
     </div>
   </div>
 
