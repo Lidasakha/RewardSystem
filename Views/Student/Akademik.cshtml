@@ -3,321 +3,335 @@
     ViewData["Title"] = "Akademik Panelim";
     ViewData["Active"] = "Akademik";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // Tüm çalışmaları birleştir → tarih sıralı
+    var tumCalisma = new List<(string Tur, string Baslik, string Detay, string Durum, DateTime? Tarih, string? Dosya, int? Puan)>();
+
+    foreach (var m in Model.Makaleler)
+        tumCalisma.Add(("Makale", m.Title ?? "", m.Journal ?? "", m.Status ?? "OnayBekliyor",
+            m.Year.HasValue ? new DateTime(m.Year.Value, 1, 1) : (DateTime?)null, m.FilePath, m.Score));
+
+    foreach (var p in Model.Projeler)
+        tumCalisma.Add(("Proje", p.Title ?? "", p.Description ?? "", "OnayBekliyor",
+            p.StartDate, p.FilePath, null));
+
+    foreach (var b in Model.Bildiriler)
+        tumCalisma.Add(("Sönum", b.Title ?? "", b.Conference ?? "", "OnayBekliyor",
+            b.Year.HasValue ? new DateTime(b.Year.Value, 1, 1) : (DateTime?)null, b.FilePath, null));
+
+    foreach (var pt in Model.Patentler)
+        tumCalisma.Add(("Patent", pt.Title ?? "", pt.PatentNumber ?? "", "OnayBekliyor",
+            pt.Year.HasValue ? new DateTime(pt.Year.Value, 1, 1) : (DateTime?)null, pt.FilePath, null));
+
+    tumCalisma = tumCalisma.OrderByDescending(x => x.Tarih ?? DateTime.MinValue).ToList();
+
+    int toplamOnay   = tumCalisma.Count(x => x.Durum == "Onaylandi");
+    int toplamDeger  = tumCalisma.Count(x => x.Durum == "Degerlendirmede");
+    int toplamRedde  = tumCalisma.Count(x => x.Durum == "Reddedildi");
+    int toplamBekle  = tumCalisma.Count(x => x.Durum == "OnayBekliyor");
+    int toplamToplam = tumCalisma.Count;
 }
-
-<!-- KPI Cards -->
-<div class="kpi-grid">
-    <div class="kpi-card">
-        <div class="kpi-icon"></div>
-        <div class="kpi-body">
-            <div class="kpi-value">@Model.Makaleler.Count</div>
-            <div class="kpi-label">Makale Sayısı</div>
-        </div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-icon"></div>
-        <div class="kpi-body">
-            <div class="kpi-value">@Model.Projeler.Count</div>
-            <div class="kpi-label">Proje Sayısı</div>
-        </div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-icon"></div>
-        <div class="kpi-body">
-            <div class="kpi-value">@Model.Bildiriler.Count</div>
-            <div class="kpi-label">Bildiri Sayısı</div>
-        </div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-icon"></div>
-        <div class="kpi-body">
-            @{
-                int akademikPuan = Model.Makaleler.Count * 100 + Model.Projeler.Count * 80 + Model.Bildiriler.Count * 40 + Model.Patentler.Count * 60;
-            }
-            <div class="kpi-value">@akademikPuan</div>
-            <div class="kpi-label">Akademik Puan</div>
-        </div>
-    </div>
-</div>
-
-<!-- Grafik -->
-<div class="panel" style="margin-bottom:20px;">
-    <div class="panel-head"><span>Yıllık Akademik Aktivite</span></div>
-    <div style="padding:20px;"> 
-        <div style="position:relative; height:300px;">
-            <canvas id="activityChart"></canvas>
-        </div>
-    </div>
-</div>
-
-<!-- Sekmeli Akademik Çalışmalar --> 
-<div class="panel">
-    <div class="tab-bar">
-        <button class="tab-btn active" onclick="showTab('makaleler', this)">Makaleler (@Model.Makaleler.Count)</button>
-        <button class="tab-btn" onclick="showTab('projeler', this)">Projeler (@Model.Projeler.Count)</button>
-        <button class="tab-btn" onclick="showTab('bildiriler', this)">Bildiriler (@Model.Bildiriler.Count)</button>
-        <button class="tab-btn" onclick="showTab('patentler', this)">Patentler (@Model.Patentler.Count)</button>
-    </div>
-
-    <!-- Makaleler Tab -->
-    <div id="tab-makaleler" class="tab-content active">
-        @if (!Model.Makaleler.Any())
-        {
-            <div class="empty-state">Henüz makale eklenmemiş.</div>
-        }
-        else
-        {
-            @foreach (var m in Model.Makaleler)
-            {
-                <div class="activity-item">
-                    <div class="activity-icon" style="background:#f0e6ff;"></div>
-                    <div class="activity-content">
-                        <div class="activity-title">@m.Title</div>
-                        <div class="activity-desc">
-                            @if (!string.IsNullOrEmpty(m.Journal)) { <span>@m.Journal</span> }
-                            @if (m.Year.HasValue) { <span style="margin-left:10px;">@m.Year</span> }
-                            @if (!string.IsNullOrEmpty(m.DOI)) { <span style="margin-left:10px;">@m.DOI</span> }
-                            @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" style="margin-left:10px; color:#1a5cb5; text-decoration:none;">Dosyayı Gör</a> }
-                        </div>
-                        <div class="activity-status">
-                            @if (m.Status == "Onaylandi") {
-                                <span class="badge-green">Onaylandı</span> 
-                                @if (m.Score.HasValue) { <span class="badge-blue">@m.Score Puan</span> }
-                            }
-                            else if (m.Status == "Degerlendirmede") { <span class="badge-yellow">Değerlendirmede</span> }
-                            else { <span class="badge-gray">Onay Bekliyor</span> }
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-
-        <!-- Makale Ekle Formu -->
-        <div class="add-form">
-            <div class="add-form-title">Yeni Makale Ekle</div>
-            <form method="post" asp-controller="Student" asp-action="MakaleEkle" enctype="multipart/form-data">
-                <div class="form-row">
-                    <input type="text" name="Title" placeholder="Makale Başlığı" required class="form-input" />
-                    <input type="text" name="Journal" placeholder="Dergi Adı" class="form-input" />
-                </div>
-                <div class="form-row">
-                    <input type="text" name="DOI" placeholder="DOI" class="form-input" />
-                    <input type="number" name="Year" placeholder="Yıl" class="form-input" style="max-width:120px;" />
-                    <input type="file" name="file" class="form-input" accept=".pdf,.doc,.docx,.jpg,.png" />
-                </div>
-                <button type="submit" class="btn-primary">Gönder</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Projeler Tab -->
-    <div id="tab-projeler" class="tab-content">
-        @if (!Model.Projeler.Any())
-        {
-            <div class="empty-state">Henüz proje eklenmemiş.</div>
-        }
-        else
-        {
-            @foreach (var p in Model.Projeler)
-            {
-                <div class="activity-item">
-                    <div class="activity-icon" style="background:#e6f7f0;"></div>
-                    <div class="activity-content">
-                        <div class="activity-title">@p.Title</div>
-                        <div class="activity-desc">
-                            @if (!string.IsNullOrEmpty(p.Description)) { <span>@p.Description</span> }
-                            @if (p.StartDate.HasValue) { <span style="margin-left:10px;">@p.StartDate.Value.ToString("dd.MM.yyyy")</span> }
-                            @if (!string.IsNullOrEmpty(p.FilePath)) { <a href="@p.FilePath" target="_blank" style="margin-left:10px; color:#1a5cb5; text-decoration:none;">Dosyayı Gör</a> }
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-
-        <div class="add-form">
-            <div class="add-form-title">Yeni Proje Ekle</div>
-            <form method="post" asp-controller="Student" asp-action="ProjeEkle" enctype="multipart/form-data">
-                <div class="form-row">
-                    <input type="text" name="Title" placeholder="Proje Başlığı" required class="form-input" />
-                    <input type="text" name="Description" placeholder="Açıklama" class="form-input" />
-                </div>
-                <div class="form-row">
-                    <input type="date" name="StartDate" class="form-input" />
-                    <input type="date" name="EndDate" class="form-input" />
-                    <input type="file" name="file" class="form-input" accept=".pdf,.doc,.docx,.jpg,.png" />
-                </div> 
-                <button type="submit" class="btn-primary">Gönder</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Bildiriler Tab -->
-    <div id="tab-bildiriler" class="tab-content">
-        @if (!Model.Bildiriler.Any())
-        {
-            <div class="empty-state">Henüz bildiri eklenmemiş.</div>
-        }
-        else
-        {
-            @foreach (var b in Model.Bildiriler)
-            {
-                <div class="activity-item">
-                    <div class="activity-icon" style="background:#fff8e6;"></div>
-                    <div class="activity-content">
-                        <div class="activity-title">@b.Title</div>
-                        <div class="activity-desc">
-                            @if (!string.IsNullOrEmpty(b.Conference)) { <span>@b.Conference</span> }
-                            @if (b.Year.HasValue) { <span style="margin-left:10px;">@b.Year</span> }
-                            @if (!string.IsNullOrEmpty(b.FilePath)) { <a href="@b.FilePath" target="_blank" style="margin-left:10px; color:#1a5cb5; text-decoration:none;">Dosyayı Gör</a> }
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-
-        <div class="add-form">
-            <div class="add-form-title">Yeni Bildiri Ekle</div>
-            <form method="post" asp-controller="Student" asp-action="BildiriEkle" enctype="multipart/form-data">
-                <div class="form-row">
-                    <input type="text" name="Title" placeholder="Bildiri Başlığı" required class="form-input" />
-                    <input type="text" name="Conference" placeholder="Konferans Adı" class="form-input" />
-                </div>
-                <div class="form-row">
-                    <input type="number" name="Year" placeholder="Yıl" class="form-input" style="max-width:120px;" />
-                    <input type="file" name="file" class="form-input" accept=".pdf,.doc,.docx,.jpg,.png" />
-                </div>
-                <button type="submit" class="btn-primary">Gönder</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Patentler Tab -->
-    <div id="tab-patentler" class="tab-content">
-        @if (!Model.Patentler.Any())
-        {
-            <div class="empty-state">Henüz patent eklenmemiş.</div>
-        }
-        else
-        {
-            @foreach (var p in Model.Patentler)
-            {
-                <div class="activity-item">
-                    <div class="activity-icon" style="background:#e6f0ff;"></div>
-                    <div class="activity-content">
-                        <div class="activity-title">@p.Title</div>
-                        <div class="activity-desc">
-                            @if (!string.IsNullOrEmpty(p.PatentNumber)) { <span>@p.PatentNumber</span> }
-                            @if (p.Year.HasValue) { <span style="margin-left:10px;">@p.Year</span> }
-                            @if (!string.IsNullOrEmpty(p.FilePath)) { <a href="@p.FilePath" target="_blank" style="margin-left:10px; color:#1a5cb5; text-decoration:none;">Dosyayı Gör</a> }
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-
-        <div class="add-form">
-            <div class="add-form-title">Yeni Patent Ekle</div>
-            <form method="post" asp-controller="Student" asp-action="PatentEkle" enctype="multipart/form-data">
-                <div class="form-row">
-                    <input type="text" name="Title" placeholder="Patent Başlığı" required class="form-input" />
-                    <input type="text" name="PatentNumber" placeholder="Patent Numarası" class="form-input" />
-                </div>
-                <div class="form-row">
-                    <input type="number" name="Year" placeholder="Yıl" class="form-input" style="max-width:120px;" />
-                    <input type="file" name="file" class="form-input" accept=".pdf,.doc,.docx,.jpg,.png" />
-                </div>
-                <button type="submit" class="btn-primary">Gönder</button>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Chart.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var makaleler = @Html.Raw(Json.Serialize(Model.Makaleler.Where(m => m.Year.HasValue).GroupBy(m => m.Year).Select(g => new { year = g.Key, count = g.Count() }).OrderBy(x => x.year)));
-    var projeler = @Html.Raw(Json.Serialize(Model.Projeler.Where(p => p.StartDate.HasValue).GroupBy(p => p.StartDate.Value.Year).Select(g => new { year = g.Key, count = g.Count() }).OrderBy(x => x.year)));
-
-    var allYears = [...new Set([...makaleler.map(x => x.year), ...projeler.map(x => x.year)])].sort();
-    if (allYears.length === 0) allYears = [new Date().getFullYear()];
-
-    var ctx = document.getElementById('activityChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: allYears.map(String),
-            datasets: [
-                {
-                    label: 'Makale',
-                    data: allYears.map(y => { var f = makaleler.find(x => x.year === y); return f ? f.count : 0; }),
-                    borderColor: '#534AB7',
-                    backgroundColor: 'rgba(83, 74, 183, 0.1)',
-                    borderWidth: 2, fill: true, tension: 0.4,
-                    pointRadius: 5, pointBackgroundColor: '#534AB7', pointBorderColor: '#fff', pointBorderWidth: 2
-                },
-                {
-                    label: 'Proje',
-                    data: allYears.map(y => { var f = projeler.find(x => x.year === y); return f ? f.count : 0; }),
-                    borderColor: '#1D9E75',
-                    backgroundColor: 'rgba(29, 158, 117, 0.1)',
-                    borderWidth: 2, fill: true, tension: 0.4,
-                    pointRadius: 5, pointBackgroundColor: '#1D9E75', pointBorderColor: '#fff', pointBorderWidth: 2
-                }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { padding: 15, font: { size: 13 }, usePointStyle: true } } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1, font: { size: 12 } } },
-                x: { grid: { display: false }, ticks: { font: { size: 12 } } }
-            }
-        }
-    });
-});
-
-function showTab(tabName, btn) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tabName).classList.add('active');
-    btn.classList.add('active');
-}
-</script>
 
 <style>
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
-.kpi-card { background: #fff; border-radius: 14px; padding: 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.04); border: 1px solid #eee; }
-.kpi-icon { font-size: 28px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 12px; }
-.kpi-value { font-size: 26px; font-weight: 800; color: #001F3F; }
-.kpi-label { font-size: 12px; color: #6c7a89; font-weight: 600; margin-top: 2px; }
+  .ak-page { display:flex; flex-direction:column; gap:20px; }
 
-.tab-bar { display: flex; gap: 0; border-bottom: 2px solid #eee; padding: 0 16px; background: #fafcfb; border-radius: 14px 14px 0 0; overflow-x: auto; }
-.tab-btn { background: none; border: none; padding: 14px 18px; font-size: 13px; font-weight: 600; color: #6c7a89; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; font-family: 'Sora', sans-serif; transition: all .2s; }
-.tab-btn:hover { color: #001F3F; }
-.tab-btn.active { color: #001F3F; border-bottom-color: #D32F2F; }
+  /* Summary bar */
+  .ak-summary {
+    display:grid; grid-template-columns:repeat(5,1fr); gap:14px;
+  }
+  @@media(max-width:1100px){ .ak-summary { grid-template-columns:repeat(3,1fr); } }
+  .ak-sum-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:18px 20px;
+    display:flex; align-items:center; gap:14px;
+    box-shadow:var(--shadow-sm); transition:box-shadow .2s,transform .2s;
+  }
+  .ak-sum-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+  .ak-sum-icon { width:44px; height:44px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .ak-sum-num  { font-size:26px; font-weight:800; color:var(--text); line-height:1; }
+  .ak-sum-lbl  { font-size:12px; color:var(--text-muted); margin-top:2px; }
 
-.tab-content { display: none; padding: 16px; }
-.tab-content.active { display: block; }
+  /* Toolbar */
+  .ak-toolbar {
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:14px 16px;
+    box-shadow:var(--shadow-sm);
+  }
+  .ak-search {
+    flex:1; min-width:200px; display:flex; align-items:center; gap:9px;
+    background:var(--surface-2); border:1.5px solid var(--border);
+    border-radius:var(--radius-sm); padding:0 14px;
+    transition:border-color .18s,box-shadow .18s;
+  }
+  .ak-search:focus-within { border-color:var(--border-focus); box-shadow:0 0 0 3px rgba(74,112,196,.1); }
+  .ak-search i { font-size:17px; color:var(--text-muted); flex-shrink:0; }
+  .ak-search input {
+    flex:1; border:none; outline:none; padding:10px 0;
+    font-family:'Sora',sans-serif; font-size:13.5px; color:var(--text);
+    background:transparent;
+  }
+  .ak-search input::placeholder { color:var(--text-light); }
 
-.activity-item { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f8fafc; }
-.activity-item:last-of-type { border-bottom: none; }
-.activity-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; background: #E3F2FD !important; }
-.activity-content { flex: 1; }
-.activity-title { font-size: 14px; font-weight: 600; color: #0a1128; margin-bottom: 4px; }
-.activity-desc { font-size: 12.5px; color: #6c7a89; }
-.activity-status { margin-top: 6px; }
+  .ak-filter {
+    padding:9px 14px; background:var(--surface-2);
+    border:1.5px solid var(--border); border-radius:var(--radius-sm);
+    font-family:'Sora',sans-serif; font-size:13px; color:var(--text);
+    cursor:pointer; outline:none; transition:border-color .18s;
+  }
+  .ak-filter:focus { border-color:var(--border-focus); }
 
-.badge-yellow { background: #fff8e6; color: #b58a00; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-.badge-gray { background: #f0f0f0; color: #666; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-.badge-blue { background: #e6f0ff; color: #1a5cb5; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+  .ak-new-btn {
+    display:inline-flex; align-items:center; gap:7px;
+    padding:10px 18px; border-radius:var(--radius-sm);
+    background:var(--accent); color:#fff; border:none;
+    font-family:'Sora',sans-serif; font-size:13px; font-weight:700;
+    cursor:pointer; transition:all .18s; white-space:nowrap; text-decoration:none;
+    box-shadow:0 2px 8px rgba(224,45,60,.25);
+  }
+  .ak-new-btn:hover { background:var(--accent-dark); transform:translateY(-1px); color:#fff; }
 
-.empty-state { padding: 30px; text-align: center; color: #888; font-size: 14px; }
+  /* List */
+  .ak-list { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
 
-.add-form { border-top: 2px solid #eee; padding: 16px 0 0; margin-top: 10px; }
-.add-form-title { font-size: 13px; font-weight: 700; color: #001F3F; margin-bottom: 12px; }
-.form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-.form-input { flex: 1; min-width: 150px; padding: 10px 14px; border: 1.5px solid #E3F2FD; border-radius: 10px; font-family: 'Sora', sans-serif; font-size: 13px; color: #0a1128; background: #fafcfb; outline: none; box-sizing: border-box; }
-.form-input:focus { border-color: #001F3F; box-shadow: 0 0 0 3px rgba(0,31,63,.1); }
+  .ak-list-head {
+    padding:14px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface-2);
+  }
+  .ak-list-head-title { font-size:13px; font-weight:700; color:var(--text); }
+  .ak-count-badge { font-size:11px; font-weight:700; color:var(--text-muted); }
+
+  /* Item */
+  .ak-item {
+    display:flex; align-items:flex-start; gap:14px;
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    transition:background .15s; cursor:default;
+  }
+  .ak-item:last-child { border-bottom:none; }
+  .ak-item:hover { background:var(--surface-2); }
+
+  .ak-item-icon {
+    width:42px; height:42px; border-radius:11px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    margin-top:2px;
+  }
+
+  .ak-item-body { flex:1; min-width:0; }
+  .ak-item-title { font-size:14px; font-weight:700; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ak-item-meta  { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+  .ak-item-meta i { font-size:13px; }
+
+  .ak-item-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+
+  /* Type pill */
+  .ak-type {
+    font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:20px;
+    white-space:nowrap;
+  }
+  .ak-type-makale  { background:var(--blue-bg);   color:var(--blue); }
+  .ak-type-proje   { background:var(--green-bg);  color:var(--green); }
+  .ak-type-sonum   { background:var(--yellow-bg); color:var(--yellow); }
+  .ak-type-patent  { background:var(--purple-bg); color:var(--purple); }
+
+  /* Status pill */
+  .ak-status {
+    font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:20px;
+    white-space:nowrap; display:inline-flex; align-items:center; gap:5px;
+  }
+  .ak-status-bekliyor      { background:var(--yellow-bg); color:var(--yellow); }
+  .ak-status-degerlendirme { background:var(--blue-bg);   color:var(--blue); }
+  .ak-status-onaylandi     { background:var(--green-bg);  color:var(--green); }
+  .ak-status-reddedildi    { background:var(--red-bg);    color:var(--red); }
+
+  .ak-status-dot { width:5px; height:5px; border-radius:50%; background:currentColor; display:inline-block; }
+
+  /* File link */
+  .ak-file-link {
+    font-size:12px; font-weight:600; color:var(--blue);
+    display:inline-flex; align-items:center; gap:4px; text-decoration:none;
+  }
+  .ak-file-link:hover { text-decoration:underline; }
+
+  /* Score badge */
+  .ak-score { font-size:11px; font-weight:700; color:var(--green); background:var(--green-bg); padding:3px 9px; border-radius:20px; }
+
+  /* Empty */
+  .ak-empty {
+    padding:60px 20px; text-align:center; color:var(--text-muted);
+  }
+  .ak-empty i { font-size:48px; display:block; margin-bottom:14px; opacity:.25; }
+  .ak-empty p { font-size:14px; margin-bottom:18px; }
+
+  /* No results */
+  .ak-no-results { padding:40px 20px; text-align:center; color:var(--text-muted); display:none; }
+  .ak-no-results i { font-size:36px; display:block; margin-bottom:10px; opacity:.3; }
+
+  @@media(max-width:700px){
+    .ak-summary { grid-template-columns:1fr 1fr; }
+    .ak-toolbar { flex-direction:column; align-items:stretch; }
+    .ak-search { min-width:0; }
+  }
+  @@media(max-width:480px){
+    .ak-summary { grid-template-columns:1fr; }
+    .ak-item { flex-wrap:wrap; }
+    .ak-item-right { flex-direction:row; align-items:center; width:100%; }
+  }
 </style>
 
+<div class="ak-page">
+
+  <!-- Summary -->
+  <div class="ak-summary">
+    <div class="ak-sum-card">
+      <div class="ak-sum-icon" style="background:var(--blue-bg);color:var(--blue);"><i class="ti ti-files"></i></div>
+      <div><div class="ak-sum-num">@toplamToplam</div><div class="ak-sum-lbl">Toplam Çalışma</div></div>
+    </div>
+    <div class="ak-sum-card">
+      <div class="ak-sum-icon" style="background:var(--green-bg);color:var(--green);"><i class="ti ti-circle-check"></i></div>
+      <div><div class="ak-sum-num">@toplamOnay</div><div class="ak-sum-lbl">Onaylanan</div></div>
+    </div>
+    <div class="ak-sum-card">
+      <div class="ak-sum-icon" style="background:var(--yellow-bg);color:var(--yellow);"><i class="ti ti-clock"></i></div>
+      <div><div class="ak-sum-num">@toplamBekle</div><div class="ak-sum-lbl">Bekleyen</div></div>
+    </div>
+    <div class="ak-sum-card">
+      <div class="ak-sum-icon" style="background:var(--purple-bg);color:var(--purple);"><i class="ti ti-eye"></i></div>
+      <div><div class="ak-sum-num">@toplamDeger</div><div class="ak-sum-lbl">Değerlendirilen</div></div>
+    </div>
+    <div class="ak-sum-card">
+      <div class="ak-sum-icon" style="background:var(--red-bg);color:var(--red);"><i class="ti ti-circle-x"></i></div>
+      <div><div class="ak-sum-num">@toplamRedde</div><div class="ak-sum-lbl">Reddedilen</div></div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="ak-toolbar">
+    <div class="ak-search">
+      <i class="ti ti-search"></i>
+      <input type="text" id="akSearch" placeholder="Başlık, dergi, konferans ile ara..." oninput="akFilter()">
+    </div>
+    <select class="ak-filter" id="akTurFilter" onchange="akFilter()">
+      <option value="">Tüm Türler</option>
+      <option value="Makale">Makale</option>
+      <option value="Proje">Proje</option>
+      <option value="Sönum">Sönum</option>
+      <option value="Patent">Patent</option>
+    </select>
+    <select class="ak-filter" id="akDurumFilter" onchange="akFilter()">
+      <option value="">Tüm Durumlar</option>
+      <option value="OnayBekliyor">Onay Bekliyor</option>
+      <option value="Degerlendirmede">Değerlendirmede</option>
+      <option value="Onaylandi">Onaylandı</option>
+      <option value="Reddedildi">Reddedildi</option>
+    </select>
+    <a href="/Student/YeniCalisma" class="ak-new-btn">
+      <i class="ti ti-plus"></i> Yeni Ekle
+    </a>
+  </div>
+
+  <!-- List -->
+  <div class="ak-list">
+    <div class="ak-list-head">
+      <span class="ak-list-head-title"><i class="ti ti-list-details" style="margin-right:7px;color:var(--accent);"></i>Çalışmalarım</span>
+      <span class="ak-count-badge" id="akVisibleCount">@tumCalisma.Count çalışma</span>
+    </div>
+
+    @if (!tumCalisma.Any())
+    {
+      <div class="ak-empty">
+        <i class="ti ti-file-off"></i>
+        <p>Henüz hiç çalışma eklemediniz.</p>
+        <a href="/Student/YeniCalisma" class="ak-new-btn" style="display:inline-flex;">
+          <i class="ti ti-plus"></i> İlk Çalışmayı Ekle
+        </a>
+      </div>
+    }
+    else
+    {
+      <div id="akItemList">
+        @foreach (var c in tumCalisma)
+        {
+          var turClass  = c.Tur == "Makale" ? "makale" : c.Tur == "Proje" ? "proje" : c.Tur == "Sönum" ? "sonum" : "patent";
+          var iconClass = c.Tur == "Makale" ? "ti-file-text" : c.Tur == "Proje" ? "ti-layout-kanban" : c.Tur == "Sönum" ? "ti-speakerphone" : "ti-certificate";
+          var iconBg    = c.Tur == "Makale" ? "var(--blue-bg);color:var(--blue)" : c.Tur == "Proje" ? "var(--green-bg);color:var(--green)" : c.Tur == "Sönum" ? "var(--yellow-bg);color:var(--yellow)" : "var(--purple-bg);color:var(--purple)";
+          var durumClass = c.Durum == "Onaylandi" ? "onaylandi" : c.Durum == "Degerlendirmede" ? "degerlendirme" : c.Durum == "Reddedildi" ? "reddedildi" : "bekliyor";
+          var durumText  = c.Durum == "Onaylandi" ? "Onaylandı" : c.Durum == "Degerlendirmede" ? "Değerlendirmede" : c.Durum == "Reddedildi" ? "Reddedildi" : "Onay Bekliyor";
+
+          <div class="ak-item" data-tur="@c.Tur" data-durum="@c.Durum" data-title="@c.Baslik.ToLower()" data-detay="@c.Detay.ToLower()">
+            <div class="ak-item-icon" style="background:@iconBg;">
+              <i class="ti @iconClass"></i>
+            </div>
+            <div class="ak-item-body">
+              <div class="ak-item-title">@c.Baslik</div>
+              <div class="ak-item-meta">
+                @if (!string.IsNullOrEmpty(c.Detay))
+                {
+                  <span><i class="ti ti-building"></i> @c.Detay</span>
+                }
+                @if (c.Tarih.HasValue)
+                {
+                  <span><i class="ti ti-calendar"></i> @c.Tarih.Value.Year</span>
+                }
+                @if (!string.IsNullOrEmpty(c.Dosya))
+                {
+                  <a href="@c.Dosya" target="_blank" class="ak-file-link">
+                    <i class="ti ti-paperclip"></i> Dosyayı Gör
+                  </a>
+                }
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <span class="ak-type ak-type-@turClass">@c.Tur</span>
+                @if (c.Puan.HasValue && c.Durum == "Onaylandi")
+                {
+                  <span class="ak-score"><i class="ti ti-star" style="font-size:11px;"></i> @c.Puan Puan</span>
+                }
+              </div>
+            </div>
+            <div class="ak-item-right">
+              <span class="ak-status ak-status-@durumClass">
+                <span class="ak-status-dot"></span> @durumText
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="ak-no-results" id="akNoResults">
+        <i class="ti ti-search-off"></i>
+        Aramanızla eşleşen çalışma bulunamadı.
+      </div>
+    }
+  </div>
+
+</div>
+
+<script>
+function akFilter() {
+  var q      = document.getElementById('akSearch').value.toLowerCase().trim();
+  var tur    = document.getElementById('akTurFilter').value;
+  var durum  = document.getElementById('akDurumFilter').value;
+  var items  = document.querySelectorAll('#akItemList .ak-item');
+  var vis    = 0;
+
+  items.forEach(function(item) {
+    var title  = item.getAttribute('data-title') || '';
+    var detay  = item.getAttribute('data-detay') || '';
+    var itemTur   = item.getAttribute('data-tur') || '';
+    var itemDurum = item.getAttribute('data-durum') || '';
+
+    var matchQ     = !q    || title.includes(q) || detay.includes(q);
+    var matchTur   = !tur  || itemTur === tur;
+    var matchDurum = !durum || itemDurum === durum;
+
+    var show = matchQ && matchTur && matchDurum;
+    item.style.display = show ? '' : 'none';
+    if (show) vis++;
+  });
+
+  var noRes = document.getElementById('akNoResults');
+  if (noRes) noRes.style.display = vis === 0 ? 'block' : 'none';
+
+  var cnt = document.getElementById('akVisibleCount');
+  if (cnt) cnt.textContent = vis + ' çalışma';
+}
+</script>

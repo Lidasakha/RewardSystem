@@ -9,7 +9,7 @@
 <div class="panel">
     <div class="panel-head">
         <span>Bölüm Sıralaması</span>
-        <span style="font-size:12px;color:#6c7a89">@Model.Count öğrenci</span>
+        <span style="font-size:12px;color:var(--text-muted)">@Model.Count öğrenci</span>
     </div>
 
     @if (!Model.Any())
@@ -45,19 +45,30 @@
 </div>
 
 <style>
-.siralama-row { display:flex; align-items:center; gap:14px; padding:14px 20px; border-bottom:1px solid #f8fafc; transition:background .15s; }
+.siralama-row { display:flex; align-items:center; gap:14px; padding:15px 20px; border-bottom:1px solid var(--border); transition:background .15s; }
 .siralama-row:last-child { border-bottom:none; }
-.siralama-row:hover { background:#ffffff; }
-.siralama-row.highlight { background:#fef2f2; }
+.siralama-row:hover { background:var(--surface-2); }
+.siralama-row.highlight { background:var(--accent-bg); }
+body.dark-mode .siralama-row.highlight { background:rgba(224,45,60,.08); }
+
 .siralama-no { width:36px; text-align:center; flex-shrink:0; }
-.rank-no { font-size:16px; font-weight:700; color:#6c7a89; }
-.siralama-avatar { width:40px; height:40px; background:linear-gradient(135deg,#001F3F,#083358); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:16px; flex-shrink:0; }
+.rank-no { font-size:16px; font-weight:700; color:var(--text-muted); }
+
+.siralama-avatar { width:40px; height:40px; background:var(--brand-600); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:16px; flex-shrink:0; }
+
 .siralama-info { flex:1; }
-.siralama-ad { font-size:14px; font-weight:700; color:#0a1128; display:flex; align-items:center; gap:8px; }
-.siralama-bolum { font-size:12px; color:#6c7a89; margin-top:2px; }
-.sen-badge { background:#D32F2F; color:#fff; border-radius:20px; padding:2px 8px; font-size:10px; font-weight:700; }
+.siralama-ad { font-size:14px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:8px; }
+.siralama-bolum { font-size:12px; color:var(--text-muted); margin-top:2px; }
+
+.sen-badge { background:var(--accent); color:#fff; border-radius:20px; padding:2px 8px; font-size:10px; font-weight:700; }
+
 .siralama-puan { text-align:center; flex-shrink:0; }
-.puan-num { font-size:20px; font-weight:800; color:#001F3F; }
-.puan-label { font-size:10px; color:#6c7a89; }
+.puan-num { font-size:20px; font-weight:800; color:var(--text); }
+.puan-label { font-size:10px; color:var(--text-muted); }
+
+/* İlk 3 sıra özel renk */
+.siralama-row:nth-child(1) .rank-no { color:#f59e0b; font-size:18px; }
+.siralama-row:nth-child(2) .rank-no { color:#94a3b8; font-size:17px; }
+.siralama-row:nth-child(3) .rank-no { color:#b45309; font-size:16px; }
 </style>
 

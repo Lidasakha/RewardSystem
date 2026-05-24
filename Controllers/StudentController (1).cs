@@ -223,6 +223,11 @@ namespace RewardSystem.Controllers
         }
 
         // 📊 İSTATİSTİKLER
+        public IActionResult YeniCalisma()
+        {
+            return View();
+        }
+
         public IActionResult Istatistikler()
         {
             ViewBag.MakaleSayisi  = _db.Articles.Count(a => a.UserId == KullaniciId);

@@ -1,14 +1,32 @@
+/* TÖS — Site JS v3 */
+
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    
-    // Eğer ekran mobil boyuttaysa (örneğin 768px altı) eski overlay mantığı çalışsın
-    if (window.innerWidth <= 768) {
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('show');
-    } else {
-        // Ekran büyükse (Masaüstü) menüyü daralt/genişlet
-        sidebar.classList.toggle('collapsed');
-    }
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('overlay');
+  var isOpen  = sidebar.classList.contains('open');
+
+  if (isOpen) {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  } else {
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
+  }
 }
 
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  var overlay = document.getElementById('overlay');
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // ESC ile kapat
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeSidebar();
+  });
+});

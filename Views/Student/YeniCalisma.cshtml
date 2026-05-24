@@ -1,0 +1,343 @@
+@{
+    ViewData["Title"] = "Yeni Çalışma Ekle";
+    ViewData["Active"] = "YeniCalisma";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+  /* ── Drawer ── */
+  .drw-overlay {
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;
+    opacity:0;pointer-events:none;transition:opacity .3s;
+  }
+  .drw-overlay.open { opacity:1;pointer-events:all; }
+
+  .drw-panel {
+    position:fixed;top:0;right:0;height:100vh;width:520px;max-width:100vw;
+    background:var(--surface);border-left:1px solid var(--border);
+    box-shadow:-8px 0 40px rgba(0,0,0,.12);z-index:301;
+    transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .drw-panel.open { transform:translateX(0); }
+
+  .drw-head {
+    padding:20px 24px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+  }
+  .drw-head-title { font-size:16px;font-weight:800;color:var(--text); }
+  .drw-head-sub   { font-size:12px;color:var(--text-muted);margin-top:2px; }
+  .drw-close {
+    background:var(--gray-100);border:none;width:34px;height:34px;
+    border-radius:8px;cursor:pointer;font-size:18px;color:var(--text-muted);
+    display:flex;align-items:center;justify-content:center;transition:background .15s;
+  }
+  .drw-close:hover { background:var(--gray-200); }
+  body.dark-mode .drw-close { background:var(--gray-800); }
+
+  .drw-tabs {
+    display:flex;border-bottom:1px solid var(--border);
+    padding:0 24px;background:var(--surface-2);flex-shrink:0;overflow-x:auto;
+  }
+  .drw-tab {
+    background:none;border:none;padding:13px 14px;
+    font-size:12.5px;font-weight:600;color:var(--text-muted);
+    cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+    font-family:'Sora',sans-serif;transition:all .18s;
+    display:flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  .drw-tab:hover { color:var(--text); }
+  .drw-tab.active { color:var(--brand-600);border-bottom-color:var(--accent);font-weight:700; }
+
+  .drw-body { flex:1;overflow-y:auto;padding:24px; }
+
+  .drw-form { display:none; }
+  .drw-form.active { display:block; }
+
+  .drw-field { margin-bottom:18px; }
+  .drw-field label {
+    display:block;font-size:12px;font-weight:600;color:var(--text-muted);
+    margin-bottom:7px;letter-spacing:.03em;text-transform:uppercase;
+  }
+  .drw-input {
+    width:100%;padding:12px 14px;
+    background:var(--surface-2);border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);font-family:'Sora',sans-serif;
+    font-size:13.5px;color:var(--text);outline:none;
+    transition:border-color .18s,box-shadow .18s;
+  }
+  .drw-input:focus { border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(74,112,196,.1); }
+  .drw-file { padding:10px 14px;cursor:pointer; }
+  .drw-row { display:flex;gap:12px; }
+  .drw-row .drw-field { flex:1; }
+
+  .drw-submit {
+    width:100%;padding:14px;margin-top:10px;
+    background:var(--brand-600);color:#fff;border:none;
+    border-radius:var(--radius-sm);font-family:'Sora',sans-serif;
+    font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    box-shadow:0 3px 10px rgba(26,43,76,.2);
+  }
+  .drw-submit:hover { background:var(--brand-700);transform:translateY(-1px);box-shadow:0 6px 18px rgba(26,43,76,.3); }
+
+  /* ── Ana Sayfa Kartları ── */
+  .yc-page { max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px; }
+
+  .yc-banner {
+    background:#111827;
+    border-radius:var(--radius-lg);padding:28px 32px;color:#fff;
+    position:relative;overflow:hidden;
+  }
+  body.dark-mode .yc-banner { background:var(--accent); }
+  .yc-banner::before { content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.05); }
+  .yc-banner h2 { font-size:22px;font-weight:800;margin-bottom:6px; }
+  .yc-banner p  { font-size:13.5px;color:rgba(255,255,255,.65);max-width:500px;line-height:1.55; }
+
+  .yc-cards { display:grid;grid-template-columns:repeat(2,1fr);gap:16px; }
+  @@media(max-width:600px){ .yc-cards { grid-template-columns:1fr; } }
+
+  .yc-card {
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow-sm);
+    display:flex;align-items:center;gap:16px;
+  }
+  .yc-card:hover { box-shadow:var(--shadow);transform:translateY(-3px);border-color:var(--gray-300); }
+
+  .yc-card-icon {
+    width:52px;height:52px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;flex-shrink:0;
+  }
+  .yc-card-title { font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px; }
+  .yc-card-desc  { font-size:12px;color:var(--text-muted);line-height:1.45; }
+
+  .yc-card-arrow {
+    margin-left:auto;color:var(--gray-300);font-size:20px;flex-shrink:0;
+    transition:transform .18s;
+  }
+  .yc-card:hover .yc-card-arrow { transform:translateX(4px);color:var(--accent); }
+</style>
+
+<!-- Drawer Overlay -->
+<div class="drw-overlay" id="drwOverlay" onclick="closeDrawer()"></div>
+
+<!-- Drawer Panel -->
+<div class="drw-panel" id="drwPanel">
+  <div class="drw-head">
+    <div>
+      <div class="drw-head-title">Yeni Çalışma Ekle</div>
+      <div class="drw-head-sub">Tür seçerek formu doldurun ve gönderin</div>
+    </div>
+    <button class="drw-close" onclick="closeDrawer()"><i class="ti ti-x"></i></button>
+  </div>
+
+  <div class="drw-tabs">
+    <button class="drw-tab active" onclick="showTab('makale',this)"><i class="ti ti-file-text"></i> Makale</button>
+    <button class="drw-tab" onclick="showTab('proje',this)"><i class="ti ti-layout-kanban"></i> Proje</button>
+    <button class="drw-tab" onclick="showTab('bildiri',this)"><i class="ti ti-speakerphone"></i> Sönum</button>
+    <button class="drw-tab" onclick="showTab('patent',this)"><i class="ti ti-certificate"></i> Patent</button>
+  </div>
+
+  <div class="drw-body">
+
+    <!-- Makale -->
+    <div id="drw-makale" class="drw-form active">
+      <form method="post" asp-controller="Student" asp-action="MakaleEkle" enctype="multipart/form-data">
+        <div class="drw-field">
+          <label>Makale Başlığı *</label>
+          <input type="text" name="Title" placeholder="Makalenizin tam başlığı" required class="drw-input"/>
+        </div>
+        <div class="drw-field">
+          <label>Dergi Adı</label>
+          <input type="text" name="Journal" placeholder="Yayımlandığı dergi" class="drw-input"/>
+        </div>
+        <div class="drw-field">
+          <label>Açıklama</label>
+          <input type="text" name="Description" placeholder="Makale hakkında kısa açıklama" class="drw-input"/>
+        </div>
+        <div class="drw-row">
+          <div class="drw-field">
+            <label>DOI</label>
+            <input type="text" name="DOI" placeholder="10.xxxx/xxxxx" class="drw-input"/>
+          </div>
+          <div class="drw-field" style="max-width:120px;">
+            <label>Yıl</label>
+            <input type="number" name="Year" placeholder="@DateTime.Now.Year" class="drw-input"/>
+          </div>
+        </div>
+        <div class="drw-field">
+          <label>Dosya (PDF, Word, vb.)</label>
+          <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.png" class="drw-input drw-file"/>
+        </div>
+        <button type="submit" class="drw-submit"><i class="ti ti-send"></i> Makale Gönder</button>
+      </form>
+    </div>
+
+    <!-- Proje -->
+    <div id="drw-proje" class="drw-form">
+      <form method="post" asp-controller="Student" asp-action="ProjeEkle" enctype="multipart/form-data">
+        <div class="drw-field">
+          <label>Proje Başlığı *</label>
+          <input type="text" name="Title" placeholder="Projenizin adı" required class="drw-input"/>
+        </div>
+        <div class="drw-field">
+          <label>Açıklama</label>
+          <input type="text" name="Description" placeholder="Kısa açıklama" class="drw-input"/>
+        </div>
+        <div class="drw-row">
+          <div class="drw-field">
+            <label>Başlangıç Tarihi</label>
+            <input type="date" name="StartDate" class="drw-input"/>
+          </div>
+          <div class="drw-field">
+            <label>Bitiş Tarihi</label>
+            <input type="date" name="EndDate" class="drw-input"/>
+          </div>
+        </div>
+        <div class="drw-field">
+          <label>Dosya</label>
+          <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.png" class="drw-input drw-file"/>
+        </div>
+        <button type="submit" class="drw-submit"><i class="ti ti-send"></i> Proje Gönder</button>
+      </form>
+    </div>
+
+    <!-- Bildiri -->
+    <div id="drw-bildiri" class="drw-form">
+      <form method="post" asp-controller="Student" asp-action="BildiriEkle" enctype="multipart/form-data">
+        <div class="drw-field">
+          <label>Bildiri Başlığı *</label>
+          <input type="text" name="Title" placeholder="Bildirinin tam başlığı" required class="drw-input"/>
+        </div>
+        <div class="drw-field">
+          <label>Konferans Adı</label>
+          <input type="text" name="Conference" placeholder="Sunulduğu konferans" class="drw-input"/>
+        </div>
+        <div class="drw-field">
+          <label>Açıklama</label>
+          <input type="text" name="Description" placeholder="Sönum hakkında kısa açıklama" class="drw-input"/>
+        </div>
+        <div class="drw-row">
+          <div class="drw-field" style="max-width:120px;">
+            <label>Yıl</label>
+            <input type="number" name="Year" placeholder="@DateTime.Now.Year" class="drw-input"/>
+          </div>
+          <div class="drw-field">
+            <label>Dosya</label>
+            <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.png" class="drw-input drw-file"/>
+          </div>
+        </div>
+        <button type="submit" class="drw-submit"><i class="ti ti-send"></i> Sönum Gönder</button>
+      </form>
+    </div>
+
+    <!-- Patent -->
+    <div id="drw-patent" class="drw-form">
+      <form method="post" asp-controller="Student" asp-action="PatentEkle" enctype="multipart/form-data">
+        <div class="drw-field">
+          <label>Patent Başlığı *</label>
+          <input type="text" name="Title" placeholder="Patentin adı" required class="drw-input"/>
+        </div>
+        <div class="drw-field">
+          <label>Patent Numarası</label>
+          <input type="text" name="PatentNumber" placeholder="TR2024/xxxxx" class="drw-input"/>
+        </div>
+        <div class="drw-field">
+          <label>Açıklama</label>
+          <input type="text" name="Description" placeholder="Patent hakkında kısa açıklama" class="drw-input"/>
+        </div>
+        <div class="drw-row">
+          <div class="drw-field" style="max-width:120px;">
+            <label>Yıl</label>
+            <input type="number" name="Year" placeholder="@DateTime.Now.Year" class="drw-input"/>
+          </div>
+          <div class="drw-field">
+            <label>Dosya</label>
+            <input type="file" name="file" accept=".pdf,.doc,.docx,.jpg,.png" class="drw-input drw-file"/>
+          </div>
+        </div>
+        <button type="submit" class="drw-submit"><i class="ti ti-send"></i> Patent Gönder</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Sayfa İçeriği ── -->
+<div class="yc-page">
+
+  <div class="yc-banner">
+    <h2>Yeni Çalışma Ekle</h2>
+    <p>Akademik çalışmanızın türünü seçin, formu doldurun ve gönderin. Onay sürecinden geçtikten sonra puanınıza yansıyacaktır.</p>
+  </div>
+
+  <div class="yc-cards">
+    <div class="yc-card" onclick="openDrawer('makale')">
+      <div class="yc-card-icon" style="background:var(--blue-bg);color:var(--blue);"><i class="ti ti-file-text"></i></div>
+      <div>
+        <div class="yc-card-title">Makale</div>
+        <div class="yc-card-desc">Dergi veya konferansta yayımlanan akademik makaleleriniz</div>
+      </div>
+      <i class="ti ti-arrow-right yc-card-arrow"></i>
+    </div>
+
+    <div class="yc-card" onclick="openDrawer('proje')">
+      <div class="yc-card-icon" style="background:var(--green-bg);color:var(--green);"><i class="ti ti-layout-kanban"></i></div>
+      <div>
+        <div class="yc-card-title">Proje</div>
+        <div class="yc-card-desc">Araştırma, geliştirme veya uygulama projeleri</div>
+      </div>
+      <i class="ti ti-arrow-right yc-card-arrow"></i>
+    </div>
+
+    <div class="yc-card" onclick="openDrawer('bildiri')">
+      <div class="yc-card-icon" style="background:var(--yellow-bg);color:var(--yellow);"><i class="ti ti-speakerphone"></i></div>
+      <div>
+        <div class="yc-card-title">Sönum</div>
+        <div class="yc-card-desc">Sempozyum veya konferanslarda sunulan sönumler</div>
+      </div>
+      <i class="ti ti-arrow-right yc-card-arrow"></i>
+    </div>
+
+    <div class="yc-card" onclick="openDrawer('patent')">
+      <div class="yc-card-icon" style="background:var(--purple-bg);color:var(--purple);"><i class="ti ti-certificate"></i></div>
+      <div>
+        <div class="yc-card-title">Patent</div>
+        <div class="yc-card-desc">Tescil edilmiş buluş ve inovasyon patentleri</div>
+      </div>
+      <i class="ti ti-arrow-right yc-card-arrow"></i>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function openDrawer(type) {
+  document.getElementById('drwPanel').classList.add('open');
+  document.getElementById('drwOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (type) {
+    var btn = document.querySelector('.drw-tab[data-type="' + type + '"]');
+    // find by index
+    var tabs = document.querySelectorAll('.drw-tab');
+    var map = { makale:0, proje:1, bildiri:2, patent:3 };
+    if (map[type] !== undefined) showTab(type, tabs[map[type]]);
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('drwPanel').classList.remove('open');
+  document.getElementById('drwOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function showTab(tabName, btn) {
+  document.querySelectorAll('.drw-form').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.drw-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('drw-' + tabName).classList.add('active');
+  btn.classList.add('active');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+</script>

@@ -1,23 +1,25 @@
 @using RewardSystem.Data
 @inject RewardSystemDbContext _db
 @{
-    var rol = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value?.ToLower();
-    var adSoyad = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-    var kullaniciAdi = User.FindFirst("Username")?.Value;
-    var bolum = User.FindFirst("Department")?.Value;
-    var initials = adSoyad?.Length > 0 ? adSoyad.Split(' ').Select(s => s[0]).Take(2).Aggregate("", (current, next) => current + next).ToUpper() : "U";
-    
+    var rol         = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value?.ToLower();
+    var adSoyad     = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+    var kullaniciAdi= User.FindFirst("Username")?.Value;
+    var initials    = adSoyad?.Length > 0
+                        ? adSoyad.Split(' ').Select(s => s[0]).Take(2)
+                                 .Aggregate("", (c, n) => c + n).ToUpper()
+                        : "U";
+    var firstLetter = adSoyad?.Length > 0 ? adSoyad[0].ToString() : "U";
+
     int userId = 0;
     int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out userId);
-    
-    // Default values
+
     int stat1 = 0, stat2 = 0, stat3 = 0;
     decimal stat3Dec = 0;
-    
+
     if (rol == "ogrenci" && userId > 0)
     {
-        stat1 = _db.Articles.Count(a => a.UserId == userId) + _db.Projects.Count(p => p.UserId == userId) + _db.Presentations.Count(b => b.UserId == userId);
-        stat2 = _db.Articles.Count(a => a.UserId == userId && a.Status == "OnayBekliyor");
+        stat1    = _db.Articles.Count(a => a.UserId == userId) + _db.Projects.Count(p => p.UserId == userId) + _db.Presentations.Count(b => b.UserId == userId);
+        stat2    = _db.Articles.Count(a => a.UserId == userId && a.Status == "OnayBekliyor");
         stat3Dec = _db.Articles.Where(a => a.UserId == userId && a.Status == "Onaylandi").Sum(a => (int?)a.Score) ?? 0;
     }
     else if (userId > 0)
@@ -30,328 +32,260 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"] — TÖS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
-    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@ViewData["Title"] — TÖS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 <script>
-    // FOUC (Flash of Unstyled Content) engellemek için body render edilir edilmez temayı uyguluyoruz
-    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.body.classList.add('dark-mode');
+  (function(){
+    var t = localStorage.getItem('theme');
+    if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme:dark)').matches)){
+      document.body.classList.add('dark-mode');
     }
+  })();
 </script>
+
 <div class="app">
-    <!-- Sidebar -->
-    <aside class="sidebar collapsed" id="sidebar">
-        <div class="user-card">
-            <div class="avatar">@(adSoyad?.Length > 0 ? adSoyad[0].ToString() : "U")</div>
-            <div class="user-info">
-                <div class="user-name">@adSoyad</div>
-                <div class="user-role">
-                    @if (rol == "ogrenci") { <span>Öğrenci</span> }
-                    else if (rol == "teacher" || rol == "admin") { <span>Öğretmen</span> }
-                    else if (rol == "superadmin") { <span>Süper Admin</span> }
-                </div>
-            </div>
-        </div>
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
 
-        <nav class="nav">
-            @if (rol == "ogrenci")
-            {
-                <div class="nav-section">ANA MENÜ</div>
-                <a href="/Student/Index" class="nav-item @(ViewData["Active"]?.ToString()=="Home"?"active":"")"><span>Ana Sayfa</span></a>
-                <div class="nav-section">AKADEMİK</div>
-                <a href="/Student/Akademik" class="nav-item @(ViewData["Active"]?.ToString()=="Akademik"?"active":"")"><span>Akademik Çalışmalar</span></a>
-                <a href="/Student/Siralama" class="nav-item @(ViewData["Active"]?.ToString()=="Siralama"?"active":"")"><span>Sıralama</span></a>
-                <div class="nav-section">DİĞER</div>
-                <a href="/Student/Bildirimler" class="nav-item @(ViewData["Active"]?.ToString()=="Bildirimler"?"active":"")"><span>Bildirimler</span></a>
-            }
-            else if (rol == "admin" || rol == "teacher" || rol == "superadmin")
-            {
-                <div class="nav-section">ANA MENÜ</div>
-                <a href="/Admin/Index" class="nav-item @(ViewData["Active"]?.ToString()=="Home"?"active":"")"><span>Ana Sayfa</span></a>
-                
-                <a href="/Admin/Ogrenciler" class="nav-item @(ViewData["Active"]?.ToString()=="Ogrenciler"?"active":"")"><span>Öğrenciler</span></a>
-                
-                @if (rol != "superadmin")
-                {
-                    <div class="nav-section">AKADEMİK</div>
-                    <a href="/Admin/Degerlendirmelerim" class="nav-item @(ViewData["Active"]?.ToString()=="Degerlendirmelerim"?"active":"")"><span>Değerlendirmelerim</span></a>
-                }
-
-                @if (rol == "superadmin")
-                {
-                    <a href="/Admin/OnayBekleyenOgrenciler" class="nav-item @(ViewData["Active"]?.ToString()=="OnayBekleyenOgrenciler"?"active":"")"><span>Öğrenci Onayları</span></a>
-                    
-                    <div class="nav-section">AKADEMİK</div>
-                    <a href="/Admin/AdminYonetimi" class="nav-item @(ViewData["Active"]?.ToString()=="AdminYonetimi"?"active":"")"><span>Akademik Yönetim</span></a>
-
-                    <div class="nav-section">SİSTEM</div>
-                    <a href="/Admin/KullaniciYonetimi" class="nav-item @(ViewData["Active"]?.ToString()=="KullaniciYonetimi"?"active":"")"><span>Kullanıcı Yönetimi</span></a>
-                }
-            }
-        </nav>
-
-        <a href="/Account/Cikis" class="logout-btn"><span>Çıkış Yap</span></a>
-    </aside>
-
-    <!-- Overlay -->
-    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-    <!-- Main -->
-    <div class="main">
-        <header class="topbar">
-            <button class="hamburger" onclick="toggleSidebar()" style="font-size: 24px; line-height: 1;">☰</button>
-            <div class="topbar-title">@ViewData["Title"]</div>
-            <div class="topbar-right">
-                <button class="theme-toggle" id="themeToggleBtn" aria-label="Temayı Değiştir" title="Aydınlık/Karanlık Mod"></button>
-                <div class="user-dropdown-wrapper" style="position: relative;">
-                    <button class="topbar-user" onclick="toggleRightPanel(event)">@kullaniciAdi</button>
-                    <!-- Dropdown Panel -->
-                    <div class="pnd-profile-dropdown" id="pndRightPanel">
-                        <div class="hesabim-inner hesabim-wrap" style="max-width: 100%; margin: 0; padding: 1rem;">
-                            <!-- Profil Kartı -->
-                            <div class="profile-card">
-                                <div class="hero">
-                                    <div class="avatar-large">@initials</div>
-                                    <div class="hero-name">@adSoyad</div>
-                                    <div class="badge role-badge">
-                                        @if (rol == "ogrenci") { <i class="ti ti-school"></i><span>Öğrenci</span> }
-                                        else if (rol == "teacher") { <i class="ti ti-book"></i><span>Öğretmen</span> }
-                                        else if (rol == "admin") { <i class="ti ti-shield"></i><span>Admin</span> }
-                                        else if (rol == "superadmin") { <i class="ti ti-bolt"></i><span>Süper Admin</span> }
-                                    </div>
-                                </div>
-                                
-                                @if (rol == "ogrenci")
-                                {
-                                    <div class="stats-row">
-                                        <div class="stat">
-                                            <div class="stat-num">@stat1</div>
-                                            <div class="stat-lbl">Gönderilen</div>
-                                        </div>
-                                        <div class="stat">
-                                            <div class="stat-num">@stat2</div>
-                                            <div class="stat-lbl">Süreçte</div>
-                                        </div>
-                                        <div class="stat">
-                                            <div class="stat-num">@stat3Dec</div>
-                                            <div class="stat-lbl">Ort. Puan</div>
-                                        </div>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="stats-row">
-                                        <div class="stat">
-                                            <div class="stat-num">@stat1</div>
-                                            <div class="stat-lbl">Değerlendirme</div>
-                                        </div>
-                                        <div class="stat">
-                                            <div class="stat-num">@stat2</div>
-                                            <div class="stat-lbl">Bekleyen</div>
-                                        </div>
-                                        <div class="stat">
-                                            <div class="stat-num">@stat3</div>
-                                            <div class="stat-lbl">Aktif</div>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-
-                            @if (rol == "ogrenci")
-                            {
-                                <div class="section-label" style="margin-top: 10px;">Hesap</div>
-                                <div class="menu-card">
-                                    <a class="menu-item" href="/Profile/Index">
-                                        <div class="menu-icon icon-navy"><i class="ti ti-user"></i></div>
-                                        <div class="menu-text">
-                                            <div class="menu-title">Profili düzenle</div>
-                                            <div class="menu-sub">@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</div>
-                                        </div>
-                                        <i class="ti ti-chevron-right menu-arrow"></i>
-                                    </a>
-                                </div>
-                                <div class="section-label" style="margin-top: 10px;">Akademik</div>
-                                <div class="menu-card">
-                                    <a class="menu-item" href="/Student/Akademik">
-                                        <div class="menu-icon icon-green"><i class="ti ti-file-upload"></i></div>
-                                        <div class="menu-text">
-                                            <div class="menu-title">Yeni çalışma ekle</div>
-                                            <div class="menu-sub">Makale veya proje yükle</div>
-                                        </div>
-                                        <i class="ti ti-chevron-right menu-arrow"></i>
-                                    </a>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="section-label" style="margin-top: 10px;">Hesap Ayarları</div>
-                                <div class="menu-card">
-                                    <a class="menu-item" href="/Profile/Index">
-                                        <div class="menu-icon icon-navy"><i class="ti ti-user"></i></div>
-                                        <div class="menu-text">
-                                            <div class="menu-title">Profili düzenle</div>
-                                            <div class="menu-sub">Ad, e-posta, şifre</div>
-                                        </div>
-                                        <i class="ti ti-chevron-right menu-arrow"></i>
-                                    </a>
-                                </div>
-
-                                <div class="section-label" style="margin-top: 10px;">Yönetim</div>
-                                <div class="menu-card">
-                                    <a class="menu-item" href="/Admin/AdminYonetimi">
-                                        <div class="menu-icon icon-green"><i class="ti ti-settings"></i></div>
-                                        <div class="menu-text">
-                                            <div class="menu-title">Akademik Yönetim</div>
-                                            <div class="menu-sub">Sistem ayarları</div>
-                                        </div>
-                                        <i class="ti ti-chevron-right menu-arrow"></i>
-                                    </a>
-                                </div>
-                            }
-
-                            <!-- Çıkış -->
-                            <form class="logout-form" asp-controller="Account" asp-action="Cikis" method="post" style="margin-top: 10px;">
-                                @Html.AntiForgeryToken()
-                                <button type="submit">
-                                    <i class="ti ti-logout"></i>
-                                    Çıkış yap
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-        <div class="content">
-            @RenderBody()
-        </div>
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <div style="width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;">TÖ</div>
+      <div class="sidebar-logo-text">
+        TÖS
+        <span class="sidebar-logo-sub">Teşvik &amp; Ödüllendirme</span>
+      </div>
     </div>
+
+    <!-- User Card -->
+    <div class="user-card">
+      <div class="avatar">@firstLetter</div>
+      <div class="user-info">
+        <div class="user-name">@adSoyad</div>
+        <div class="user-role">
+          @if (rol == "ogrenci")         { <span>Öğrenci</span> }
+          else if (rol == "teacher")     { <span>Öğretmen</span> }
+          else if (rol == "admin")       { <span>Admin</span> }
+          else if (rol == "superadmin")  { <span>Süper Admin</span> }
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      @if (rol == "ogrenci")
+      {
+        <div class="nav-section">Ana Menü</div>
+        <a href="/Student/Index" class="nav-item @(ViewData["Active"]?.ToString()=="Home"?"active":"")">
+          <i class="ti ti-home"></i><span>Ana Sayfa</span>
+        </a>
+
+        <div class="nav-section">Akademik</div>
+        <a href="/Student/Akademik" class="nav-item @(ViewData["Active"]?.ToString()=="Akademik"?"active":"")">
+          <i class="ti ti-file-text"></i><span>Akademik Çalışmalar</span>
+        </a>
+        <a href="/Student/YeniCalisma" class="nav-item @(ViewData["Active"]?.ToString()=="YeniCalisma"?"active":"")">
+          <i class="ti ti-circle-plus"></i><span>Yeni Çalışma Ekle</span>
+        </a>
+        <a href="/Student/Siralama" class="nav-item @(ViewData["Active"]?.ToString()=="Siralama"?"active":"")">
+          <i class="ti ti-trophy"></i><span>Sıralama</span>
+        </a>
+
+        <div class="nav-section">Diğer</div>
+        <a href="/Student/Bildirimler" class="nav-item @(ViewData["Active"]?.ToString()=="Bildirimler"?"active":"")">
+          <i class="ti ti-bell"></i><span>Bildirimler</span>
+        </a>
+      }
+      else if (rol == "admin" || rol == "teacher" || rol == "superadmin")
+      {
+        <div class="nav-section">Ana Menü</div>
+        <a href="/Admin/Index" class="nav-item @(ViewData["Active"]?.ToString()=="Home"?"active":"")">
+          <i class="ti ti-layout-dashboard"></i><span>Ana Sayfa</span>
+        </a>
+        <a href="/Admin/Ogrenciler" class="nav-item @(ViewData["Active"]?.ToString()=="Ogrenciler"?"active":"")">
+          <i class="ti ti-users"></i><span>Öğrenciler</span>
+        </a>
+
+        @if (rol != "superadmin")
+        {
+          <div class="nav-section">Akademik</div>
+          <a href="/Admin/Degerlendirmelerim" class="nav-item @(ViewData["Active"]?.ToString()=="Degerlendirmelerim"?"active":"")">
+            <i class="ti ti-clipboard-check"></i><span>Değerlendirmelerim</span>
+          </a>
+        }
+
+        @if (rol == "superadmin")
+        {
+          <a href="/Admin/OnayBekleyenOgrenciler" class="nav-item @(ViewData["Active"]?.ToString()=="OnayBekleyenOgrenciler"?"active":"")">
+            <i class="ti ti-user-check"></i><span>Öğrenci Onayları</span>
+          </a>
+          <div class="nav-section">Akademik</div>
+          <a href="/Admin/AdminYonetimi" class="nav-item @(ViewData["Active"]?.ToString()=="AdminYonetimi"?"active":"")">
+            <i class="ti ti-settings-2"></i><span>Akademik Yönetim</span>
+          </a>
+          <div class="nav-section">Sistem</div>
+          <a href="/Admin/KullaniciYonetimi" class="nav-item @(ViewData["Active"]?.ToString()=="KullaniciYonetimi"?"active":"")">
+            <i class="ti ti-users-group"></i><span>Kullanıcı Yönetimi</span>
+          </a>
+        }
+      }
+    </nav>
+
+    <!-- Logout -->
+    <form asp-controller="Account" asp-action="Cikis" method="post" style="padding:0;">
+      @Html.AntiForgeryToken()
+      <button type="submit" class="logout-btn" style="width:100%;text-align:left;">
+        <i class="ti ti-logout"></i><span>Çıkış Yap</span>
+      </button>
+    </form>
+  </aside>
+
+  <!-- Overlay (mobile) -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Menüyü aç/kapat">
+        <i class="ti ti-menu-2"></i>
+      </button>
+
+      <div class="topbar-title">@ViewData["Title"]</div>
+
+      <div class="topbar-right">
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="themeToggleBtn" aria-label="Tema değiştir">
+          <i class="ti ti-sun" id="themeIcon"></i>
+        </button>
+
+        <!-- User Dropdown -->
+        <div class="user-dropdown-wrapper">
+          <button class="topbar-user" onclick="toggleRightPanel(event)">
+            <div class="topbar-avatar">@initials</div>
+            <span class="topbar-username">@kullaniciAdi</span>
+            <i class="ti ti-chevron-down" style="font-size:13px;color:var(--text-muted);"></i>
+          </button>
+
+          <!-- Dropdown -->
+          <div class="pnd-profile-dropdown" id="pndRightPanel">
+            <div class="hesabim-inner">
+
+              <!-- Profile Card -->
+              <div class="profile-card">
+                <div class="hero">
+                  <div class="avatar-large">@initials</div>
+                  <div class="hero-name">@adSoyad</div>
+                  <div class="badge role-badge">
+                    @if (rol == "ogrenci")       { <i class="ti ti-school"></i><span>Öğrenci</span> }
+                    else if (rol == "teacher")   { <i class="ti ti-book"></i><span>Öğretmen</span> }
+                    else if (rol == "admin")     { <i class="ti ti-shield"></i><span>Admin</span> }
+                    else if (rol == "superadmin"){ <i class="ti ti-bolt"></i><span>Süper Admin</span> }
+                  </div>
+                </div>
+
+                <div class="stats-row">
+                  @if (rol == "ogrenci")
+                  {
+                    <div class="stat"><div class="stat-num">@stat1</div><div class="stat-lbl">Gönderilen</div></div>
+                    <div class="stat"><div class="stat-num">@stat2</div><div class="stat-lbl">Süreçte</div></div>
+                    <div class="stat"><div class="stat-num">@stat3Dec</div><div class="stat-lbl">Ort. Puan</div></div>
+                  }
+                  else
+                  {
+                    <div class="stat"><div class="stat-num">@stat1</div><div class="stat-lbl">Değerlendirme</div></div>
+                    <div class="stat"><div class="stat-num">@stat2</div><div class="stat-lbl">Bekleyen</div></div>
+                    <div class="stat"><div class="stat-num">@stat3</div><div class="stat-lbl">Aktif</div></div>
+                  }
+                </div>
+              </div>
+
+              <!-- Menu -->
+              <div class="section-label">Hesap</div>
+              <div class="menu-card">
+                <a class="menu-item" href="/Profile/Index">
+                  <div class="menu-icon icon-navy"><i class="ti ti-user"></i></div>
+                  <div class="menu-text">
+                    <div class="menu-title">Profili Düzenle</div>
+                    <div class="menu-sub">@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</div>
+                  </div>
+                  <i class="ti ti-chevron-right menu-arrow"></i>
+                </a>
+                @if (rol == "ogrenci")
+                {
+                  <a class="menu-item" href="/Student/Akademik">
+                    <div class="menu-icon icon-green"><i class="ti ti-file-upload"></i></div>
+                    <div class="menu-text">
+                      <div class="menu-title">Yeni Çalışma Ekle</div>
+                      <div class="menu-sub">Makale, proje veya bildiri</div>
+                    </div>
+                    <i class="ti ti-chevron-right menu-arrow"></i>
+                  </a>
+                }
+              </div>
+
+              <!-- Logout -->
+              <form class="logout-form" asp-controller="Account" asp-action="Cikis" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit">
+                  <i class="ti ti-logout"></i>Çıkış Yap
+                </button>
+              </form>
+
+            </div>
+          </div>
+        </div><!-- /user-dropdown-wrapper -->
+      </div><!-- /topbar-right -->
+    </header>
+
+    <!-- Page Content -->
+    <div class="content">
+      @RenderBody()
+    </div>
+  </div>
 </div>
+
 <script src="~/js/site.js"></script>
 <script>
-    const themeBtn = document.getElementById('themeToggleBtn');
-    
-    // İlk yüklendiğinde ikonu ayarla
-    if (document.body.classList.contains('dark-mode')) {
-        themeBtn.innerHTML = 'Aydınlık Mod'; // Veya boş bırakabilirsiniz
+  // ── Theme ──────────────────────────────────────────────
+  const themeBtn  = document.getElementById('themeToggleBtn');
+  const themeIcon = document.getElementById('themeIcon');
+
+  function applyThemeIcon() {
+    const dark = document.body.classList.contains('dark-mode');
+    themeIcon.className = dark ? 'ti ti-moon' : 'ti ti-sun';
+    themeBtn.title = dark ? 'Aydınlık moda geç' : 'Karanlık moda geç';
+  }
+
+  applyThemeIcon();
+
+  themeBtn.addEventListener('click', function () {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    applyThemeIcon();
+  });
+
+  // ── Dropdown ───────────────────────────────────────────
+  function toggleRightPanel(e) {
+    if (e) e.stopPropagation();
+    document.getElementById('pndRightPanel').classList.toggle('open');
+  }
+
+  document.addEventListener('click', function (e) {
+    const panel   = document.getElementById('pndRightPanel');
+    const wrapper = document.querySelector('.user-dropdown-wrapper');
+    if (panel && panel.classList.contains('open') && wrapper && !wrapper.contains(e.target)) {
+      panel.classList.remove('open');
     }
-
-    themeBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
-        // İkonu güncelle
-        // Tercihi kaydet
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        
-        themeBtn.innerHTML = isDark ? 'Aydınlık Mod' : 'Karanlık Mod'; // Veya boş bırakabilirsiniz
-    });
-
-    // Right Profile Panel Toggle
-    function toggleRightPanel(event) {
-        if (event) {
-            event.stopPropagation();
-        }
-        const panel = document.getElementById('pndRightPanel');
-        panel.classList.toggle('open');
-    }
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-        const panel = document.getElementById('pndRightPanel');
-        const wrapper = document.querySelector('.user-dropdown-wrapper');
-        if (panel && panel.classList.contains('open') && !wrapper.contains(event.target)) {
-            panel.classList.remove('open');
-        }
-    });
+  });
 </script>
-
-<style>
-    /* Profil Dropdown Yeni Tasarım & Renk Güncellemeleri */
-    .topbar-title { color: #1a2b4c !important; font-weight: 700; }
-    .pnd-profile-dropdown { width: 340px; padding: 0; border: 1px solid #eee; border-radius: 16px; overflow: hidden; background: #fafafa; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-    .hesabim-wrap { display: flex; flex-direction: column; gap: 12px; }
-    .profile-card { background: #fff; border: 0.5px solid #e5e5e5; border-radius: 12px; overflow: hidden; }
-    .hero { padding: 1.75rem 1.25rem 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 10px; border-bottom: 0.5px solid #e5e5e5; }
-    .avatar-large { width: 72px; height: 72px; border-radius: 16px; background: #1a2b4c; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 500; color: #fff; }
-    .hero-name { font-size: 17px; font-weight: 500; color: #1a1a1a; }
-    .role-badge { display: inline-flex; align-items: center; gap: 5px; background: #e8ecf2; color: #1a2b4c; font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
-    
-    .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; }
-    .stat { padding: 0.9rem 0.5rem; display: flex; flex-direction: column; gap: 3px; align-items: center; border-right: 0.5px solid #e5e5e5; }
-    .stat:last-child { border-right: none; }
-    .stat-num { font-size: 20px; font-weight: 500; color: #1a1a1a; }
-    .stat-lbl { font-size: 11px; color: #888; text-align: center; }
-
-    .section-label { font-size: 11px; font-weight: 500; color: #aaa; padding: 0 0.25rem; letter-spacing: .04em; text-transform: uppercase; }
-    .menu-card { background: #fff; border: 0.5px solid #e5e5e5; border-radius: 12px; overflow: hidden; }
-    .menu-item { display: flex; align-items: center; gap: 12px; padding: 14px 1.25rem; text-decoration: none; border-bottom: 0.5px solid #e5e5e5; transition: background .12s; cursor: pointer; }
-    .menu-item:last-child { border-bottom: none; }
-    .menu-item:hover { background: #f9f9f9; }
-    .menu-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
-    .icon-navy { background: #e8ecf2; color: #1a2b4c; }
-    .icon-green  { background: #E1F5EE; color: #0F6E56; }
-    .icon-amber  { background: #FAEEDA; color: #854F0B; }
-    .menu-text { flex: 1; }
-    .menu-title { font-size: 14px; font-weight: 500; color: #1a1a1a; }
-    .menu-sub { font-size: 12px; color: #888; margin-top: 1px; }
-    .menu-arrow { color: #ccc; font-size: 16px; }
-
-    .logout-form button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border-radius: 12px; border: 0.5px solid #F09595; background: #FCEBEB; color: #A32D2D; font-size: 14px; font-weight: 500; cursor: pointer; transition: background .12s; }
-    .logout-form button:hover { background: #F7C1C1; }
-
-    /* Dark Mode Uyumu */
-    body.dark-mode .pnd-profile-dropdown { background: #1a1a1a; border-color: #333; }
-    body.dark-mode .hero { border-bottom-color: #2a2a2a; }
-    body.dark-mode .hero-name { color: #eee; }
-    body.dark-mode .role-badge { background: #2a2a5a; color: #aaaaff; }
-    body.dark-mode .stats-row { background: #141414; border-bottom-color: #2a2a2a; }
-    body.dark-mode .stat { border-right-color: #222; }
-    body.dark-mode .stat-num { color: #eee; }
-    body.dark-mode .menu-item:hover { background: #222; }
-    body.dark-mode .menu-title { color: #eee; }
-    body.dark-mode .menu-sub { color: #777; }
-    body.dark-mode .panel-footer { background: #1a1a1a; }
-    body.dark-mode .logout-form button { background: #2d1a1a; border-color: #5a2a2a; color: #ff8a8a; }
-    /* Sidebar Daraltma CSS'i */
-    .sidebar {
-        transition: width 0.3s ease;
-        overflow-x: hidden;
-    }
-
-    @@media (min-width: 901px) {
-        .sidebar.collapsed {
-            width: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            border: none !important;
-            transform: translateX(-100%) !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-        }
-
-        /* Ana içerik (main) alanının sol boşluğunu sidebar gizlendiğinde sıfırla */
-        .sidebar.collapsed ~ .main {
-            margin-left: 0 !important;
-            width: 100% !important;
-        }
-    }
-
-    .app {
-        display: flex;
-        transition: margin-left 0.3s ease;
-    }
-
-    .hamburger {
-        display: block !important;
-    }
-</style>
-
 </body>
 </html>

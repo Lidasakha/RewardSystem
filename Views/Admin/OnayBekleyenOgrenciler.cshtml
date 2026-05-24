@@ -1,899 +1,349 @@
 ﻿@model List<RewardSystem.Models.User>
 @{
-    ViewData["Title"] = "Onay Bekleyen Öğrenciler";
+    ViewData["Title"] = "Öğrenci Onayları";
     ViewData["Active"] = "OnayBekleyenOgrenciler";
-}
-
-<!-- Alerts -->
-@if (TempData["Mesaj"] != null)
-{
-    <div class="pnd-alert pnd-alert-success">
-        <span class="pnd-alert-icon"></span>
-        <span>@TempData["Mesaj"]</span>
-        <button class="pnd-alert-close" onclick="this.parentElement.remove()">âœ•</button>
-    </div>
-}
-@if (TempData["Hata"] != null)
-{
-    <div class="pnd-alert pnd-alert-danger">
-        <span class="pnd-alert-icon"></span>
-        <span>@TempData["Hata"]</span>
-        <button class="pnd-alert-close" onclick="this.parentElement.remove()">âœ•</button>
-    </div>
-}
-
-@if (!Model.Any())
-{
-    <div class="pnd-empty-wrapper">
-        <div class="pnd-empty-card">
-            <div class="pnd-empty-illustration">
-                <div class="pnd-empty-circle"> 
-                    <span></span>
-                </div>
-                <div class="pnd-empty-ring"></div>
-            </div>
-            <h2>Tüm kayıtlar onaylandı!</h2>
-            <p>Şu anda onay bekleyen öğrenci kaydı bulunmuyor.<br>Yeni kayıtlar geldiğinde burada görünecek.</p>
-            <a href="/Admin/Ogrenciler" class="pnd-link-btn">
-                Tüm Öğrencileri Görüntüle
-            </a>
-        </div>
-    </div>
-}
-else
-{
-    <!-- Header Section -->
-    <div class="pnd-page-header">
-        <div class="pnd-header-left">
-            <div class="pnd-header-icon"></div>
-            <div>
-                <h1>Onay Bekleyen Kayıtlar</h1>
-                <p>Sisteme kayıt olmuş ancak henüz onaylanmamış öğrencileri inceleyin</p>
-            </div>
-        </div>
-        <div class="pnd-header-stats">
-            <div class="pnd-mini-stat">
-                <span class="pnd-mini-stat-num">@Model.Count</span>
-                <span class="pnd-mini-stat-label">Bekleyen</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Search & Filter Bar -->
-    <div class="pnd-toolbar">
-        <div class="pnd-search-box">
-            <span class="pnd-search-icon"></span>
-            <input type="text" id="pndSearchInput" placeholder="İsim, e-posta veya bölüm ile ara..." oninput="filterStudents(this.value)">
-        </div>
-        <div class="pnd-toolbar-actions">
-            <button class="pnd-btn-outline" onclick="approveAll()" title="Tümünü Onayla"> 
-                <span></span> Tümünü Onayla
-            </button>
-        </div>
-    </div>
-
-    <!-- Student Cards Grid -->
-    <div class="pnd-cards-grid" id="pndCardsGrid">
-        @{ var delay = 0; }
-        @foreach (var s in Model)
-        {
-            <div class="pnd-student-card" style="animation-delay: @(delay)ms" data-name="@s.FullName?.ToLower()" data-email="@s.Email?.ToLower()" data-dept="@s.Department?.ToLower()">
-                <!-- Card Top -->
-                <div class="pnd-card-top">
-                    <div class="pnd-card-avatar">
-                        @(s.FullName?.Length > 0 ? s.FullName[0].ToString().ToUpper() : "?")
-                    </div>
-                    <div class="pnd-card-status-badge">
-                        <span class="pnd-pulse"></span>
-                        Onay Bekliyor
-                    </div>
-                </div>
-
-                <!-- Card Body -->
-                <div class="pnd-card-body">
-                    <h3 class="pnd-card-name">@s.FullName</h3> 
-                    <span class="pnd-card-role">Öğrenci</span>
-
-                    <div class="pnd-card-details">
-                        <div class="pnd-detail-item">
-                            <span class="pnd-detail-icon"></span>
-                            <div class="pnd-detail-content">
-                                <span class="pnd-detail-label">Kullanıcı Adı</span>
-                                <span class="pnd-detail-value">@s.Username</span>
-                            </div>
-                        </div>
-                        <div class="pnd-detail-item">
-                            <span class="pnd-detail-icon"></span>
-                            <div class="pnd-detail-content">
-                                <span class="pnd-detail-label">E-posta</span>
-                                <span class="pnd-detail-value pnd-email-val">@(s.Email ?? "—")</span>
-                            </div>
-                        </div>
-                        <div class="pnd-detail-item">
-                            <span class="pnd-detail-icon"></span>
-                            <div class="pnd-detail-content">
-                                <span class="pnd-detail-label">Bölüm</span>
-                                <span class="pnd-detail-value">@(s.Department ?? "—")</span>
-                            </div>
-                        </div>
-                        <div class="pnd-detail-item">
-                            <span class="pnd-detail-icon"></span>
-                            <div class="pnd-detail-content">
-                                <span class="pnd-detail-label">Kayıt Tarihi</span>
-                                <span class="pnd-detail-value">@(s.CreateDate == default(DateTime) ? "—" : s.CreateDate.ToLocalTime().ToString("dd MMM yyyy, HH:mm"))</span>
-                            </div>
-                        </div>
-                    </div>
-                </div> 
-
-                <!-- Card Actions -->
-                <div class="pnd-card-actions">
-                    <form asp-action="OgrenciOnayla" method="post" onsubmit="return confirm('Bu öğrenciyi onaylamak istediğinize emin misiniz?');">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@s.Id" />
-                        <button type="submit" class="pnd-btn-approve">
-                            <span class="pnd-btn-icon"></span>
-                            Onayla
-                        </button>
-                    </form>
-                    <form asp-action="OgrenciReddet" method="post" onsubmit="return confirm('@s.FullName adlı öğrencinin kaydını reddetmek istediğinize emin misiniz? Bu işlem geri alınamaz.');">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@s.Id" />
-                        <button type="submit" class="pnd-btn-reject"> 
-                            <span class="pnd-btn-icon"></span>
-                            Reddet
-                        </button>
-                    </form>
-                </div>
-            </div>
-            delay += 80;
-        }
-    </div>
-
-    <!-- No Results (hidden by default) -->
-    <div class="pnd-no-results" id="pndNoResults" style="display:none;">
-        <span class="pnd-no-results-icon"></span>
-        <p>Aramanızla eşleşen öğrenci bulunamadı.</p>
-    </div>
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <style>
-    /* ==================== PAGE HEADER ==================== */
-    .pnd-page-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: linear-gradient(135deg, #001F3F, #083358);
-        border-radius: 20px;
-        padding: 28px 32px;
-        margin-bottom: 20px;
-        color: #fff;
-        box-shadow: 0 8px 32px rgba(26, 43, 76, 0.25);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .pnd-page-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
-        border-radius: 50%;
-    }
-
-    .pnd-page-header::after {
-        content: '';
-        position: absolute;
-        bottom: -60%;
-        left: 10%;
-        width: 200px;
-        height: 200px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
-        border-radius: 50%;
-    }
-
-    .pnd-header-left {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .pnd-header-icon {
-        width: 56px;
-        height: 56px;
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 26px;
-        flex-shrink: 0;
-        backdrop-filter: blur(8px);
-    }
-
-    .pnd-header-left h1 {
-        font-size: 22px;
-        font-weight: 800;
-        letter-spacing: -0.3px;
-        margin-bottom: 4px;
-    }
-
-    .pnd-header-left p {
-        font-size: 13.5px;
-        color: rgba(255, 255, 255, 0.7);
-        font-weight: 400;
-    }
-
-    .pnd-header-stats {
-        position: relative;
-        z-index: 1;
-    }
-
-    .pnd-mini-stat {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background: rgba(255, 255, 255, 0.12);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 16px;
-        padding: 14px 28px;
-    }
-
-    .pnd-mini-stat-num {
-        font-size: 32px;
-        font-weight: 800;
-        color: #D32F2F;
-        line-height: 1;
-    }
-
-    .pnd-mini-stat-label {
-        font-size: 12px;
-        color: rgba(255, 255, 255, 0.65);
-        font-weight: 500;
-        margin-top: 4px;
-    }
-
-    /* ==================== TOOLBAR ==================== */
-    .pnd-toolbar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-
-    .pnd-search-box {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        background: #fff;
-        border: 1.5px solid #E3F2FD;
-        border-radius: 14px;
-        padding: 0 18px;
-        transition: all 0.25s;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-    }
-
-    .pnd-search-box:focus-within {
-        border-color: #001F3F;
-        box-shadow: 0 0 0 4px rgba(217, 4, 41, 0.1);
-    }
-
-    .pnd-search-icon {
-        font-size: 16px;
-        margin-right: 10px;
-        opacity: 0.5;
-    }
-
-    .pnd-search-box input {
-        width: 100%;
-        border: none;
-        outline: none;
-        padding: 14px 0;
-        font-family: 'Sora', sans-serif;
-        font-size: 13.5px;
-        color: #0a1128;
-        background: transparent;
-    }
-
-    .pnd-search-box input::placeholder {
-        color: #a0b8ac;
-    }
-
-    .pnd-btn-outline {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 12px 22px;
-        background: #fff;
-        color: #D32F2F;
-        border: 1.5px solid #FFCDD2;
-        border-radius: 12px;
-        font-family: 'Sora', sans-serif;
-        font-size: 13px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.25s;
-        white-space: nowrap;
-    }
-
-    .pnd-btn-outline:hover {
-        background: #D32F2F;
-        color: #fff;
-        border-color: #D32F2F;
-        box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
-        transform: translateY(-1px);
-    }
-
-    /* ==================== CARDS GRID ==================== */
-    .pnd-cards-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 16pxpx;
-    }
-
-    .pnd-student-card {
-        background: #fff;
-        border-radius: 20px;
-        border: 1px solid #eee;
-        box-shadow: 0 4px 20px rgba(26, 43, 76, 0.04);
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        animation: pndCardIn 0.5s ease backwards;
-        display:flex;
-        align-items: center;
-        justify-content:space-between;
-        padding:12px 24px;
-    }
-
-    @@keyframes pndCardIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.97);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
-
-    .pnd-student-card:hover {
-        box-shadow: 0 12px 40px rgba(26, 43, 76, 0.1);
-        transform: translateY(-4px);
-        border-color: #cbd5e1;
-    }
-
-    /* Card Top */
-    .pnd-card-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0;
-    }
-
-    .pnd-card-avatar {
-        width: 54px;
-        height: 54px;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #001F3F, #083358);
-        color: #fff;
-        font-weight: 800;
-        font-size: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 6px 20px rgba(26, 43, 76, 0.2);
-    }
-
-    .pnd-card-status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: linear-gradient(135deg, #fffbeb, #fef3c7);
-        color: #b45309;
-        border: 1px solid #fde68a;
-        padding: 5px 14px;
-        border-radius: 20px;
-        font-size: 11.5px;
-        font-weight: 700;
-    }
-
-    .pnd-pulse {
-        width: 7px;
-        height: 7px;
-        background: #f59e0b;
-        border-radius: 50%;
-        display: inline-block;
-        animation: pndPulse 2s ease-in-out infinite;
-    }
-
-    @@keyframes pndPulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.4); }
-    }
-
-    /* Card Body */
-    .pnd-card-body {
-        padding: 0 20px;
-        flex: 1;
-    }
-
-    .pnd-card-name {
-        font-size: 17px;
-        font-weight: 800;
-        color: #0a1128;
-        margin-bottom: 4px;
-        letter-spacing: -0.2px;
-    }
-
-    .pnd-card-role {
-        font-size: 12px;
-        color: #6c7a89;
-        font-weight: 500;
-    }
-
-    .pnd-card-details {
-        margin-top: 8px;
-        display: flex;
-        flex-direction: row;
-        gap: 12px;
-    }
-
-    .pnd-detail-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 12px;
-        background: #f5f5f5;
-        border-radius: 12px;
-        transition: background 0.2s;
-    }
-
-    .pnd-detail-item:hover {
-        background: #eee;
-    }
-
-    .pnd-detail-icon {
-        font-size: 15px;
-        width: 20px;
-        text-align: center;
-        flex-shrink: 0;
-    }
-
-    .pnd-detail-content {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-
-    .pnd-detail-label {
-        font-size: 10.5px;
-        font-weight: 600;
-        color: #9ab5a6;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .pnd-detail-value {
-        font-size: 13px;
-        font-weight: 600;
-        color: #001F3F;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .pnd-email-val {
-        font-size: 12.5px;
-    }
-
-    /* Card Actions */
-    .pnd-card-actions {
-        display: flex;
-        gap: 10px;
-        padding: 0;
-        margin-top: 0;
-        border-top: none;
-        min-width: 220px;
-    }
-
-    .pnd-card-actions form {
-        flex: 1;
-        display: flex;
-    }
-
-    .pnd-btn-approve,
-    .pnd-btn-reject {
-        flex: 1;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 0;
-        border: none;
-        border-radius: 12px;
-        font-family: 'Sora', sans-serif;
-        font-size: 13px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .pnd-btn-approve {
-        background: linear-gradient(135deg, #001F3F, #083358);
-        color: #fff;
-        box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
-    }
-
-    .pnd-btn-approve:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
-    }
-
-    .pnd-btn-approve:active {
-        transform: translateY(0);
-    }
-
-    .pnd-btn-reject {
-        background: #fff;
-        color: #dc2626;
-        border: 1.5px solid #fecaca;
-        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.06);
-    }
-
-    .pnd-btn-reject:hover {
-        background: linear-gradient(135deg, #f87171, #dc2626);
-        color: #fff;
-        border-color: transparent;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(220, 38, 38, 0.35);
-    }
-
-    .pnd-btn-reject:active {
-        transform: translateY(0);
-    }
-
-    .pnd-btn-icon {
-        font-size: 14px;
-        font-weight: 900;
-    }
-
-    /* ==================== ALERTS ==================== */
-    .pnd-alert {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 16px 20px;
-        border-radius: 14px;
-        margin-bottom: 16px;
-        font-size: 13.5px;
-        font-weight: 600;
-        animation: pndSlideDown 0.4s ease;
-    }
-
-    @@keyframes pndSlideDown {
-        from { opacity: 0; transform: translateY(-12px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .pnd-alert-success {
-        background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
-        border: 1px solid #90CAF9;
-        color: #0D47A1;
-    }
-
-    .pnd-alert-danger {
-        background: linear-gradient(135deg, #fef2f2, #fee2e2);
-        border: 1px solid #fca5a5;
-        color: #D32F2F;
-    }
-
-    .pnd-alert-icon {
-        font-size: 18px;
-    }
-
-    .pnd-alert-close {
-        margin-left: auto;
-        background: none;
-        border: none;
-        font-size: 16px;
-        cursor: pointer;
-        opacity: 0.5;
-        transition: opacity 0.2s;
-        color: inherit;
-    }
-
-    .pnd-alert-close:hover {
-        opacity: 1;
-    }
-
-    /* ==================== EMPTY STATE ==================== */
-    .pnd-empty-wrapper {
-        display: flex;
-        justify-content: center;
-        padding: 40px 0;
-    }
-
-    .pnd-empty-card {
-        text-align: center;
-        background: #fff;
-        border-radius: 24px;
-        border: 1px solid #eee;
-        padding: 60px 50px;
-        max-width: 460px;
-        box-shadow: 0 8px 40px rgba(26, 43, 76, 0.06);
-    }
-
-    .pnd-empty-illustration {
-        position: relative;
-        width: 100px;
-        height: 100px;
-        margin: 0 auto 28px;
-    }
-
-    .pnd-empty-circle {
-        width: 100px;
-        height: 100px;
-        background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 44px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .pnd-empty-ring {
-        position: absolute;
-        inset: -10px;
-        border: 2px dashed #BBDEFB;
-        border-radius: 50%;
-        animation: pndSpin 20s linear infinite;
-    }
-
-    @@keyframes pndSpin {
-        to { transform: rotate(360deg); }
-    }
-
-    .pnd-empty-card h2 {
-        font-size: 22px;
-        font-weight: 800;
-        color: #001F3F;
-        margin-bottom: 10px;
-    }
-
-    .pnd-empty-card p {
-        font-size: 14px;
-        color: #6c7a89;
-        line-height: 1.7;
-        margin-bottom: 24px;
-    }
-
-    .pnd-link-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 24px;
-        background: linear-gradient(135deg, #001F3F, #083358);
-        color: #fff;
-        border-radius: 12px;
-        text-decoration: none;
-        font-size: 13.5px;
-        font-weight: 700;
-        transition: all 0.25s;
-    }
-
-    .pnd-link-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(26, 43, 76, 0.3);
-    }
-
-    /* ==================== NO RESULTS ==================== */
-    .pnd-no-results {
-        text-align: center;
-        padding: 60px 20px;
-        color: #6c7a89;
-    }
-
-    .pnd-no-results-icon {
-        font-size: 48px;
-        display: block;
-        margin-bottom: 14px;
-        opacity: 0.5;
-    }
-
-    .pnd-no-results p {
-        font-size: 14px;
-        font-weight: 500;
-    }
-
-    /* ==================== DARK MODE ==================== */
-    body.dark-mode .pnd-page-header {
-        background: linear-gradient(135deg, #060b14, #16352a);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    }
-
-    body.dark-mode .pnd-search-box {
-        background: #0f172a;
-        border-color: #1e293b;
-    }
-
-    body.dark-mode .pnd-search-box input {
-        color: #e2e8e4;
-    }
-
-    body.dark-mode .pnd-search-box input::placeholder {
-        color: #64748b;
-    }
-
-    body.dark-mode .pnd-btn-outline {
-        background: #0f172a;
-        border-color: #1e293b;
-        color: #4ade80;
-    }
-
-    body.dark-mode .pnd-btn-outline:hover {
-        background: #22c55e;
-        color: #fff;
-    }
-
-    body.dark-mode .pnd-student-card {
-        background: #0f172a;
-        border-color: #1e293b;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    body.dark-mode .pnd-student-card:hover {
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-        border-color: #3a5a48;
-    }
-
-    body.dark-mode .pnd-card-avatar {
-        background: linear-gradient(135deg, #9d021e, #d90429);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-    }
-
-    body.dark-mode .pnd-card-status-badge {
-        background: rgba(245, 158, 11, 0.12);
-        border-color: rgba(245, 158, 11, 0.25);
-        color: #fbbf24;
-    }
-
-    body.dark-mode .pnd-card-name {
-        color: #e2e8e4;
-    }
-
-    body.dark-mode .pnd-card-role {
-        color: #64748b;
-    }
-
-    body.dark-mode .pnd-detail-item {
-        background: #1e293b;
-    }
-
-    body.dark-mode .pnd-detail-item:hover {
-        background: #223a2e;
-    }
-
-    body.dark-mode .pnd-detail-label {
-        color: #64748b;
-    }
-
-    body.dark-mode .pnd-detail-value {
-        color: #c5dccf;
-    }
-
-    body.dark-mode .pnd-card-actions {
-        border-top-color: #1e293b;
-    }
-
-    body.dark-mode .pnd-btn-reject {
-        background: #1e293b;
-        border-color: rgba(220, 38, 38, 0.25);
-        color: #f87171;
-    }
-
-    body.dark-mode .pnd-btn-reject:hover {
-        background: linear-gradient(135deg, #f87171, #dc2626);
-        color: #fff;
-    }
-
-    body.dark-mode .pnd-empty-card {
-        background: #0f172a;
-        border-color: #1e293b;
-    }
-
-    body.dark-mode .pnd-empty-card h2 {
-        color: #e2e8e4;
-    }
-
-    body.dark-mode .pnd-empty-circle {
-        background: linear-gradient(135deg, #1e293b, #1e293b);
-    }
-
-    body.dark-mode .pnd-empty-ring {
-        border-color: #1e293b;
-    }
-
-    body.dark-mode .pnd-alert-success {
-        background: rgba(34, 197, 94, 0.1);
-        border-color: rgba(34, 197, 94, 0.25);
-        color: #4ade80;
-    }
-
-    body.dark-mode .pnd-alert-danger {
-        background: rgba(220, 38, 38, 0.1);
-        border-color: rgba(220, 38, 38, 0.25);
-        color: #f87171;
-    }
-
-    /* ==================== RESPONSIVE ==================== */
-    @@media (max-width: 768px) {
-        .pnd-page-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
-            padding: 22px 20px;
-        }
-
-        .pnd-header-stats {
-            align-self: flex-end;
-        }
-
-        .pnd-toolbar {
-            flex-direction: column;
-        }
-
-        .pnd-cards-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .pnd-header-left h1 {
-            font-size: 18px;
-        }
-    }
+  .ob-page { display:flex; flex-direction:column; gap:20px; }
+
+  /* Banner */
+  .ob-banner {
+    background:linear-gradient(135deg,var(--brand-600) 0%,#0a1e3d 100%);
+    border-radius:var(--radius-lg); padding:24px 28px; color:#fff;
+    display:flex; align-items:center; justify-content:space-between;
+    position:relative; overflow:hidden;
+  }
+  .ob-banner::before {
+    content:''; position:absolute; top:-50px; right:-50px;
+    width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,.05);
+  }
+  .ob-banner-left { display:flex; align-items:center; gap:16px; z-index:1; }
+  .ob-banner-icon {
+    width:52px; height:52px; border-radius:14px;
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2);
+    display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0;
+  }
+  .ob-banner-left h2 { font-size:19px; font-weight:700; margin-bottom:3px; }
+  .ob-banner-left p  { font-size:13px; color:rgba(255,255,255,.65); }
+  .ob-banner-stat {
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18);
+    border-radius:14px; padding:14px 24px; text-align:center; z-index:1;
+  }
+  .ob-banner-num { font-size:30px; font-weight:800; color:#fbbf24; line-height:1; }
+  .ob-banner-lbl { font-size:11px; color:rgba(255,255,255,.6); margin-top:3px; }
+
+  /* Toolbar */
+  .ob-toolbar {
+    display:flex; align-items:center; gap:12px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:12px 16px;
+    box-shadow:var(--shadow-sm);
+  }
+  .ob-search {
+    flex:1; display:flex; align-items:center; gap:10px;
+    background:var(--surface-2); border:1.5px solid var(--border);
+    border-radius:var(--radius-sm); padding:0 14px;
+    transition:border-color .18s, box-shadow .18s;
+  }
+  .ob-search:focus-within { border-color:var(--border-focus); box-shadow:0 0 0 3px rgba(74,112,196,.1); }
+  .ob-search i { font-size:17px; color:var(--text-muted); flex-shrink:0; }
+  .ob-search input {
+    flex:1; border:none; outline:none; padding:10px 0;
+    font-family:'Sora',sans-serif; font-size:13.5px; color:var(--text);
+    background:transparent;
+  }
+  .ob-search input::placeholder { color:var(--text-light); }
+
+  .ob-approve-all {
+    display:inline-flex; align-items:center; gap:7px;
+    padding:10px 18px; border-radius:var(--radius-sm);
+    background:var(--green); color:#fff; border:none;
+    font-family:'Sora',sans-serif; font-size:13px; font-weight:700;
+    cursor:pointer; transition:all .18s; white-space:nowrap;
+    box-shadow:0 2px 8px rgba(22,163,74,.25);
+  }
+  .ob-approve-all:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(22,163,74,.35); }
+
+  /* Table */
+  .ob-table-wrap {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm);
+  }
+
+  .ob-table { width:100%; border-collapse:separate; border-spacing:0; }
+
+  .ob-table th {
+    text-align:left; padding:13px 20px;
+    font-size:11px; font-weight:700; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:.6px;
+    border-bottom:2px solid var(--border);
+    background:var(--surface-2); white-space:nowrap;
+  }
+
+  .ob-table td {
+    padding:14px 20px; font-size:13.5px; color:var(--text);
+    border-bottom:1px solid var(--border); vertical-align:middle;
+  }
+
+  .ob-table tbody tr:last-child td { border-bottom:none; }
+  .ob-table tbody tr { transition:background .15s; }
+  .ob-table tbody tr:hover { background:var(--surface-2); }
+
+  /* User cell */
+  .ob-user { display:flex; align-items:center; gap:12px; }
+  .ob-av {
+    width:42px; height:42px; border-radius:12px;
+    background:var(--brand-600); color:#fff;
+    font-weight:800; font-size:16px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .ob-name { font-weight:700; font-size:14px; color:var(--text); }
+  .ob-username { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+
+  /* Info cells */
+  .ob-info-label { font-size:10.5px; color:var(--text-muted); margin-bottom:2px; }
+  .ob-info-val   { font-size:13px; font-weight:600; color:var(--text); }
+
+  /* Status badge */
+  .ob-status {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--yellow-bg); color:var(--yellow);
+    border:1px solid rgba(217,119,6,.2);
+    padding:4px 12px; border-radius:20px;
+    font-size:11px; font-weight:700; white-space:nowrap;
+  }
+  .ob-pulse {
+    width:6px; height:6px; border-radius:50%; background:var(--yellow);
+    animation:obPulse 2s ease-in-out infinite;
+  }
+  @@keyframes obPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+
+  /* Actions */
+  .ob-actions { display:flex; gap:8px; }
+  .ob-btn-approve {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:8px 16px; border:none; border-radius:var(--radius-sm);
+    font-family:'Sora',sans-serif; font-size:12.5px; font-weight:700;
+    cursor:pointer; transition:all .18s;
+    background:var(--green); color:#fff;
+    box-shadow:0 2px 8px rgba(22,163,74,.25);
+  }
+  .ob-btn-approve:hover { transform:translateY(-1px); box-shadow:0 5px 14px rgba(22,163,74,.35); }
+
+  .ob-btn-reject {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:8px 16px; border:1px solid rgba(220,38,38,.25); border-radius:var(--radius-sm);
+    font-family:'Sora',sans-serif; font-size:12.5px; font-weight:700;
+    cursor:pointer; transition:all .18s;
+    background:var(--red-bg); color:var(--red);
+  }
+  .ob-btn-reject:hover { background:var(--red); color:#fff; border-color:transparent; transform:translateY(-1px); }
+
+  /* Alerts */
+  .ob-alert {
+    display:flex; align-items:center; gap:12px;
+    padding:14px 18px; border-radius:var(--radius-sm);
+    font-size:13.5px; font-weight:600;
+  }
+  .ob-alert-success { background:var(--green-bg); border:1px solid rgba(22,163,74,.25); color:var(--green); }
+  .ob-alert-danger  { background:var(--red-bg);   border:1px solid rgba(220,38,38,.25);  color:var(--red); }
+  .ob-alert-close { margin-left:auto; background:none; border:none; cursor:pointer; color:inherit; opacity:.6; font-size:18px; }
+  .ob-alert-close:hover { opacity:1; }
+
+  /* Empty */
+  .ob-empty {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:60px 40px;
+    text-align:center; box-shadow:var(--shadow-sm);
+  }
+  .ob-empty-icon {
+    width:80px; height:80px; border-radius:20px;
+    background:var(--green-bg); color:var(--green);
+    display:flex; align-items:center; justify-content:center;
+    font-size:38px; margin:0 auto 20px;
+  }
+  .ob-empty h3 { font-size:20px; font-weight:800; color:var(--text); margin-bottom:8px; }
+  .ob-empty p  { font-size:13.5px; color:var(--text-muted); max-width:320px; margin:0 auto 22px; line-height:1.6; }
+
+  /* No results */
+  .ob-no-results { text-align:center; padding:40px; color:var(--text-muted); font-size:13.5px; display:none; }
+
+  /* Responsive */
+  @@media(max-width:900px){
+    .ob-banner { flex-direction:column; align-items:flex-start; gap:14px; }
+    .ob-table thead th:nth-child(3),
+    .ob-table tbody td:nth-child(3),
+    .ob-table thead th:nth-child(4),
+    .ob-table tbody td:nth-child(4) { display:none; }
+  }
+  @@media(max-width:600px){
+    .ob-toolbar { flex-direction:column; }
+    .ob-table thead th:nth-child(5),
+    .ob-table tbody td:nth-child(5) { display:none; }
+  }
 </style>
 
-<script>
-    function filterStudents(query) {
-        const cards = document.querySelectorAll('.pnd-student-card');
-        const noResults = document.getElementById('pndNoResults');
-        const q = query.toLowerCase().trim();
-        let visibleCount = 0;
+<div class="ob-page">
 
-        cards.forEach(card => {
-            const name = card.getAttribute('data-name') || '';
-            const email = card.getAttribute('data-email') || '';
-            const dept = card.getAttribute('data-dept') || '';
+  @if (TempData["Mesaj"] != null)
+  {
+    <div class="ob-alert ob-alert-success">
+      <i class="ti ti-circle-check" style="font-size:20px;"></i>
+      <span>@TempData["Mesaj"]</span>
+      <button class="ob-alert-close" onclick="this.parentElement.remove()">×</button>
+    </div>
+  }
+  @if (TempData["Hata"] != null)
+  {
+    <div class="ob-alert ob-alert-danger">
+      <i class="ti ti-alert-circle" style="font-size:20px;"></i>
+      <span>@TempData["Hata"]</span>
+      <button class="ob-alert-close" onclick="this.parentElement.remove()">×</button>
+    </div>
+  }
 
-            if (name.includes(q) || email.includes(q) || dept.includes(q)) {
-                card.style.display = '';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
+  @if (!Model.Any())
+  {
+    <div class="ob-empty">
+      <div class="ob-empty-icon"><i class="ti ti-checks"></i></div>
+      <h3>Tüm kayıtlar onaylandı!</h3>
+      <p>Şu anda onay bekleyen öğrenci kaydı bulunmuyor. Yeni kayıtlar geldiğinde burada görünecek.</p>
+      <a href="/Admin/Ogrenciler" class="btn-primary" style="text-decoration:none;">
+        <i class="ti ti-users"></i> Tüm Öğrencileri Gör
+      </a>
+    </div>
+  }
+  else
+  {
+    <!-- Banner -->
+    <div class="ob-banner">
+      <div class="ob-banner-left">
+        <div class="ob-banner-icon"><i class="ti ti-user-check"></i></div>
+        <div>
+          <h2>Onay Bekleyen Kayıtlar</h2>
+          <p>Sisteme kayıt olmuş ancak henüz onaylanmamış öğrenciler.</p>
+        </div>
+      </div>
+      <div class="ob-banner-stat">
+        <div class="ob-banner-num">@Model.Count</div>
+        <div class="ob-banner-lbl">Bekleyen</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="ob-toolbar">
+      <div class="ob-search">
+        <i class="ti ti-search"></i>
+        <input type="text" id="obSearchInput" placeholder="İsim, e-posta veya bölüm ile ara..." oninput="filterStudents(this.value)">
+      </div>
+      <button class="ob-approve-all" onclick="approveAll()">
+        <i class="ti ti-checks"></i> Tümünü Onayla
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="ob-table-wrap">
+      <div style="overflow-x:auto;">
+        <table class="ob-table" id="obTable">
+          <thead>
+            <tr>
+              <th>Öğrenci</th>
+              <th>E-posta</th>
+              <th>Bölüm</th>
+              <th>Sınıf</th>
+              <th>Kayıt Tarihi</th>
+              <th>Durum</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="obTableBody">
+            @foreach (var s in Model)
+            {
+              <tr data-name="@s.FullName?.ToLower()" data-email="@s.Email?.ToLower()" data-dept="@s.Department?.ToLower()">
+                <td>
+                  <div class="ob-user">
+                    <div class="ob-av">@(s.FullName?.Length > 0 ? s.FullName[0].ToString().ToUpper() : "?")</div>
+                    <div>
+                      <div class="ob-name">@s.FullName</div>
+                      <div class="ob-username">@s.Username</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="ob-info-label">E-posta</div>
+                  <div class="ob-info-val">@(s.Email ?? "—")</div>
+                </td>
+                <td>
+                  <div class="ob-info-label">Bölüm</div>
+                  <div class="ob-info-val">@(s.Department ?? "—")</div>
+                </td>
+                <td>
+                  <div class="ob-info-label">Sınıf</div>
+                  <div class="ob-info-val">@(s.Grade ?? "—")</div>
+                </td>
+                <td>
+                  <div class="ob-info-label">Tarih</div>
+                  <div class="ob-info-val">@(s.CreateDate == default(DateTime) ? "—" : s.CreateDate.ToLocalTime().ToString("dd MMM yyyy"))</div>
+                </td>
+                <td>
+                  <span class="ob-status">
+                    <span class="ob-pulse"></span> Bekliyor
+                  </span>
+                </td>
+                <td>
+                  <div class="ob-actions">
+                    <form asp-action="OgrenciOnayla" method="post" onsubmit="return confirm('Bu öğrenciyi onaylamak istiyor musunuz?');">
+                      @Html.AntiForgeryToken()
+                      <input type="hidden" name="id" value="@s.Id" />
+                      <button type="submit" class="ob-btn-approve">
+                        <i class="ti ti-check"></i> Onayla
+                      </button>
+                    </form>
+                    <form asp-action="OgrenciReddet" method="post" onsubmit="return confirm('@s.FullName adlı öğrenciyi reddetmek istiyor musunuz?');">
+                      @Html.AntiForgeryToken()
+                      <input type="hidden" name="id" value="@s.Id" />
+                      <button type="submit" class="ob-btn-reject">
+                        <i class="ti ti-x"></i> Reddet
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
             }
-        });
+          </tbody>
+        </table>
+      </div>
+      <div class="ob-no-results" id="obNoResults">
+        <i class="ti ti-search-off" style="font-size:36px;display:block;margin-bottom:10px;opacity:.4;"></i>
+        Aramanızla eşleşen öğrenci bulunamadı.
+      </div>
+    </div>
+  }
 
-        if (noResults) {
-            noResults.style.display = visibleCount === 0 && q.length > 0 ? 'block' : 'none';
-        }
-    }
+</div>
 
-    function approveAll() {
-        if (!confirm('Tüm bekleyen öğrencileri onaylamak istediğinize emin misiniz?')) return;
+<script>
+  function filterStudents(query) {
+    const rows = document.querySelectorAll('#obTableBody tr');
+    const noResults = document.getElementById('obNoResults');
+    const q = query.toLowerCase().trim();
+    let visible = 0;
+    rows.forEach(row => {
+      const name  = row.getAttribute('data-name')  || '';
+      const email = row.getAttribute('data-email') || '';
+      const dept  = row.getAttribute('data-dept')  || '';
+      const match = name.includes(q) || email.includes(q) || dept.includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    if (noResults) noResults.style.display = visible === 0 && q.length > 0 ? 'block' : 'none';
+  }
 
-        const forms = document.querySelectorAll('.pnd-btn-approve');
-        if (forms.length > 0) {
-            forms[0].closest('form').submit();
-        }
-    }
+  function approveAll() {
+    if (!confirm('Tüm bekleyen öğrencileri onaylamak istiyor musunuz?')) return;
+    const firstApprove = document.querySelector('.ob-btn-approve');
+    if (firstApprove) firstApprove.closest('form').submit();
+  }
 </script>
-

@@ -3,126 +3,238 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Üye Ol — Teşvik ve Ödüllendirme Sistemi</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Sora',sans-serif;background:#f4f6f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-        body::before{content:'';position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(58,173,110,.09) 0%,transparent 70%);top:-200px;right:-200px;pointer-events:none}
-        body::after{content:'';position:fixed;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(240,192,64,.07) 0%,transparent 70%);bottom:-150px;left:-150px;pointer-events:none}
-        .wrap{width:100%;max-width:440px; margin-top:20px; z-index:1;}
-        .brand{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;text-align:center}
-        .brand-icon{width:60px;height:60px;background:#1a2b4c;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#ffffff;box-shadow:0 8px 32px rgba(26,43,76,.28);margin-bottom:12px}
-        .brand h1{font-size:18px;font-weight:700;color:#0a1128;letter-spacing:-.4px}
-        .card{background:#fff;border-radius:22px;padding:28px;border:1px solid #e2e8f0;box-shadow:0 4px 40px rgba(0,0,0,.07)}
-        .card h2{font-size:20px;font-weight:700;color:#0a1128;letter-spacing:-.6px;margin-bottom:5px}
-        .card>p{font-size:13.5px;color:#6c7a89;margin-bottom:20px}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Üye Ol — TÖS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --brand:#1a2b4c;--accent:#e02d3c;
+      --bg:#f0f4f8;--surface:#fff;--border:#e2e8f0;
+      --text:#0f172a;--muted:#64748b;--light:#94a3b8;
+      --r:14px;
+    }
+    body{
+      font-family:'Sora',sans-serif;background:var(--bg);
+      min-height:100vh;display:flex;align-items:flex-start;justify-content:center;
+      padding:32px 24px;
+    }
+    body::before{
+      content:'';position:fixed;width:600px;height:600px;border-radius:50%;
+      background:radial-gradient(circle,rgba(26,43,76,.06) 0%,transparent 70%);
+      top:-200px;right:-150px;pointer-events:none;
+    }
+    body::after{
+      content:'';position:fixed;width:400px;height:400px;border-radius:50%;
+      background:radial-gradient(circle,rgba(224,45,60,.06) 0%,transparent 70%);
+      bottom:-120px;left:-100px;pointer-events:none;
+    }
 
-        .fg{margin-bottom:14px}
-        .fg label{display:block;font-size:13px;font-weight:600;color:#3d5a4a;margin-bottom:6px}
-        .iw{position:relative}
-        .iw .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
-        .fg input{width:100%;padding:10px 14px 10px 36px;border:1.5px solid #e2e8f0;border-radius:10px;font-family:'Sora',sans-serif;font-size:13.5px;color:#0a1128;background:#fafcfb;outline:none}
-        .fg input:focus{border-color:#d90429;background:#fff;box-shadow:0 0 0 4px rgba(58,173,110,.1)}
-        .fg input::placeholder{color:#b5d0c0}
-        .btn-login{width:100%;padding:12px;background:linear-gradient(135deg,#d90429,#9d021e);color:#fff;border:none;border-radius:10px;font-family:'Sora',sans-serif;font-size:14.5px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(26,43,76,.3); margin-top:10px;}
-        .btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(26,43,76,.4)}
-        .err{background:#fee;border:1px solid #fcc;border-radius:10px;padding:10px 14px;font-size:13px;color:#c00;margin-bottom:16px}
-        .footer{text-align:center;margin-top:20px;font-size:12px;color:#6c7a89; padding-bottom: 20px;}
-        .log-link {text-align:center; margin-top:15px; font-size:13px; color:#6c7a89;}
-        .log-link a {color:#111d33; text-decoration:none; font-weight:600;}
-    </style>
+    .wrap{width:100%;max-width:480px;position:relative;z-index:1;}
+
+    .brand{text-align:center;margin-bottom:24px;}
+    .brand-logo{
+      width:60px;height:60px;border-radius:16px;
+      background:var(--brand);
+      display:inline-flex;align-items:center;justify-content:center;
+      font-size:17px;font-weight:800;color:#fff;
+      box-shadow:0 6px 24px rgba(26,43,76,.2);margin-bottom:12px;
+    }
+    .brand h1{font-size:17px;font-weight:700;color:var(--text);}
+
+    .card{background:var(--surface);border-radius:20px;padding:28px;border:1px solid var(--border);box-shadow:0 4px 24px rgba(0,0,0,.08);}
+    .card-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:3px;}
+    .card-sub{font-size:13px;color:var(--muted);margin-bottom:22px;}
+
+    /* Grid for 2-column fields */
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    @@media(max-width:480px){.form-grid{grid-template-columns:1fr;}}
+
+    .fg{margin-bottom:0;}
+    .fg.full{grid-column:1/-1;}
+    .fg label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.02em;}
+    .input-wrap{position:relative;}
+    .input-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--light);pointer-events:none;}
+    .fg input{
+      width:100%;padding:10px 12px 10px 36px;
+      border:1.5px solid var(--border);border-radius:10px;
+      font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);
+      background:#fafcfb;outline:none;transition:border-color .18s,box-shadow .18s;
+    }
+    .fg input:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(26,43,76,.08);}
+    .fg input::placeholder{color:var(--light);}
+    select{
+      flex:1;border:none;outline:none;padding:10px 0;
+      font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);
+      background:transparent;cursor:pointer;
+      -webkit-appearance:none;appearance:none;
+    }
+    select:focus{outline:none;}
+
+    /* Section divider */
+    .section-head{
+      font-size:10.5px;font-weight:700;color:var(--light);
+      text-transform:uppercase;letter-spacing:.8px;
+      padding:18px 0 12px;grid-column:1/-1;
+      display:flex;align-items:center;gap:10px;
+    }
+    .section-head::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    .btn-submit{
+      width:100%;padding:13px;margin-top:20px;
+      background:var(--brand);color:#fff;border:none;
+      border-radius:10px;font-family:'Sora',sans-serif;
+      font-size:14.5px;font-weight:700;cursor:pointer;
+      transition:all .2s;box-shadow:0 4px 16px rgba(26,43,76,.2);
+      display:flex;align-items:center;justify-content:center;gap:8px;
+    }
+    .btn-submit:hover{background:var(--accent);transform:translateY(-1px);box-shadow:0 6px 20px rgba(224,45,60,.3);}
+
+    .err{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:11px 14px;font-size:13px;color:#dc2626;margin-bottom:16px;}
+
+    .login-link{text-align:center;font-size:13px;color:var(--muted);margin-top:16px;}
+    .login-link a{color:var(--brand);font-weight:700;}
+    .login-link a:hover{color:var(--accent);}
+
+    .footer{text-align:center;margin-top:18px;font-size:11.5px;color:var(--light);padding-bottom:20px;}
+  </style>
 </head>
 <body>
 <div class="wrap">
-    <div class="brand">
-        <div class="brand-icon">TÖ</div>
-        <h1>Teşvik ve Ödüllendirme Sistemi</h1>
+  <div class="brand">
+    <div class="brand-logo">TÖ</div>
+    <h1>Teşvik ve Ödüllendirme Sistemi</h1>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Öğrenci Kaydı</div>
+    <div class="card-sub">Akademik başarı platformuna katılmak için kayıt olun.</div>
+
+    @if (ViewData.ModelState.ErrorCount > 0)
+    {
+      <div class="err">
+        @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        { <div>@err.ErrorMessage</div> }
+      </div>
+    }
+
+    <form asp-action="KayitOl" method="post">
+      @Html.AntiForgeryToken()
+
+      <div class="form-grid">
+        <!-- Kişisel Bilgiler -->
+        <div class="section-head">Kişisel Bilgiler</div>
+
+        <div class="fg full">
+          <label>Ad Soyad</label>
+          <div class="input-wrap">
+            <i class="ti ti-user"></i>
+            <input asp-for="FullName" placeholder="Adınız ve soyadınız" autocomplete="name">
+          </div>
+        </div>
+
+        <div class="fg">
+          <label>Kullanıcı Adı</label>
+          <div class="input-wrap">
+            <i class="ti ti-at"></i>
+            <input asp-for="Username" placeholder="Kullanıcı adı" autocomplete="username">
+          </div>
+        </div>
+
+        <div class="fg">
+          <label>E-posta</label>
+          <div class="input-wrap">
+            <i class="ti ti-mail"></i>
+            <input asp-for="Email" type="email" placeholder="E-posta adresi">
+          </div>
+        </div>
+
+        <!-- Akademik Bilgiler -->
+        <div class="section-head">Akademik Bilgiler</div>
+
+        <div class="fg">
+          <label>Bölüm</label>
+          <div class="input-wrap">
+            <i class="ti ti-building-community"></i>
+            <select asp-for="Department">
+              <option value="">— Bölüm seçin —</option>
+              <option>Bilgisayar Mühendisliği</option>
+              <option>Elektrik-Elektronik Mühendisliği</option>
+              <option>Makine Mühendisliği</option>
+              <option>İnşaat Mühendisliği</option>
+              <option>Endüstri Mühendisliği</option>
+              <option>Kimya Mühendisliği</option>
+              <option>Biyomedikal Mühendisliği</option>
+              <option>Yazılım Mühendisliği</option>
+              <option>Matematik</option>
+              <option>Fizik</option>
+              <option>İşletme</option>
+              <option>Uluslararası İlişkiler</option>
+              <option>Hukuk</option>
+              <option>Tıp</option>
+              <option>Diğer</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fg">
+          <label>Sınıf</label>
+          <div class="input-wrap">
+            <i class="ti ti-school"></i>
+            <select asp-for="Grade">
+              <option value="">— Sınıf seçin —</option>
+              <option>1. Sınıf</option>
+              <option>2. Sınıf</option>
+              <option>3. Sınıf</option>
+              <option>4. Sınıf</option>
+              <option>5. Sınıf</option>
+              <option>Yüksek Lisans</option>
+              <option>Doktora</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fg full">
+          <label>Öğrenci Numarası</label>
+          <div class="input-wrap">
+            <i class="ti ti-id-badge"></i>
+            <input asp-for="StudentNumber" placeholder="20240101001">
+          </div>
+        </div>
+
+        <!-- Güvenlik -->
+        <div class="section-head">Güvenlik</div>
+
+        <div class="fg">
+          <label>Şifre</label>
+          <div class="input-wrap">
+            <i class="ti ti-lock"></i>
+            <input asp-for="Password" type="password" placeholder="Şifre belirleyin" autocomplete="new-password">
+          </div>
+        </div>
+
+        <div class="fg">
+          <label>Şifre (Tekrar)</label>
+          <div class="input-wrap">
+            <i class="ti ti-lock-check"></i>
+            <input asp-for="ConfirmPassword" type="password" placeholder="Şifreyi tekrarlayın" autocomplete="new-password">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        <i class="ti ti-user-plus"></i> Kayıt Ol
+      </button>
+    </form>
+
+    <div class="login-link">
+      Zaten hesabınız var mı? <a asp-action="Giris">Giriş Yap</a>
     </div>
-    <div class="card">
-        <h2>Öğrenci Kaydı 📝</h2>
-        <p>Sisteme kayıt olmak için bilgilerinizi girin.</p>
+  </div>
 
-        @if (ViewData.ModelState.ErrorCount > 0)
-        {
-            <div class="err">
-                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    <div>@err.ErrorMessage</div>
-                }
-            </div>
-        }
-
-        <form asp-action="KayitOl" method="post">
-            @Html.AntiForgeryToken()
-
-            <div class="fg">
-                <label>Ad Soyad</label>
-                <div class="iw">
-                    <span class="ic">‍</span>
-                    <input asp-for="FullName" placeholder="Adınız ve soyadınız" autocomplete="name">
-                </div>
-            </div>
-            <div class="fg">
-                <label>Kullanıcı Adı</label>
-                <div class="iw">
-                    <span class="ic"></span>
-                    <input asp-for="Username" placeholder="Kullanıcı adınızı belirleyin" autocomplete="username">
-                </div>
-            </div>
-            <div class="fg">
-                <label>E-posta</label>
-                <div class="iw">
-                    <span class="ic"></span>
-                    <input asp-for="Email" type="email" placeholder="E-posta adresinizi girin">
-                </div>
-            </div>
-            <div class="fg">
-                <label>Bölüm</label>
-                <div class="iw">
-                    <span class="ic"></span>
-                    <input asp-for="Department" placeholder="Örn: Bilgisayar Mühendisliği">
-                </div>
-            </div>
-            <div class="fg">
-                <label>Sınıf</label>
-                <div class="iw">
-                    <span class="ic"></span>
-                    <input asp-for="Grade" placeholder="Örn: 3. Sınıf">
-                </div>
-            </div>
-            <div class="fg">
-                <label>Öğrenci Numarası</label>
-                <div class="iw">
-                    <span class="ic"></span>
-                    <input asp-for="StudentNumber" placeholder="Örn: 20240101001">
-                </div>
-            </div>
-            <div class="fg">
-                <label>Şifre</label>
-                <div class="iw">
-                    <span class="ic"></span>
-                    <input asp-for="Password" type="password" placeholder="Şifrenizi belirleyin" autocomplete="new-password">
-                </div>
-            </div>
-            <div class="fg">
-                <label>Şifre (Tekrar)</label>
-                <div class="iw">
-                    <span class="ic"></span>
-                    <input asp-for="ConfirmPassword" type="password" placeholder="Şifrenizi tekrar girin" autocomplete="new-password">
-                </div>
-            </div>
-            
-            <button type="submit" class="btn-login">Kayıt Ol →</button>
-            <div class="log-link">
-                Zaten hesabınız var mı? <a asp-action="Giris">Giriş Yap</a>
-            </div>
-        </form>
-    </div>
-    <div class="footer">© 2025 Teşvik ve Ödüllendirme Sistemi · Üniversite</div>
+  <div class="footer">© 2025 Teşvik ve Ödüllendirme Sistemi · Tüm hakları saklıdır.</div>
 </div>
 </body>
 </html>
-
