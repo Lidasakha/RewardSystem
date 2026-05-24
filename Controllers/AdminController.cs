@@ -156,6 +156,82 @@ namespace RewardSystem.Controllers
             return RedirectToAction("Degerlendirmelerim");
         }
 
+
+        [Authorize(Roles = "superadmin")]
+        public IActionResult Raporlar()
+        {
+            ViewBag.ToplamOgrenci    = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive);
+            ViewBag.ToplamHoca       = _db.Users.Count(u => u.UserType != null && (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin") && u.IsActive);
+            ViewBag.ToplamMakale     = _db.Articles.Count();
+            ViewBag.ToplamOnaylanan  = _db.Articles.Count(a => a.Status == "Onaylandi");
+            ViewBag.ToplamBekleyen   = _db.Articles.Count(a => a.Status == "OnayBekliyor");
+            ViewBag.ToplamDegerlendirme = _db.Articles.Count(a => a.Status == "Degerlendirmede");
+
+            var durumlar = new[] {
+                new { durum = "Onaylandı",       sayi = _db.Articles.Count(a => a.Status == "Onaylandi") },
+                new { durum = "Onay Bekliyor",   sayi = _db.Articles.Count(a => a.Status == "OnayBekliyor") },
+                new { durum = "Değerlendirmede", sayi = _db.Articles.Count(a => a.Status == "Degerlendirmede") }
+            };
+            ViewBag.DurumDagilimi = durumlar;
+
+            var bolumIds = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive && u.Department != null && u.Department != "")
+                .Select(u => new { u.Id, u.Department })
+                .ToList();
+
+            var bolumIstatistik = bolumIds
+                .GroupBy(u => u.Department)
+                .Select(g => new {
+                    bolum   = g.Key,
+                    ogrenci = g.Count(),
+                    makale  = _db.Articles.Count(a => g.Select(u => u.Id).Contains(a.UserId))
+                })
+                .OrderByDescending(x => x.makale)
+                .Take(8)
+                .ToList<object>();
+            ViewBag.BolumIstatistik = bolumIstatistik;
+
+            var yillikTrend = _db.Articles
+                .Where(a => a.Year.HasValue)
+                .GroupBy(a => a.Year)
+                .Select(g => new { yil = g.Key, sayi = g.Count() })
+                .OrderBy(x => x.yil)
+                .ToList<object>();
+            ViewBag.YillikTrend = yillikTrend;
+
+            var tumOgrenciler = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive)
+                .ToList();
+
+            var topOgrenciler = tumOgrenciler
+                .Select(u => new {
+                    ad     = (u.FirstName + " " + u.LastName).Trim(),
+                    bolum  = u.Department ?? "—",
+                    puan   = _db.Articles.Where(a => a.UserId == u.Id && a.Status == "Onaylandi").Sum(a => (int?)a.Score) ?? 0,
+                    makale = _db.Articles.Count(a => a.UserId == u.Id)
+                })
+                .OrderByDescending(x => x.puan)
+                .Take(5)
+                .ToList<object>();
+            ViewBag.TopOgrenciler = topOgrenciler;
+
+            var tumHocalar = _db.Users
+                .Where(u => u.UserType != null && (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin") && u.IsActive)
+                .ToList();
+
+            var hocaPerf = tumHocalar
+                .Select(u => new {
+                    ad            = (u.FirstName + " " + u.LastName).Trim(),
+                    degerlendirme = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == u.Id && a.IsCompleted)
+                })
+                .OrderByDescending(x => x.degerlendirme)
+                .Take(5)
+                .ToList<object>();
+            ViewBag.HocaPerformans = hocaPerf;
+
+            return View();
+        }
+
         public IActionResult Bildirimler()
         {
             var notifications = _db.Notifications
@@ -298,17 +374,41 @@ namespace RewardSystem.Controllers
             var user = _db.Users.Find(id);
             if (user != null)
             {
-                // Note: Consider foreign key constraints (Articles, Assignments, etc.)
-                // In a real app, you might just want to set user.IsActive = false;
-                try 
+                try
                 {
+                    // Makaleye bağlı atamalar
+                    var makaleler = _db.Articles.Where(a => a.UserId == id).ToList();
+                    if (makaleler.Any())
+                    {
+                        var makaleIds = makaleler.Select(m => m.Id).ToList();
+                        var atamalar = _db.ArticleTeacherAssignments.Where(a => makaleIds.Contains(a.ArticleId)).ToList();
+                        _db.ArticleTeacherAssignments.RemoveRange(atamalar);
+                        _db.Articles.RemoveRange(makaleler);
+                    }
+
+                    var projeler = _db.Projects.Where(p => p.UserId == id).ToList();
+                    if (projeler.Any()) _db.Projects.RemoveRange(projeler);
+
+                    var bildiriler = _db.Presentations.Where(b => b.UserId == id).ToList();
+                    if (bildiriler.Any()) _db.Presentations.RemoveRange(bildiriler);
+
+                    var patentler = _db.Patents.Where(p => p.UserId == id).ToList();
+                    if (patentler.Any()) _db.Patents.RemoveRange(patentler);
+
+                    var bildirimler = _db.Notifications.Where(n => n.UserId == id).ToList();
+                    if (bildirimler.Any()) _db.Notifications.RemoveRange(bildirimler);
+
+                    // Öğretmen olarak atanmışsa onları da sil
+                    var ogretmenAta = _db.ArticleTeacherAssignments.Where(a => a.TeacherId == id).ToList();
+                    if (ogretmenAta.Any()) _db.ArticleTeacherAssignments.RemoveRange(ogretmenAta);
+
                     _db.Users.Remove(user);
                     _db.SaveChanges();
-                    TempData["Mesaj"] = "Kullanıcı başarıyla silindi.";
+                    TempData["Mesaj"] = user.FullName + " başarıyla silindi.";
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    TempData["Hata"] = "Kullanıcı silinemedi (Bağlı veriler olabilir). Sadece durumu pasife çekmeyi deneyin.";
+                    TempData["Hata"] = "Kullanıcı silinirken bir hata oluştu. Lütfen tekrar deneyin.";
                 }
             }
             else

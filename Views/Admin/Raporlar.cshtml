@@ -1,0 +1,463 @@
+@{
+    ViewData["Title"] = "Raporlar & İstatistikler";
+    ViewData["Active"] = "Raporlar";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var toplamOgrenci       = (int)(ViewBag.ToplamOgrenci       ?? 0);
+    var toplamHoca          = (int)(ViewBag.ToplamHoca          ?? 0);
+    var toplamMakale        = (int)(ViewBag.ToplamMakale        ?? 0);
+    var toplamOnaylanan     = (int)(ViewBag.ToplamOnaylanan     ?? 0);
+    var toplamBekleyen      = (int)(ViewBag.ToplamBekleyen      ?? 0);
+    var toplamDegerlendirme = (int)(ViewBag.ToplamDegerlendirme ?? 0);
+}
+
+<style>
+  .rp-page { display:flex; flex-direction:column; gap:20px; }
+
+  /* Banner */
+  .rp-banner {
+    background:#111827; border-radius:var(--radius-lg);
+    padding:24px 28px; color:#fff; position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+  }
+  .rp-banner::before { content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.04); }
+  body.dark-mode .rp-banner { background:var(--brand-700); }
+  .rp-banner h2 { font-size:20px;font-weight:700;margin-bottom:4px; }
+  .rp-banner p  { font-size:13px;color:rgba(255,255,255,.6); }
+
+  /* KPI grid */
+  .rp-kpi { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; }
+  @@media(max-width:1200px){ .rp-kpi { grid-template-columns:repeat(3,1fr); } }
+  @@media(max-width:700px) { .rp-kpi { grid-template-columns:repeat(2,1fr); } }
+
+  .rp-kpi-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 16px; display:flex; align-items:center; gap:12px;
+    box-shadow:var(--shadow-sm); transition:box-shadow .2s,transform .2s; cursor:default;
+  }
+  .rp-kpi-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+  .rp-kpi-icon { width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0; }
+  .rp-kpi-num  { font-size:24px;font-weight:800;color:var(--text);line-height:1; }
+  .rp-kpi-lbl  { font-size:11.5px;color:var(--text-muted);margin-top:3px; }
+
+  /* Chart panels */
+  .rp-charts { display:grid; grid-template-columns:1fr 340px; gap:20px; }
+  @@media(max-width:960px){ .rp-charts { grid-template-columns:1fr; } }
+
+  .rp-panel {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden;
+  }
+  .rp-panel-head {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    font-size:14px; font-weight:700; color:var(--text);
+  }
+  .rp-panel-body { padding:20px; }
+
+  /* Chart type toggle */
+  .chart-toggle { display:flex; gap:4px; }
+  .ct-btn {
+    padding:5px 12px; border-radius:6px; border:1.5px solid var(--border);
+    background:none; font-family:'Sora',sans-serif; font-size:11.5px;
+    font-weight:600; color:var(--text-muted); cursor:pointer; transition:all .15s;
+  }
+  .ct-btn.active { background:var(--brand-600); color:#fff; border-color:var(--brand-600); }
+
+  /* Leaderboard */
+  .lb-row {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 20px; border-bottom:1px solid var(--border);
+    transition:background .15s;
+  }
+  .lb-row:last-child { border-bottom:none; }
+  .lb-row:hover { background:var(--surface-2); }
+  .lb-rank { width:28px; text-align:center; font-size:14px; font-weight:800; color:var(--text-muted); flex-shrink:0; }
+  .lb-rank.gold   { color:#f59e0b; }
+  .lb-rank.silver { color:#94a3b8; }
+  .lb-rank.bronze { color:#b45309; }
+  .lb-av { width:36px;height:36px;border-radius:9px;background:var(--brand-600);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .lb-info { flex:1; min-width:0; }
+  .lb-name  { font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .lb-dept  { font-size:11.5px;color:var(--text-muted);margin-top:1px; }
+  .lb-score { font-size:14px;font-weight:800;color:var(--accent);flex-shrink:0; }
+  .lb-badge { font-size:10.5px;font-weight:700;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:20px; }
+
+  /* Bolum chart bar */
+  .bolum-bar-wrap { display:flex; flex-direction:column; gap:12px; padding:20px; }
+  .bolum-row { display:flex; flex-direction:column; gap:5px; }
+  .bolum-label { display:flex; justify-content:space-between; align-items:center; }
+  .bolum-name { font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px; }
+  .bolum-count { font-size:12px;font-weight:700;color:var(--text-muted); }
+  .bolum-bar-bg { height:8px;background:var(--gray-100);border-radius:20px;overflow:hidden; }
+  .bolum-bar-fill { height:100%;border-radius:20px;transition:width .6s cubic-bezier(.4,0,.2,1); }
+
+  /* Two col bottom */
+  .rp-bottom { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @@media(max-width:800px){ .rp-bottom { grid-template-columns:1fr; } }
+
+  /* Period selector */
+  .period-sel {
+    padding:5px 12px; border-radius:6px; border:1.5px solid var(--border);
+    background:none; font-family:'Sora',sans-serif; font-size:12px;
+    font-weight:600; color:var(--text); cursor:pointer; outline:none;
+  }
+  body.dark-mode .period-sel { background:var(--surface); }
+</style>
+
+<div class="rp-page">
+
+  <!-- Banner -->
+  <div class="rp-banner">
+    <div>
+      <h2>Raporlar & İstatistikler</h2>
+      <p>Üniversite geneli akademik performans verileri</p>
+    </div>
+    <div style="display:flex;gap:8px;z-index:1;">
+      <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 18px;text-align:center;">
+        <div style="font-size:22px;font-weight:800;color:#34d399;">@toplamOnaylanan</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;">Onaylanan</div>
+      </div>
+      <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 18px;text-align:center;">
+        <div style="font-size:22px;font-weight:800;color:#fbbf24;">@toplamBekleyen</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;">Bekleyen</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="rp-kpi">
+    <div class="rp-kpi-card">
+      <div class="rp-kpi-icon" style="background:var(--blue-bg);color:var(--blue);"><i class="ti ti-school"></i></div>
+      <div><div class="rp-kpi-num">@toplamOgrenci</div><div class="rp-kpi-lbl">Aktif Öğrenci</div></div>
+    </div>
+    <div class="rp-kpi-card">
+      <div class="rp-kpi-icon" style="background:var(--purple-bg);color:var(--purple);"><i class="ti ti-book"></i></div>
+      <div><div class="rp-kpi-num">@toplamHoca</div><div class="rp-kpi-lbl">Öğretim Üyesi</div></div>
+    </div>
+    <div class="rp-kpi-card">
+      <div class="rp-kpi-icon" style="background:var(--gray-100);color:var(--gray-600);"><i class="ti ti-files"></i></div>
+      <div><div class="rp-kpi-num">@toplamMakale</div><div class="rp-kpi-lbl">Toplam Çalışma</div></div>
+    </div>
+    <div class="rp-kpi-card">
+      <div class="rp-kpi-icon" style="background:var(--green-bg);color:var(--green);"><i class="ti ti-circle-check"></i></div>
+      <div><div class="rp-kpi-num">@toplamOnaylanan</div><div class="rp-kpi-lbl">Onaylanan</div></div>
+    </div>
+    <div class="rp-kpi-card">
+      <div class="rp-kpi-icon" style="background:var(--yellow-bg);color:var(--yellow);"><i class="ti ti-clock"></i></div>
+      <div><div class="rp-kpi-num">@toplamBekleyen</div><div class="rp-kpi-lbl">Bekleyen</div></div>
+    </div>
+    <div class="rp-kpi-card">
+      <div class="rp-kpi-icon" style="background:var(--blue-bg);color:var(--blue);"><i class="ti ti-eye"></i></div>
+      <div><div class="rp-kpi-num">@toplamDegerlendirme</div><div class="rp-kpi-lbl">Değerlendirmede</div></div>
+    </div>
+  </div>
+
+  <!-- Ana Grafikler -->
+  <div class="rp-charts">
+
+    <!-- Yıllık Trend (bar/line toggle) -->
+    <div class="rp-panel">
+      <div class="rp-panel-head">
+        <span><i class="ti ti-trending-up" style="color:var(--blue);margin-right:7px;"></i>Yıllık Çalışma Trendi</span>
+        <div class="chart-toggle">
+          <button class="ct-btn active" onclick="switchTrend('bar',this)">Çubuk</button>
+          <button class="ct-btn" onclick="switchTrend('line',this)">Çizgi</button>
+        </div>
+      </div>
+      <div class="rp-panel-body">
+        <div style="position:relative;height:260px;">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Durum Dağılımı (pie/doughnut toggle) -->
+    <div class="rp-panel">
+      <div class="rp-panel-head">
+        <span><i class="ti ti-chart-pie" style="color:var(--accent);margin-right:7px;"></i>Durum Dağılımı</span>
+        <div class="chart-toggle">
+          <button class="ct-btn active" onclick="switchDurum('doughnut',this)">Halka</button>
+          <button class="ct-btn" onclick="switchDurum('pie',this)">Pasta</button>
+        </div>
+      </div>
+      <div class="rp-panel-body">
+        <div style="position:relative;height:220px;">
+          <canvas id="durumChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bölüm İstatistiği + En Başarılı Öğrenciler -->
+  <div class="rp-bottom">
+
+    <!-- Bölüm bazlı bar -->
+    <div class="rp-panel">
+      <div class="rp-panel-head">
+        <span><i class="ti ti-building" style="color:var(--purple);margin-right:7px;"></i>Bölüm Bazlı Aktivite</span>
+        <div class="chart-toggle">
+          <button class="ct-btn active" onclick="switchBolumView('bar',this)">Grafik</button>
+          <button class="ct-btn" onclick="switchBolumView('list',this)">Liste</button>
+        </div>
+      </div>
+      <div id="bolumBarView">
+        <div style="padding:20px;position:relative;height:240px;">
+          <canvas id="bolumChart"></canvas>
+        </div>
+      </div>
+      <div id="bolumListView" style="display:none;" class="bolum-bar-wrap">
+        @{
+          var bolumList = ViewBag.BolumIstatistik as IEnumerable<dynamic> ?? new List<dynamic>();
+          var bolumArr  = bolumList.ToList();
+          int maxMakale = bolumArr.Count > 0 ? (int)bolumArr.Max(b => (int)b.makale) : 1;
+          if (maxMakale == 0) maxMakale = 1;
+          string[] barColors = new[]{"#4a70c4","#e02d3c","#16a34a","#d97706","#7c3aed","#0891b2","#be185d","#65a30d"};
+        }
+        @for (int i = 0; i < bolumArr.Count; i++)
+        {
+          var b = bolumArr[i];
+          int pct = (int)Math.Round((double)(int)b.makale / maxMakale * 100);
+          <div class="bolum-row">
+            <div class="bolum-label">
+              <span class="bolum-name">@b.bolum</span>
+              <span class="bolum-count">@b.makale çalışma · @b.ogrenci öğrenci</span>
+            </div>
+            <div class="bolum-bar-bg">
+              <div class="bolum-bar-fill" style="width:@pct%;background:@barColors[i % barColors.Length];"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- En Başarılı Öğrenciler -->
+    <div class="rp-panel">
+      <div class="rp-panel-head">
+        <span><i class="ti ti-trophy" style="color:#f59e0b;margin-right:7px;"></i>En Başarılı Öğrenciler</span>
+      </div>
+      @{
+        var topList = ViewBag.TopOgrenciler as IEnumerable<dynamic> ?? new List<dynamic>();
+        var topArr  = topList.ToList();
+        string[] rankClass = new[]{"gold","silver","bronze","","" };
+        string[] rankIcon  = new[]{"🥇","🥈","🥉","4.","5."};
+      }
+      @for (int i = 0; i < topArr.Count; i++)
+      {
+        var o = topArr[i];
+        string adStr   = (string)o.ad;
+        string initStr = adStr.Length > 0 ? adStr.Split(' ').Select(s => s.Length > 0 ? s[0].ToString() : "").Take(2).Aggregate("", (a, b) => a + b).ToUpper() : "?";
+        <div class="lb-row">
+          <div class="lb-rank @(i < 3 ? rankClass[i] : "")">@rankIcon[i]</div>
+          <div class="lb-av">@initStr</div>
+          <div class="lb-info">
+            <div class="lb-name">@o.ad</div>
+            <div class="lb-dept">@o.bolum · @o.makale çalışma</div>
+          </div>
+          <div class="lb-score">@o.puan p</div>
+        </div>
+      }
+      @if (!topArr.Any())
+      {
+        <div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13.5px;">
+          <i class="ti ti-trophy" style="font-size:32px;display:block;margin-bottom:8px;opacity:.3;"></i>
+          Henüz puanlı öğrenci yok.
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Öğretmen Performansı -->
+  <div class="rp-panel">
+    <div class="rp-panel-head">
+      <span><i class="ti ti-users" style="color:var(--green);margin-right:7px;"></i>Öğretim Üyesi Değerlendirme Performansı</span>
+    </div>
+    <div class="rp-panel-body">
+      <div style="position:relative;height:200px;">
+        <canvas id="hocaChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+// ── Veri ──────────────────────────────────────────
+const yillikData   = @Html.Raw(Json.Serialize(ViewBag.YillikTrend   ?? new object[0]));
+const bolumData    = @Html.Raw(Json.Serialize(ViewBag.BolumIstatistik ?? new object[0]));
+const durumData    = @Html.Raw(Json.Serialize(ViewBag.DurumDagilimi ?? new object[0]));
+const hocaData     = @Html.Raw(Json.Serialize(ViewBag.HocaPerformans ?? new object[0]));
+
+const isDark = document.body.classList.contains('dark-mode');
+const gridC  = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)';
+const textC  = isDark ? '#94a3b8' : '#64748b';
+
+// ── Yıllık Trend ──
+let trendType = 'bar';
+let trendChart;
+
+function buildTrend(type) {
+  if (trendChart) trendChart.destroy();
+  const labels = yillikData.map(x => String(x.yil));
+  const data   = yillikData.map(x => x.sayi);
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        label: 'Çalışma Sayısı',
+        data,
+        backgroundColor: type === 'bar'
+          ? 'rgba(74,112,196,.7)'
+          : 'rgba(74,112,196,.1)',
+        borderColor: '#4a70c4',
+        borderWidth: 2,
+        borderRadius: type === 'bar' ? 8 : 0,
+        fill: type === 'line',
+        tension: 0.4,
+        pointRadius: 5,
+        pointBackgroundColor: '#4a70c4',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero:true, grid:{color:gridC}, ticks:{stepSize:1,color:textC} },
+        x: { grid:{display:false}, ticks:{color:textC} }
+      }
+    }
+  });
+}
+
+function switchTrend(type, btn) {
+  document.querySelectorAll('.chart-toggle .ct-btn').forEach(b => {
+    if (b.closest('.rp-panel') === btn.closest('.rp-panel')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  trendType = type;
+  buildTrend(type);
+}
+
+// ── Durum Dağılımı ──
+let durumType = 'doughnut';
+let durumChart;
+
+function buildDurum(type) {
+  if (durumChart) durumChart.destroy();
+  const labels = (durumData || []).map(x => x.durum);
+  const data   = (durumData || []).map(x => x.sayi);
+  durumChart = new Chart(document.getElementById('durumChart'), {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: ['#16a34a','#d97706','#4a70c4'],
+        borderColor: isDark ? '#0f172a' : '#fff',
+        borderWidth: 3,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'bottom', labels:{padding:14,font:{size:12},color:textC,usePointStyle:true} }
+      },
+      cutout: type === 'doughnut' ? '65%' : 0
+    }
+  });
+}
+
+function switchDurum(type, btn) {
+  document.querySelectorAll('.chart-toggle .ct-btn').forEach(b => {
+    if (b.closest('.rp-panel') === btn.closest('.rp-panel')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  buildDurum(type);
+}
+
+// ── Bölüm Grafik ──
+let bolumChart;
+
+function buildBolum() {
+  if (bolumChart) bolumChart.destroy();
+  const labels = bolumData.map(x => x.bolum?.length > 18 ? x.bolum.substring(0,18)+'…' : x.bolum);
+  const data   = bolumData.map(x => x.makale);
+  bolumChart = new Chart(document.getElementById('bolumChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Çalışma',
+        data,
+        backgroundColor: ['#4a70c4','#e02d3c','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#65a30d'],
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ beginAtZero:true, grid:{color:gridC}, ticks:{stepSize:1,color:textC} },
+        y:{ grid:{display:false}, ticks:{color:textC,font:{size:11}} }
+      }
+    }
+  });
+}
+
+function switchBolumView(view, btn) {
+  document.querySelectorAll('.chart-toggle .ct-btn').forEach(b => {
+    if (b.closest('.rp-panel') === btn.closest('.rp-panel')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  if (view === 'bar') {
+    document.getElementById('bolumBarView').style.display = '';
+    document.getElementById('bolumListView').style.display = 'none';
+    buildBolum();
+  } else {
+    document.getElementById('bolumBarView').style.display = 'none';
+    document.getElementById('bolumListView').style.display = '';
+  }
+}
+
+// ── Hoca Performansı ──
+function buildHoca() {
+  const labels = hocaData.map(x => x.ad);
+  const data   = hocaData.map(x => x.degerlendirme);
+  new Chart(document.getElementById('hocaChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets:[{
+        label:'Değerlendirilen',
+        data,
+        backgroundColor:'rgba(22,163,74,.7)',
+        borderColor:'#16a34a',
+        borderWidth:2,
+        borderRadius:8
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true,grid:{color:gridC},ticks:{stepSize:1,color:textC}},
+        x:{grid:{display:false},ticks:{color:textC}}
+      }
+    }
+  });
+}
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', function() {
+  buildTrend('bar');
+  buildDurum('doughnut');
+  buildBolum();
+  buildHoca();
+});
+</script>
