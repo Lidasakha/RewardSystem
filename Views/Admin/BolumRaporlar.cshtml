@@ -1,0 +1,270 @@
+@{
+    ViewData["Title"] = "Bölüm Raporları";
+    ViewData["Active"] = "BolumRaporlar";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var dept    = ViewBag.BenimDept as string ?? "Bölüm";
+    var ortPuan = Math.Round((double)(ViewBag.OrtPuan ?? 0.0), 1);
+}
+
+<style>
+  .br-page { display:flex;flex-direction:column;gap:20px; }
+
+  .br-banner {
+    background:#111827;border-radius:var(--radius-lg);
+    padding:24px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between;
+    position:relative;overflow:hidden;
+  }
+  .br-banner::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);}
+  body.dark-mode .br-banner{background:var(--brand-700);}
+  .br-banner h2{font-size:19px;font-weight:700;margin-bottom:4px;}
+  .br-banner p {font-size:13px;color:rgba(255,255,255,.6);}
+  .br-banner-stats{display:flex;gap:10px;z-index:1;}
+  .br-bstat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 18px;text-align:center;}
+  .br-bstat-num{font-size:22px;font-weight:800;line-height:1;}
+  .br-bstat-lbl{font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;}
+
+  /* KPI */
+  .br-kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;}
+  @@media(max-width:1100px){.br-kpi{grid-template-columns:repeat(3,1fr);}}
+  @@media(max-width:600px) {.br-kpi{grid-template-columns:repeat(2,1fr);}}
+  .br-kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm);transition:box-shadow .2s,transform .2s;}
+  .br-kc:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+  .br-ki{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+  .br-kn{font-size:24px;font-weight:800;color:var(--text);line-height:1;}
+  .br-kl{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
+
+  /* Chart panels */
+  .br-charts{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;}
+  @@media(max-width:900px){.br-charts{grid-template-columns:1fr;}}
+  .br-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;}
+  .br-ph{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text);}
+  .br-pb{padding:20px;}
+
+  /* Toggle */
+  .ct{display:flex;gap:4px;}
+  .ct-b{padding:5px 12px;border-radius:6px;border:1.5px solid var(--border);background:none;font-family:'Sora',sans-serif;font-size:11.5px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+  .ct-b.active{background:var(--brand-600);color:#fff;border-color:var(--brand-600);}
+
+  /* Leaderboard */
+  .lb-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);transition:background .15s;}
+  .lb-row:last-child{border-bottom:none;}
+  .lb-row:hover{background:var(--surface-2);}
+  .lb-rk{width:28px;text-align:center;font-size:14px;font-weight:800;color:var(--text-muted);flex-shrink:0;}
+  .lb-rk.gold{color:#f59e0b;}.lb-rk.silver{color:#94a3b8;}.lb-rk.bronze{color:#b45309;}
+  .lb-av{width:36px;height:36px;border-radius:9px;background:var(--brand-600);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .lb-info{flex:1;min-width:0;}
+  .lb-name{font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lb-sub{font-size:11.5px;color:var(--text-muted);margin-top:1px;}
+  .lb-score{font-size:15px;font-weight:800;color:var(--accent);flex-shrink:0;}
+
+  .empty-chart{padding:40px;text-align:center;color:var(--text-muted);font-size:13.5px;}
+</style>
+
+<div class="br-page">
+
+  <!-- Banner -->
+  <div class="br-banner">
+    <div>
+      <h2>@dept — Bölüm Raporları</h2>
+      <p>Bölümünüze ait akademik performans istatistikleri</p>
+    </div>
+    <div class="br-banner-stats">
+      <div class="br-bstat">
+        <div class="br-bstat-num" style="color:#34d399;">@ViewBag.ToplamOnaylanan</div>
+        <div class="br-bstat-lbl">Onaylanan</div>
+      </div>
+      <div class="br-bstat">
+        <div class="br-bstat-num" style="color:#fbbf24;">@ViewBag.ToplamBekleyen</div>
+        <div class="br-bstat-lbl">Bekleyen</div>
+      </div>
+      <div class="br-bstat">
+        <div class="br-bstat-num" style="color:#a78bfa;">@ViewBag.BenimDegerlendirme</div>
+        <div class="br-bstat-lbl">Benim Değer.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="br-kpi">
+    <div class="br-kc">
+      <div class="br-ki" style="background:var(--blue-bg);color:var(--blue);"><i class="ti ti-school"></i></div>
+      <div><div class="br-kn">@ViewBag.ToplamOgrenci</div><div class="br-kl">Bölüm Öğrencisi</div></div>
+    </div>
+    <div class="br-kc">
+      <div class="br-ki" style="background:var(--gray-100);color:var(--gray-600);"><i class="ti ti-files"></i></div>
+      <div><div class="br-kn">@ViewBag.ToplamCalisma</div><div class="br-kl">Toplam Çalışma</div></div>
+    </div>
+    <div class="br-kc">
+      <div class="br-ki" style="background:var(--green-bg);color:var(--green);"><i class="ti ti-circle-check"></i></div>
+      <div><div class="br-kn">@ViewBag.ToplamOnaylanan</div><div class="br-kl">Onaylanan</div></div>
+    </div>
+    <div class="br-kc">
+      <div class="br-ki" style="background:var(--yellow-bg);color:var(--yellow);"><i class="ti ti-clock"></i></div>
+      <div><div class="br-kn">@ViewBag.ToplamBekleyen</div><div class="br-kl">Bekleyen</div></div>
+    </div>
+    <div class="br-kc">
+      <div class="br-ki" style="background:var(--purple-bg);color:var(--purple);"><i class="ti ti-clipboard-check"></i></div>
+      <div><div class="br-kn">@ViewBag.BenimDegerlendirme</div><div class="br-kl">Değerlendirdiğim</div></div>
+    </div>
+    <div class="br-kc">
+      <div class="br-ki" style="background:var(--accent-bg);color:var(--accent);"><i class="ti ti-star"></i></div>
+      <div><div class="br-kn">@ortPuan</div><div class="br-kl">Ort. Verilen Puan</div></div>
+    </div>
+  </div>
+
+  <!-- Grafikler -->
+  <div class="br-charts">
+
+    <!-- Yıllık Trend -->
+    <div class="br-panel">
+      <div class="br-ph">
+        <span><i class="ti ti-trending-up" style="color:var(--blue);margin-right:7px;"></i>Yıllık Çalışma Trendi</span>
+        <div class="ct">
+          <button class="ct-b active" onclick="switchTrend('bar',this)">Çubuk</button>
+          <button class="ct-b" onclick="switchTrend('line',this)">Çizgi</button>
+        </div>
+      </div>
+      <div class="br-pb">
+        <div style="position:relative;height:240px;">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Durum Dağılımı -->
+    <div class="br-panel">
+      <div class="br-ph">
+        <span><i class="ti ti-chart-pie" style="color:var(--accent);margin-right:7px;"></i>Durum Dağılımı</span>
+        <div class="ct">
+          <button class="ct-b active" onclick="switchDurum('doughnut',this)">Halka</button>
+          <button class="ct-b" onclick="switchDurum('pie',this)">Pasta</button>
+        </div>
+      </div>
+      <div class="br-pb">
+        <div style="position:relative;height:220px;">
+          <canvas id="durumChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- En Başarılı Öğrenciler -->
+  <div class="br-panel">
+    <div class="br-ph">
+      <span><i class="ti ti-trophy" style="color:#f59e0b;margin-right:7px;"></i>Bölümün En Başarılı Öğrencileri</span>
+    </div>
+    @{
+      var topList = ViewBag.TopOgrenciler as IEnumerable<dynamic> ?? new List<dynamic>();
+      var topArr  = topList.ToList();
+      string[] rkCls = new[]{"gold","silver","bronze","",""};
+      string[] rkIcn = new[]{"🥇","🥈","🥉","4.","5."};
+    }
+    @if (!topArr.Any())
+    {
+      <div class="empty-chart">
+        <i class="ti ti-trophy" style="font-size:32px;display:block;margin-bottom:8px;opacity:.3;"></i>
+        Henüz puanlı öğrenci yok.
+      </div>
+    }
+    else
+    {
+      @for (int i = 0; i < topArr.Count; i++)
+      {
+        var o = topArr[i];
+        string adStr   = (string)o.ad;
+        string initStr = adStr.Length > 0 ? adStr.Split(' ').Select(s => s.Length > 0 ? s[0].ToString() : "").Take(2).Aggregate("", (a, b) => a + b).ToUpper() : "?";
+        <div class="lb-row">
+          <div class="lb-rk @rkCls[i]">@rkIcn[i]</div>
+          <div class="lb-av">@initStr</div>
+          <div class="lb-info">
+            <div class="lb-name">@o.ad</div>
+            <div class="lb-sub">@o.makale çalışma</div>
+          </div>
+          <div class="lb-score">@o.puan p</div>
+        </div>
+      }
+    }
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+const yillikData = @Html.Raw(Json.Serialize(ViewBag.YillikTrend   ?? new object[0]));
+const durumData  = @Html.Raw(Json.Serialize(ViewBag.DurumDagilimi ?? new object[0]));
+
+const isDark = document.body.classList.contains('dark-mode');
+const gridC  = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)';
+const textC  = isDark ? '#94a3b8' : '#64748b';
+
+// Trend Chart
+let trendChart;
+function buildTrend(type) {
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type,
+    data: {
+      labels: yillikData.map(x => String(x.yil)),
+      datasets: [{
+        label: 'Çalışma Sayısı',
+        data: yillikData.map(x => x.sayi),
+        backgroundColor: type === 'bar' ? 'rgba(74,112,196,.7)' : 'rgba(74,112,196,.1)',
+        borderColor: '#4a70c4', borderWidth: 2,
+        borderRadius: type === 'bar' ? 8 : 0,
+        fill: type === 'line', tension: 0.4,
+        pointRadius: 5, pointBackgroundColor: '#4a70c4', pointBorderColor: '#fff', pointBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: gridC }, ticks: { stepSize: 1, color: textC } },
+        x: { grid: { display: false }, ticks: { color: textC } }
+      }
+    }
+  });
+}
+
+function switchTrend(type, btn) {
+  btn.closest('.ct').querySelectorAll('.ct-b').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildTrend(type);
+}
+
+// Durum Chart
+let durumChart;
+function buildDurum(type) {
+  if (durumChart) durumChart.destroy();
+  durumChart = new Chart(document.getElementById('durumChart'), {
+    type,
+    data: {
+      labels: (durumData || []).map(x => x.durum),
+      datasets: [{
+        data: (durumData || []).map(x => x.sayi),
+        backgroundColor: ['#16a34a','#d97706','#4a70c4'],
+        borderColor: isDark ? '#0f172a' : '#fff',
+        borderWidth: 3, hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 }, color: textC, usePointStyle: true } }
+      },
+      cutout: type === 'doughnut' ? '65%' : 0
+    }
+  });
+}
+
+function switchDurum(type, btn) {
+  btn.closest('.ct').querySelectorAll('.ct-b').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildDurum(type);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  buildTrend('bar');
+  buildDurum('doughnut');
+});
+</script>

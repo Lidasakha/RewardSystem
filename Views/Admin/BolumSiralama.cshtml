@@ -1,0 +1,153 @@
+@model List<RewardSystem.Models.RankingRow>
+@{
+    ViewData["Title"] = "Bölüm Sıralaması";
+    ViewData["Active"] = "BolumSiralama";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var dept = ViewBag.BenimDept as string ?? "Bölüm";
+}
+
+<style>
+  .bs-page { display:flex;flex-direction:column;gap:20px; }
+  .bs-banner {
+    background:#111827;border-radius:var(--radius-lg);
+    padding:22px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between;
+    position:relative;overflow:hidden;
+  }
+  .bs-banner::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);}
+  body.dark-mode .bs-banner{background:var(--brand-700);}
+  .bs-banner h2{font-size:19px;font-weight:700;margin-bottom:4px;}
+  .bs-banner p {font-size:13px;color:rgba(255,255,255,.6);}
+  .bs-stat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 22px;text-align:center;z-index:1;}
+  .bs-stat-num{font-size:26px;font-weight:800;color:#fbbf24;line-height:1;}
+  .bs-stat-lbl{font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;}
+
+  /* Search */
+  .bs-toolbar{display:flex;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow-sm);}
+  .bs-search{flex:1;display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 14px;transition:border-color .18s;}
+  .bs-search:focus-within{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(74,112,196,.1);}
+  .bs-search i{font-size:17px;color:var(--text-muted);}
+  .bs-search input{flex:1;border:none;outline:none;padding:10px 0;font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent;}
+  .bs-search input::placeholder{color:var(--text-light);}
+
+  /* List */
+  .bs-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;}
+  .bs-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text);background:var(--surface-2);}
+
+  .bs-row{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);transition:background .15s;}
+  .bs-row:last-child{border-bottom:none;}
+  .bs-row:hover{background:var(--surface-2);}
+
+  .bs-rank{width:36px;text-align:center;flex-shrink:0;}
+  .bs-rank span{font-size:16px;font-weight:800;color:var(--text-muted);}
+  .bs-rank.gold   span{color:#f59e0b;font-size:18px;}
+  .bs-rank.silver span{color:#94a3b8;font-size:17px;}
+  .bs-rank.bronze span{color:#b45309;font-size:16px;}
+
+  .bs-av{width:42px;height:42px;border-radius:12px;background:var(--brand-600);color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+  .bs-info{flex:1;min-width:0;}
+  .bs-name{font-size:14px;font-weight:700;color:var(--text);}
+  .bs-dept{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
+
+  .bs-score-wrap{text-align:right;flex-shrink:0;}
+  .bs-score{font-size:22px;font-weight:800;color:var(--text);}
+  .bs-score-lbl{font-size:10.5px;color:var(--text-muted);margin-top:1px;}
+
+  /* Progress bar */
+  .bs-bar-bg{height:5px;background:var(--gray-100);border-radius:20px;margin-top:6px;overflow:hidden;min-width:80px;}
+  .bs-bar-fill{height:100%;border-radius:20px;background:var(--accent);}
+
+  .empty-state{padding:50px 20px;text-align:center;color:var(--text-muted);}
+  .empty-state i{font-size:40px;display:block;margin-bottom:12px;opacity:.3;}
+  .no-results{padding:30px;text-align:center;color:var(--text-muted);display:none;}
+</style>
+
+<div class="bs-page">
+
+  <div class="bs-banner">
+    <div>
+      <h2>@dept — Öğrenci Sıralaması</h2>
+      <p>Bölümünüzdeki öğrencilerin akademik puan sıralaması</p>
+    </div>
+    <div class="bs-stat">
+      <div class="bs-stat-num">@Model.Count</div>
+      <div class="bs-stat-lbl">Öğrenci</div>
+    </div>
+  </div>
+
+  <div class="bs-toolbar">
+    <div class="bs-search">
+      <i class="ti ti-search"></i>
+      <input type="text" placeholder="Öğrenci adı ile ara..." oninput="filterRows(this.value)">
+    </div>
+  </div>
+
+  <div class="bs-panel">
+    <div class="bs-head">
+      <span><i class="ti ti-trophy" style="color:#f59e0b;margin-right:7px;"></i>Sıralama</span>
+      <span style="font-size:12px;color:var(--text-muted);" id="visibleCount">@Model.Count öğrenci</span>
+    </div>
+
+    @if (!Model.Any())
+    {
+      <div class="empty-state">
+        <i class="ti ti-users-off"></i>
+        Bölümünüzde kayıtlı öğrenci bulunamadı.
+      </div>
+    }
+    else
+    {
+      @{
+        int maxScore = Model.Any() ? Model.Max(r => r.Score) : 1;
+        if (maxScore == 0) maxScore = 1;
+      }
+      <div id="rowList">
+        @for (int i = 0; i < Model.Count; i++)
+        {
+          var r = Model[i];
+          var initial = r.User.FullName?.Length > 0 ? r.User.FullName[0].ToString().ToUpper() : "?";
+          var rankClass = i == 0 ? "gold" : i == 1 ? "silver" : i == 2 ? "bronze" : "";
+          var rankIcon  = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : (i + 1).ToString() + ".";
+          int pct = (int)Math.Round((double)r.Score / maxScore * 100);
+          <div class="bs-row" data-name="@r.User.FullName?.ToLower()">
+            <div class="bs-rank @rankClass"><span>@rankIcon</span></div>
+            <div class="bs-av">@initial</div>
+            <div class="bs-info">
+              <div class="bs-name">@r.User.FullName</div>
+              <div class="bs-dept">@(r.User.StudentNumber ?? "—")</div>
+            </div>
+            <div class="bs-score-wrap">
+              <div class="bs-score">@r.Score</div>
+              <div class="bs-score-lbl">Akademik Puan</div>
+              <div class="bs-bar-bg">
+                <div class="bs-bar-fill" style="width:@pct%;"></div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="no-results" id="noResults">
+        <i class="ti ti-search-off" style="font-size:32px;display:block;margin-bottom:8px;opacity:.3;"></i>
+        Arama sonucu bulunamadı.
+      </div>
+    }
+  </div>
+</div>
+
+<script>
+function filterRows(q) {
+  const rows = document.querySelectorAll('#rowList .bs-row');
+  const noRes = document.getElementById('noResults');
+  const cnt   = document.getElementById('visibleCount');
+  q = q.toLowerCase().trim();
+  let vis = 0;
+  rows.forEach(r => {
+    const name = r.getAttribute('data-name') || '';
+    const show = !q || name.includes(q);
+    r.style.display = show ? '' : 'none';
+    if (show) vis++;
+  });
+  if (noRes) noRes.style.display = vis === 0 && q ? 'block' : 'none';
+  if (cnt)   cnt.textContent = vis + ' öğrenci';
+}
+</script>

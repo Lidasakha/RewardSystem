@@ -18,15 +18,42 @@ namespace RewardSystem.Controllers
 
         public IActionResult Index()
         {
-            ViewBag.PendingArticles = _db.Articles.Count(m => m.Status == "OnayBekliyor");
-            ViewBag.PendingStudents = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && !u.IsActive);
+            var rol = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value?.ToLower();
+
+            ViewBag.PendingArticles     = _db.Articles.Count(m => m.Status == "OnayBekliyor");
+            ViewBag.PendingStudents     = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && !u.IsActive);
             ViewBag.TotalActiveStudents = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive);
-            
+
             ViewBag.RecentPendingArticles = _db.Articles
                 .Include(a => a.User)
                 .Where(a => a.Status == "OnayBekliyor")
                 .OrderByDescending(a => a.CreatedAt)
                 .Take(5).ToList();
+
+            // Teacher-specific stats
+            if (rol == "teacher" || rol == "admin")
+            {
+                var benimDept = _db.Users.Where(u => u.Id == UserId).Select(u => u.Department).FirstOrDefault() ?? "";
+                ViewBag.BenimDept = benimDept;
+                ViewBag.BenimDegerlendirme = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && a.IsCompleted);
+                ViewBag.BekleyenDegerlendirme = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && !a.IsCompleted);
+                ViewBag.OrtPuan = _db.ArticleTeacherAssignments
+                    .Where(a => a.TeacherId == UserId && a.IsCompleted && a.GivenScore.HasValue)
+                    .Select(a => (double?)a.GivenScore)
+                    .Average() ?? 0;
+
+                var deptStudentIds = _db.Users
+                    .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive && u.Department == benimDept)
+                    .Select(u => u.Id).ToList();
+                ViewBag.BolumOgrenci = deptStudentIds.Count;
+
+                // Son değerlendirdikleri
+                ViewBag.SonDegerlendirmeler = _db.ArticleTeacherAssignments
+                    .Include(a => a.Article).ThenInclude(art => art.User)
+                    .Where(a => a.TeacherId == UserId && a.IsCompleted)
+                    .OrderByDescending(a => a.Id)
+                    .Take(5).ToList();
+            }
 
             return View();
         }
@@ -228,6 +255,84 @@ namespace RewardSystem.Controllers
                 .Take(5)
                 .ToList<object>();
             ViewBag.HocaPerformans = hocaPerf;
+
+            return View();
+        }
+
+
+        [Authorize(Roles = "teacher,admin")]
+        public IActionResult BolumSiralama()
+        {
+            var benimDept = _db.Users.Where(u => u.Id == UserId).Select(u => u.Department).FirstOrDefault() ?? "";
+            ViewBag.BenimDept = benimDept;
+
+            var siralama = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci"
+                         && u.IsActive && u.Department == benimDept)
+                .Select(u => new RewardSystem.Models.RankingRow {
+                    User  = u,
+                    Score = _db.Articles.Count(a => a.UserId == u.Id)      * 100
+                          + _db.Projects.Count(p => p.UserId == u.Id)      * 80
+                          + _db.Presentations.Count(b => b.UserId == u.Id) * 40
+                          + _db.Patents.Count(c => c.UserId == u.Id)       * 50
+                })
+                .OrderByDescending(r => r.Score)
+                .ToList();
+
+            return View(siralama);
+        }
+
+        [Authorize(Roles = "teacher,admin")]
+        public IActionResult BolumRaporlar()
+        {
+            var benimDept = _db.Users.Where(u => u.Id == UserId).Select(u => u.Department).FirstOrDefault() ?? "";
+            ViewBag.BenimDept = benimDept;
+
+            var deptStudentIds = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci"
+                         && u.IsActive && u.Department == benimDept)
+                .Select(u => u.Id).ToList();
+
+            ViewBag.ToplamOgrenci       = deptStudentIds.Count;
+            ViewBag.ToplamCalisma       = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId));
+            ViewBag.ToplamOnaylanan     = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "Onaylandi");
+            ViewBag.ToplamBekleyen      = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "OnayBekliyor");
+            ViewBag.ToplamDegerlendirme = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "Degerlendirmede");
+            ViewBag.BenimDegerlendirme  = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && a.IsCompleted);
+            ViewBag.BekleyenAtama       = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && !a.IsCompleted);
+            ViewBag.OrtPuan = _db.ArticleTeacherAssignments
+                .Where(a => a.TeacherId == UserId && a.IsCompleted && a.GivenScore.HasValue)
+                .Select(a => (double?)a.GivenScore).Average() ?? 0;
+
+            var durumlar = new[] {
+                new { durum = "Onaylandı",       sayi = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "Onaylandi") },
+                new { durum = "Onay Bekliyor",   sayi = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "OnayBekliyor") },
+                new { durum = "Değerlendirmede", sayi = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "Degerlendirmede") }
+            };
+            ViewBag.DurumDagilimi = durumlar;
+
+            var yillikTrend = _db.Articles
+                .Where(a => deptStudentIds.Contains(a.UserId) && a.Year.HasValue)
+                .GroupBy(a => a.Year)
+                .Select(g => new { yil = g.Key, sayi = g.Count() })
+                .OrderBy(x => x.yil)
+                .ToList<object>();
+            ViewBag.YillikTrend = yillikTrend;
+
+            var deptStudents = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci"
+                         && u.IsActive && u.Department == benimDept)
+                .ToList();
+
+            var topOgrenciler = deptStudents
+                .Select(u => new {
+                    ad     = (u.FirstName + " " + u.LastName).Trim(),
+                    puan   = _db.Articles.Where(a => a.UserId == u.Id && a.Status == "Onaylandi").Sum(a => (int?)a.Score) ?? 0,
+                    makale = _db.Articles.Count(a => a.UserId == u.Id)
+                })
+                .OrderByDescending(x => x.puan)
+                .Take(5).ToList<object>();
+            ViewBag.TopOgrenciler = topOgrenciler;
 
             return View();
         }
