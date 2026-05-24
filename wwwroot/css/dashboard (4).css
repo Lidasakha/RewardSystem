@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    TÖS — Teşvik & Ödüllendirme Sistemi  |  Design System v2
    ============================================================ */
 
@@ -931,3 +931,23 @@ body.dark-mode .tab-btn.active { color: var(--brand-200); border-bottom-color: v
 }
 .form-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(74,112,196,.1); }
 body.dark-mode .form-input { background: var(--surface); }
+
+/* ── Language Switcher ─────────────────────────────────────── */
+.lang-switch {
+  display:flex; gap:4px; align-items:center;
+  background:var(--gray-100); border-radius:8px; padding:3px;
+}
+body.dark-mode .lang-switch { background:var(--gray-800); }
+
+.lang-btn {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:5px 10px; border-radius:6px;
+  font-size:12px; font-weight:700; color:var(--text-muted);
+  text-decoration:none; transition:all .15s; white-space:nowrap;
+}
+.lang-btn:hover { color:var(--text); background:var(--surface); }
+.lang-btn.active {
+  background:var(--surface); color:var(--text);
+  box-shadow:var(--shadow-sm);
+}
+body.dark-mode .lang-btn.active { background:var(--gray-700); }

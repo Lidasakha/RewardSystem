@@ -1,4 +1,6 @@
 @using RewardSystem.Data
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
 @inject RewardSystemDbContext _db
 @{
     var rol         = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value?.ToLower();
@@ -58,8 +60,8 @@
     <div class="sidebar-logo">
       <div style="width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;">TÖ</div>
       <div class="sidebar-logo-text">
-        TÖS
-        <span class="sidebar-logo-sub">Teşvik &amp; Ödüllendirme</span>
+        @Localizer["AppName"]
+        <span class="sidebar-logo-sub">@Localizer["AppFullName"]</span>
       </div>
     </div>
 
@@ -69,10 +71,10 @@
       <div class="user-info">
         <div class="user-name">@adSoyad</div>
         <div class="user-role">
-          @if (rol == "ogrenci")         { <span>Öğrenci</span> }
-          else if (rol == "teacher")     { <span>Öğretmen</span> }
-          else if (rol == "admin")       { <span>Admin</span> }
-          else if (rol == "superadmin")  { <span>Süper Admin</span> }
+          @if (rol == "ogrenci")         { <span>@Localizer["Role.Student"]</span> }
+          else if (rol == "teacher")     { <span>@Localizer["Role.Teacher"]</span> }
+          else if (rol == "admin")       { <span>@Localizer["Role.Admin"]</span> }
+          else if (rol == "superadmin")  { <span>@Localizer["Role.SuperAdmin"]</span> }
         </div>
       </div>
     </div>
@@ -83,64 +85,64 @@
       {
         <div class="nav-section">Ana Menü</div>
         <a href="/Student/Index" class="nav-item @(ViewData["Active"]?.ToString()=="Home"?"active":"")">
-          <i class="ti ti-home"></i><span>Ana Sayfa</span>
+          <i class="ti ti-home"></i><span>@Localizer["Menu.Home"]</span>
         </a>
 
-        <div class="nav-section">Akademik</div>
+        <div class="nav-section">@Localizer["Menu.AcademicWorks"]</div>
         <a href="/Student/Akademik" class="nav-item @(ViewData["Active"]?.ToString()=="Akademik"?"active":"")">
-          <i class="ti ti-file-text"></i><span>Akademik Çalışmalar</span>
+          <i class="ti ti-file-text"></i>@Localizer["Menu.AcademicWorks"]
         </a>
         <a href="/Student/YeniCalisma" class="nav-item @(ViewData["Active"]?.ToString()=="YeniCalisma"?"active":"")">
-          <i class="ti ti-circle-plus"></i><span>Yeni Çalışma Ekle</span>
+          <i class="ti ti-circle-plus"></i>@Localizer["Menu.NewWork"]
         </a>
         <a href="/Student/Siralama" class="nav-item @(ViewData["Active"]?.ToString()=="Siralama"?"active":"")">
-          <i class="ti ti-trophy"></i><span>Sıralama</span>
+          <i class="ti ti-trophy"></i>@Localizer["Menu.Ranking"]
         </a>
 
         <div class="nav-section">Diğer</div>
         <a href="/Student/Bildirimler" class="nav-item @(ViewData["Active"]?.ToString()=="Bildirimler"?"active":"")">
-          <i class="ti ti-bell"></i><span>Bildirimler</span>
+          <i class="ti ti-bell"></i>@Localizer["Menu.Notifications"]
         </a>
       }
       else if (rol == "admin" || rol == "teacher" || rol == "superadmin")
       {
         <div class="nav-section">Ana Menü</div>
         <a href="/Admin/Index" class="nav-item @(ViewData["Active"]?.ToString()=="Home"?"active":"")">
-          <i class="ti ti-layout-dashboard"></i><span>Ana Sayfa</span>
+          <i class="ti ti-layout-dashboard"></i>@Localizer["Menu.Home"]
         </a>
         <a href="/Admin/Ogrenciler" class="nav-item @(ViewData["Active"]?.ToString()=="Ogrenciler"?"active":"")">
-          <i class="ti ti-users"></i><span>Öğrenciler</span>
+          <i class="ti ti-users"></i>@Localizer["Menu.Students"]
         </a>
 
         @if (rol != "superadmin")
         {
           <div class="nav-section">Akademik</div>
           <a href="/Admin/Degerlendirmelerim" class="nav-item @(ViewData["Active"]?.ToString()=="Degerlendirmelerim"?"active":"")">
-            <i class="ti ti-clipboard-check"></i><span>Değerlendirmelerim</span>
+            <i class="ti ti-clipboard-check"></i>@Localizer["Menu.Evaluations"]
           </a>
           <a href="/Admin/BolumSiralama" class="nav-item @(ViewData["Active"]?.ToString()=="BolumSiralama"?"active":"")">
-            <i class="ti ti-trophy"></i><span>Bölüm Sıralaması</span>
+            <i class="ti ti-trophy"></i>@Localizer["Menu.DeptRanking"]
           </a>
           <a href="/Admin/BolumRaporlar" class="nav-item @(ViewData["Active"]?.ToString()=="BolumRaporlar"?"active":"")">
-            <i class="ti ti-chart-bar"></i><span>Bölüm Raporları</span>
+            <i class="ti ti-chart-bar"></i>@Localizer["Menu.DeptReports"]
           </a>
         }
 
         @if (rol == "superadmin")
         {
           <a href="/Admin/OnayBekleyenOgrenciler" class="nav-item @(ViewData["Active"]?.ToString()=="OnayBekleyenOgrenciler"?"active":"")">
-            <i class="ti ti-user-check"></i><span>Öğrenci Onayları</span>
+            <i class="ti ti-user-check"></i>@Localizer["Menu.StudentApprovals"]
           </a>
           <div class="nav-section">Akademik</div>
           <a href="/Admin/AdminYonetimi" class="nav-item @(ViewData["Active"]?.ToString()=="AdminYonetimi"?"active":"")">
-            <i class="ti ti-settings-2"></i><span>Akademik Yönetim</span>
+            <i class="ti ti-settings-2"></i>@Localizer["Menu.AcademicManagement"]
           </a>
           <div class="nav-section">Sistem</div>
           <a href="/Admin/Raporlar" class="nav-item @(ViewData["Active"]?.ToString()=="Raporlar"?"active":"")">
             <i class="ti ti-chart-bar"></i><span>Raporlar & İstatistikler</span>
           </a>
           <a href="/Admin/KullaniciYonetimi" class="nav-item @(ViewData["Active"]?.ToString()=="KullaniciYonetimi"?"active":"")">
-            <i class="ti ti-users-group"></i><span>Kullanıcı Yönetimi</span>
+            <i class="ti ti-users-group"></i>@Localizer["Menu.UserManagement"]
           </a>
         }
       }
@@ -150,7 +152,7 @@
     <form asp-controller="Account" asp-action="Cikis" method="post" style="padding:0;">
       @Html.AntiForgeryToken()
       <button type="submit" class="logout-btn" style="width:100%;text-align:left;">
-        <i class="ti ti-logout"></i><span>Çıkış Yap</span>
+        <i class="ti ti-logout"></i><span>@Localizer["Logout"]</span>
       </button>
     </form>
   </aside>
@@ -170,6 +172,17 @@
       <div class="topbar-title">@ViewData["Title"]</div>
 
       <div class="topbar-right">
+        <!-- Language Switcher -->
+        <div class="lang-switch">
+          @{ var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName; }
+          <a href="/Language/Set/tr?returnUrl=@Context.Request.Path"
+             class="lang-btn @(currentCulture == "tr" ? "active" : "")"
+             title="Türkçe">🇹🇷 TR</a>
+          <a href="/Language/Set/en?returnUrl=@Context.Request.Path"
+             class="lang-btn @(currentCulture == "en" ? "active" : "")"
+             title="English">🇬🇧 EN</a>
+        </div>
+
         <!-- Theme Toggle -->
         <button class="theme-toggle" id="themeToggleBtn" aria-label="Tema değiştir">
           <i class="ti ti-sun" id="themeIcon"></i>
@@ -244,7 +257,7 @@
               <form class="logout-form" asp-controller="Account" asp-action="Cikis" method="post">
                 @Html.AntiForgeryToken()
                 <button type="submit">
-                  <i class="ti ti-logout"></i>Çıkış Yap
+                  <i class="ti ti-logout"></i>@Localizer["Logout"]
                 </button>
               </form>
 

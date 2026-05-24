@@ -1,11 +1,13 @@
 ﻿@model RewardSystem.Models.RegisterViewModel
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
 @{ Layout = null; }
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Üye Ol — TÖS</title>
+  <title>@Localizer["Register.Button"] — @Localizer["AppName"]</title>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
   <style>
@@ -105,12 +107,12 @@
 <div class="wrap">
   <div class="brand">
     <div class="brand-logo">TÖ</div>
-    <h1>Teşvik ve Ödüllendirme Sistemi</h1>
+    <h1>@Localizer["AppFullName"]</h1>
   </div>
 
   <div class="card">
-    <div class="card-title">Öğrenci Kaydı</div>
-    <div class="card-sub">Akademik başarı platformuna katılmak için kayıt olun.</div>
+    <div class="card-title">@Localizer["Register.Title"]</div>
+    <div class="card-sub">@Localizer["Register.Subtitle"]</div>
 
     @if (ViewData.ModelState.ErrorCount > 0)
     {
@@ -125,10 +127,10 @@
 
       <div class="form-grid">
         <!-- Kişisel Bilgiler -->
-        <div class="section-head">Kişisel Bilgiler</div>
+        <div class="section-head">@Localizer["Register.PersonalInfo"]</div>
 
         <div class="fg full">
-          <label>Ad Soyad</label>
+          <label>@Localizer["Register.FullName"]</label>
           <div class="input-wrap">
             <i class="ti ti-user"></i>
             <input asp-for="FullName" placeholder="Adınız ve soyadınız" autocomplete="name">
@@ -136,7 +138,7 @@
         </div>
 
         <div class="fg">
-          <label>Kullanıcı Adı</label>
+          <label>@Localizer["Register.Username"]</label>
           <div class="input-wrap">
             <i class="ti ti-at"></i>
             <input asp-for="Username" placeholder="Kullanıcı adı" autocomplete="username">
@@ -144,7 +146,7 @@
         </div>
 
         <div class="fg">
-          <label>E-posta</label>
+          <label>@Localizer["Register.Email"]</label>
           <div class="input-wrap">
             <i class="ti ti-mail"></i>
             <input asp-for="Email" type="email" placeholder="E-posta adresi">
@@ -152,10 +154,10 @@
         </div>
 
         <!-- Akademik Bilgiler -->
-        <div class="section-head">Akademik Bilgiler</div>
+        <div class="section-head">@Localizer["Register.AcademicInfo"]</div>
 
         <div class="fg">
-          <label>Bölüm</label>
+          <label>@Localizer["Register.Department"]</label>
           <div class="input-wrap">
             <i class="ti ti-building-community"></i>
             <select asp-for="Department">
@@ -180,7 +182,7 @@
         </div>
 
         <div class="fg">
-          <label>Sınıf</label>
+          <label>@Localizer["Register.Grade"]</label>
           <div class="input-wrap">
             <i class="ti ti-school"></i>
             <select asp-for="Grade">
@@ -197,7 +199,7 @@
         </div>
 
         <div class="fg full">
-          <label>Öğrenci Numarası</label>
+          <label>@Localizer["Register.StudentNumber"]</label>
           <div class="input-wrap">
             <i class="ti ti-id-badge"></i>
             <input asp-for="StudentNumber" placeholder="20240101001">
@@ -205,10 +207,10 @@
         </div>
 
         <!-- Güvenlik -->
-        <div class="section-head">Güvenlik</div>
+        <div class="section-head">@Localizer["Register.Security"]</div>
 
         <div class="fg">
-          <label>Şifre</label>
+          <label>@Localizer["Register.Password"]</label>
           <div class="input-wrap">
             <i class="ti ti-lock"></i>
             <input asp-for="Password" type="password" placeholder="Şifre belirleyin" autocomplete="new-password">
@@ -216,7 +218,7 @@
         </div>
 
         <div class="fg">
-          <label>Şifre (Tekrar)</label>
+          <label>@Localizer["Register.ConfirmPassword"]</label>
           <div class="input-wrap">
             <i class="ti ti-lock-check"></i>
             <input asp-for="ConfirmPassword" type="password" placeholder="Şifreyi tekrarlayın" autocomplete="new-password">
@@ -225,12 +227,12 @@
       </div>
 
       <button type="submit" class="btn-submit">
-        <i class="ti ti-user-plus"></i> Kayıt Ol
+        <i class="ti ti-user-plus"></i> @Localizer["Register.Button"]
       </button>
     </form>
 
     <div class="login-link">
-      Zaten hesabınız var mı? <a asp-action="Giris">Giriş Yap</a>
+      @Localizer["Register.HasAccount"] <a asp-action="Giris">@Localizer["Register.Login"]</a>
     </div>
   </div>
 
