@@ -20,9 +20,21 @@ function closeSidebar() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  // Overlay tıklama
   var overlay = document.getElementById('overlay');
   if (overlay) {
     overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Ana içerik alanı tıklama — sidebar açıksa kapat
+  var main = document.querySelector('.main');
+  if (main) {
+    main.addEventListener('click', function () {
+      var sidebar = document.getElementById('sidebar');
+      if (sidebar && sidebar.classList.contains('open')) {
+        closeSidebar();
+      }
+    });
   }
 
   // ESC ile kapat

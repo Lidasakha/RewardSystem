@@ -1,246 +1,490 @@
 @model List<RewardSystem.Models.Article>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
-    ViewData["Title"] = "Admin Yönetimi";
+    ViewData["Title"] = "Akademik Yönetim";
     ViewData["Active"] = "AdminYonetimi";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var hocalar = ViewBag.Hocalar as List<RewardSystem.Models.User> ?? new();
+
+    int toplamBekliyor     = Model.Count;
+    int toplamDegerlendirme = 0; // Sadece bekleyenler listeleniyor
 }
 
-<div class="panel">
-    <div class="panel-head">
-        <span>Onay Bekleyen Makaleler</span>
+<style>
+  .ay-page { display:flex; flex-direction:column; gap:20px; }
+
+  /* Banner */
+  .ay-banner {
+    background:#111827; border-radius:var(--radius-lg);
+    padding:24px 28px; color:#fff; display:flex; align-items:center; justify-content:space-between;
+    position:relative; overflow:hidden;
+  }
+  .ay-banner::before { content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04); }
+  body.dark-mode .ay-banner { background:var(--brand-700); }
+  .ay-banner-left h2 { font-size:19px;font-weight:700;margin-bottom:4px; }
+  .ay-banner-left p  { font-size:13px;color:rgba(255,255,255,.6); }
+  .ay-banner-stat {
+    background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+    border-radius:12px;padding:12px 22px;text-align:center;z-index:1;
+  }
+  .ay-banner-num { font-size:28px;font-weight:800;color:#fbbf24;line-height:1; }
+  .ay-banner-lbl { font-size:10.5px;color:rgba(255,255,255,.55);margin-top:3px; }
+
+  /* Alerts */
+  .ay-alert {
+    display:flex;align-items:center;gap:12px;
+    padding:14px 18px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;
+  }
+  .ay-alert-success { background:var(--green-bg);border:1px solid rgba(22,163,74,.25);color:var(--green); }
+  .ay-alert-danger  { background:var(--red-bg);  border:1px solid rgba(220,38,38,.25); color:var(--red); }
+  .ay-alert-close   { margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:18px; }
+
+  /* Table */
+  .ay-panel { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden; }
+
+  .ay-panel-head {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface-2);
+  }
+  .ay-panel-title { font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px; }
+
+  .ay-table { width:100%;border-collapse:separate;border-spacing:0; }
+  .ay-table th {
+    text-align:left;padding:13px 20px;
+    font-size:11px;font-weight:700;color:var(--text-muted);
+    text-transform:uppercase;letter-spacing:.6px;
+    border-bottom:2px solid var(--border);background:var(--surface-2);white-space:nowrap;
+  }
+  .ay-table td {
+    padding:14px 20px;font-size:13.5px;color:var(--text);
+    border-bottom:1px solid var(--border);vertical-align:middle;
+  }
+  .ay-table tbody tr:last-child td { border-bottom:none; }
+  .ay-table tbody tr { transition:background .15s; }
+  .ay-table tbody tr:hover { background:var(--surface-2); }
+
+  /* Student cell */
+  .ay-student { display:flex;align-items:center;gap:11px; }
+  .ay-av {
+    width:38px;height:38px;border-radius:10px;flex-shrink:0;
+    background:var(--brand-600);color:#fff;
+    font-weight:800;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .ay-st-name { font-weight:700;font-size:13.5px;color:var(--text); }
+  .ay-st-dept { font-size:11.5px;color:var(--text-muted);margin-top:1px; }
+
+  /* Title cell */
+  .ay-title { font-weight:600;color:var(--text);font-size:13.5px;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .ay-year  { font-size:11.5px;color:var(--text-muted);margin-top:2px; }
+
+  /* File link */
+  .ay-file { display:inline-flex;align-items:center;gap:5px;color:var(--blue);font-weight:600;font-size:12.5px;text-decoration:none; }
+  .ay-file:hover { text-decoration:underline; }
+  .ay-no-file { color:var(--text-light);font-size:12.5px; }
+
+  /* Status badge */
+  .ay-badge { font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px; }
+  .ay-badge-yellow { background:var(--yellow-bg);color:var(--yellow); }
+  .ay-badge-dot { width:5px;height:5px;border-radius:50%;background:currentColor; }
+
+  /* Action buttons */
+  .ay-actions { display:flex;gap:8px;align-items:center; }
+  .ay-btn {
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 15px;border:none;border-radius:var(--radius-sm);
+    font-family:'Sora',sans-serif;font-size:12.5px;font-weight:700;
+    cursor:pointer;transition:all .18s;white-space:nowrap;
+  }
+  .ay-btn-assign { background:var(--brand-600);color:#fff;box-shadow:0 2px 8px rgba(26,43,76,.25); }
+  .ay-btn-assign:hover { background:var(--brand-700);transform:translateY(-1px); }
+
+  /* Empty */
+  .ay-empty { padding:60px 20px;text-align:center; }
+  .ay-empty i { font-size:48px;display:block;margin-bottom:16px;color:var(--green);opacity:.7; }
+  .ay-empty h3 { font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px; }
+  .ay-empty p  { font-size:13.5px;color:var(--text-muted); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,.5);z-index:9999;
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-overlay.open { display:flex; }
+
+  .modal-box {
+    background:var(--surface);border-radius:18px;
+    width:100%;max-width:520px;overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.2);
+    display:flex;flex-direction:column;max-height:90vh;
+  }
+
+  .modal-head {
+    padding:20px 24px 16px;border-bottom:1px solid var(--border);
+    display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;
+  }
+  .modal-head-title { font-size:16px;font-weight:800;color:var(--text);margin-bottom:3px; }
+  .modal-head-sub   { font-size:12px;color:var(--text-muted); }
+  .modal-close {
+    background:var(--gray-100);border:none;width:32px;height:32px;
+    border-radius:8px;cursor:pointer;font-size:18px;color:var(--text-muted);
+    display:flex;align-items:center;justify-content:center;
+  }
+  body.dark-mode .modal-close { background:var(--gray-800); }
+  .modal-close:hover { background:var(--gray-200); }
+
+  .modal-search { padding:14px 20px 10px;flex-shrink:0; }
+  .modal-search-box {
+    display:flex;align-items:center;gap:9px;
+    background:var(--surface-2);border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);padding:0 14px;
+  }
+  .modal-search-box i { font-size:17px;color:var(--text-muted); }
+  .modal-search-box input {
+    flex:1;border:none;outline:none;padding:10px 0;
+    font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent;
+  }
+  .modal-search-box input::placeholder { color:var(--text-light); }
+
+  .modal-teacher-list { flex:1;overflow-y:auto;padding:4px 8px; }
+
+  .teacher-row {
+    display:flex;align-items:center;gap:12px;
+    padding:11px 12px;border-radius:10px;cursor:pointer;
+    transition:background .15s;
+  }
+  .teacher-row:hover { background:var(--surface-2); }
+  .t-av {
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    background:var(--brand-600);color:#fff;
+    font-size:13px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .t-name  { font-size:13.5px;font-weight:600;color:var(--text); }
+  .t-title { font-size:11.5px;color:var(--text-muted); }
+  .t-check {
+    margin-left:auto;width:20px;height:20px;border-radius:5px;
+    border:1.5px solid var(--border);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .15s;
+  }
+  .t-check.active { background:var(--accent);border-color:var(--accent); }
+  .t-check.active::after { content:'✓';font-size:12px;color:#fff;font-weight:700; }
+
+  .modal-selected {
+    padding:12px 20px;border-top:1px solid var(--border);
+    background:var(--surface-2);flex-shrink:0;
+  }
+  .modal-selected-label { font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px; }
+  .chips-wrap { display:flex;flex-wrap:wrap;gap:6px; }
+  .chip {
+    display:flex;align-items:center;gap:5px;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:20px;padding:4px 12px;font-size:12px;
+  }
+  .chip-pct { font-weight:800;color:var(--accent); }
+  .chip-rm  { background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:15px;padding:0;line-height:1; }
+  .chip-rm:hover { color:var(--red); }
+  .empty-chips { font-size:12.5px;color:var(--text-light);font-style:italic; }
+
+  .modal-foot {
+    padding:14px 20px;border-top:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+  }
+  .total-info { font-size:13px;color:var(--text-muted); }
+  .total-info span { font-weight:800;font-size:15px; }
+  .total-info .ok   { color:var(--green); }
+  .total-info .warn { color:var(--yellow); }
+  .modal-submit {
+    display:inline-flex;align-items:center;gap:7px;
+    padding:10px 22px;background:var(--brand-600);color:#fff;border:none;
+    border-radius:var(--radius-sm);font-family:'Sora',sans-serif;
+    font-size:13.5px;font-weight:700;cursor:pointer;transition:all .18s;
+  }
+  .modal-submit:hover { background:var(--brand-700);transform:translateY(-1px); }
+  .modal-submit:disabled { opacity:.4;cursor:not-allowed;transform:none; }
+  .no-results { text-align:center;padding:24px;color:var(--text-muted);font-size:13px; }
+</style>
+
+<div class="ay-page">
+
+  @if (TempData["Mesaj"] != null)
+  {
+    <div class="ay-alert ay-alert-success">
+      <i class="ti ti-circle-check" style="font-size:20px;"></i>
+      <span>@TempData["Mesaj"]</span>
+      <button class="ay-alert-close" onclick="this.parentElement.remove()">×</button>
+    </div>
+  }
+  @if (TempData["Hata"] != null)
+  {
+    <div class="ay-alert ay-alert-danger">
+      <i class="ti ti-alert-circle" style="font-size:20px;"></i>
+      <span>@TempData["Hata"]</span>
+      <button class="ay-alert-close" onclick="this.parentElement.remove()">×</button>
+    </div>
+  }
+
+  <!-- Banner -->
+  <div class="ay-banner">
+    <div class="ay-banner-left">
+      <h2>Akademik Yönetim</h2>
+      <p>Onay bekleyen çalışmalar — hoca atayarak değerlendirme sürecini başlatın.</p>
+    </div>
+    <div class="ay-banner-stat">
+      <div class="ay-banner-num">@toplamBekliyor</div>
+      <div class="ay-banner-lbl">Bekleyen Çalışma</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="ay-panel">
+    <div class="ay-panel-head">
+      <div class="ay-panel-title">
+        <i class="ti ti-clock" style="color:var(--yellow);font-size:18px;"></i>
+        Onay Bekleyen Çalışmalar
+      </div>
+      @if (Model.Any())
+      {
+        <span style="font-size:12px;color:var(--text-muted);">@Model.Count çalışma bekliyor</span>
+      }
     </div>
 
-    @if (TempData["Hata"] != null) { <div style="padding:10px; background:#fff0f0; color:#D32F2F; margin:10px; border-radius:8px; font-size:13px;">@TempData["Hata"]</div> }
-    @if (TempData["Mesaj"] != null) { <div style="padding:10px; background:#F0F4F8; color:#001F3F; margin:10px; border-radius:8px; font-size:13px;">@TempData["Mesaj"]</div> }
-
-    <table class="table">
-        <thead>
+    @if (!Model.Any())
+    {
+      <div class="ay-empty">
+        <i class="ti ti-checks"></i>
+        <h3>Bekleyen çalışma yok!</h3>
+        <p>Tüm çalışmalar değerlendirmeye alındı.</p>
+      </div>
+    }
+    else
+    {
+      <div style="overflow-x:auto;">
+        <table class="ay-table">
+          <thead>
             <tr>
-                <th>Öğrenci</th>
-                <th>Makale Başlığı</th>
-                <th>Dosya</th>
-                <th>İşlem</th>
+              <th>Öğrenci</th>
+              <th>Çalışma Başlığı</th>
+              <th>Dosya</th>
+              <th>Durum</th>
+              <th>İşlem</th>
             </tr>
-        </thead>
-        <tbody>
-            @foreach(var m in Model) {
-                <tr>
-                    <td>@m.User?.FullName</td>
-                    <td>@m.Title</td>
-                    <td>
-                        @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" style="color:#1a5cb5; text-decoration:none;">İncele</a> }
-                        else { <span style="color:#999; font-size:12px;">Yok</span> }
-                    </td>
-                    <td>
-                        <button class="btn-primary" onclick="openAssignModal('@m.Id', '@(m.Title?.Replace("'", "\\'"))')">Hoca Ata</button>
-                    </td>
-                </tr>
+          </thead>
+          <tbody>
+            @foreach (var m in Model)
+            {
+              var initial = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
+              <tr>
+                <td>
+                  <div class="ay-student">
+                    <div class="ay-av">@initial</div>
+                    <div>
+                      <div class="ay-st-name">@m.User?.FullName</div>
+                      <div class="ay-st-dept">@(m.User?.Department ?? "—")</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="ay-title">@m.Title</div>
+                  @if (m.Year.HasValue) { <div class="ay-year">@m.Year</div> }
+                </td>
+                <td>
+                  @if (!string.IsNullOrEmpty(m.FilePath))
+                  {
+                    <a href="@m.FilePath" target="_blank" class="ay-file">
+                      <i class="ti ti-paperclip"></i> İncele
+                    </a>
+                  }
+                  else { <span class="ay-no-file">Dosya yok</span> }
+                </td>
+                <td>
+                  <span class="ay-badge ay-badge-yellow">
+                    <span class="ay-badge-dot"></span> Onay Bekliyor
+                  </span>
+                </td>
+                <td>
+                  <div class="ay-actions">
+                    <button class="ay-btn ay-btn-assign"
+                            onclick="openModal('@m.Id', '@(m.Title?.Replace("'", "\\'"))', '@(m.User?.FullName?.Replace("'", "\\'"))')">
+                      <i class="ti ti-user-plus"></i> Hoca Ata
+                    </button>
+                  </div>
+                </td>
+              </tr>
             }
-        </tbody>
-    </table>
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
 </div>
 
-<!-- Yeni Nesil Hoca Atama Modal -->
-<div id="assignModal" class="modal-assign-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999;">
-    <div class="modal">
-        <div class="modal-header">
-            <div>
-                <div style="font-size:13px; color:var(--color-text-secondary); margin-bottom:4px;">Makale değerlendirmesi</div>
-                <h2 id="modalTitleDisplay">Hoca Atama</h2> 
-            </div>
-            <button type="button" class="close-btn" onclick="closeModal()" aria-label="Kapat">Kapat</button>
-        </div>
-
-        <div class="search-wrap">
-            <div class="search-box">
-                <i></i>
-                <input id="searchInput" type="text" placeholder="Hoca ara…" autocomplete="off" />
-            </div>
-        </div>
-
-        <div class="teacher-list" id="teacherList"></div>
-
-        <div class="selected-section">
-            <div class="selected-label">Seçilen hocalar</div>
-            <div class="selected-chips" id="chips">
-                <span class="empty-chips">Henüz seçim yapılmadı</span>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <div class="total-badge">Toplam: <span id="totalPct" class="warn">0%</span></div>
-            <form id="assignForm" asp-controller="Admin" asp-action="MakaleHocaAtama" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" id="modalMakaleId" name="makaleId" />
-                <div id="hiddenInputsContainer"></div> <!-- Dinamik inputlar buraya gelecek -->
-                <button type="button" class="btn-assign" id="assignBtn" disabled onclick="submitAssignForm()">Hoca ata</button>
-            </form>
-        </div>
+<!-- ══ Hoca Atama Modal ══ -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title" id="modalArticleTitle">Hoca Ata</div>
+        <div class="modal-head-sub" id="modalStudentName">Öğrenci</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
     </div>
+
+    <div class="modal-search">
+      <div class="modal-search-box">
+        <i class="ti ti-search"></i>
+        <input id="searchInput" type="text" placeholder="Hoca adı ile ara…" autocomplete="off" oninput="renderList(this.value)">
+      </div>
+    </div>
+
+    <div class="modal-teacher-list" id="teacherList"></div>
+
+    <div class="modal-selected">
+      <div class="modal-selected-label">Seçilen Hocalar</div>
+      <div class="chips-wrap" id="chips">
+        <span class="empty-chips">Henüz hoca seçilmedi</span>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <div class="total-info">
+        Toplam ağırlık: <span id="totalPct" class="warn">0%</span>
+      </div>
+      <form id="assignForm" asp-controller="Admin" asp-action="MakaleHocaAtama" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="modalMakaleId" name="makaleId">
+        <div id="hiddenInputsContainer"></div>
+        <button type="button" class="modal-submit" id="assignBtn" disabled onclick="submitForm()">
+          <i class="ti ti-check"></i> Hoca Ata & Gönder
+        </button>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
-const teachers = @Html.Raw(Json.Serialize(hocalar.Select(h => new { id = h.Id, name = h.FullName, title = h.UserType ?? "Öğretim Üyesi" })));
+const teachers = @Html.Raw(Json.Serialize(hocalar.Select(h => new {
+  id = h.Id,
+  name = h.FullName ?? "",
+  title = h.UserType ?? "Öğretim Üyesi"
+})));
+
 let selected = [];
 
-function openAssignModal(id, title) {
-    document.getElementById('modalMakaleId').value = id;
-    document.getElementById('modalTitleDisplay').innerText = title;
-    document.getElementById('assignModal').style.display = 'flex';
-    selected = []; // Modal her açıldığında temizle
-    renderList();
-    renderChips();
-}
-
-function closeModal() {
-    document.getElementById('assignModal').style.display = 'none';
-}
-
 function initials(name) {
-    return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  return name.split(' ').slice(0,2).map(w => w[0] || '').join('').toUpperCase();
 }
 
 function redistribute() {
-    if (selected.length === 0) return;
-    const base = Math.floor(100 / selected.length);
-    const rem = 100 - base * selected.length;
-    selected = selected.map((s, i) => ({ ...s, pct: base + (i < rem ? 1 : 0) }));
+  if (!selected.length) return;
+  const base = Math.floor(100 / selected.length);
+  const rem  = 100 - base * selected.length;
+  selected = selected.map((s, i) => ({ ...s, pct: base + (i < rem ? 1 : 0) }));
 }
 
-function renderList(filter = '') {
-    const list = document.getElementById('teacherList');
-    list.innerHTML = '';
-    const q = filter.toLowerCase();
-    let anyVisible = false;
+function renderList(filter) {
+  const list = document.getElementById('teacherList');
+  list.innerHTML = '';
+  const q = (filter || '').toLowerCase();
+  let any = false;
 
-    teachers.forEach(t => {
-        if (q && !t.name.toLowerCase().includes(q)) return;
-        anyVisible = true;
-        const isSelected = selected.some(s => s.id === t.id);
-        const row = document.createElement('div');
-        row.className = 'teacher-row';
-        row.innerHTML = `
-            <div class="avatar">${initials(t.name)}</div>
-            <div style="flex:1">
-                <div class="teacher-name">${t.name}</div>
-                <div class="teacher-title">${t.title}</div>
-                </div> 
-                <div class="check ${isSelected ? 'active' : ''}"></div>
-        `;
-        row.addEventListener('click', () => toggleTeacher(t));
-        list.appendChild(row);
-    });
+  teachers.forEach(t => {
+    if (q && !t.name.toLowerCase().includes(q)) return;
+    any = true;
+    const isSel = selected.some(s => s.id === t.id);
+    const row   = document.createElement('div');
+    row.className = 'teacher-row';
+    row.innerHTML = `
+      <div class="t-av">${initials(t.name)}</div>
+      <div style="flex:1;">
+        <div class="t-name">${t.name}</div>
+        <div class="t-title">${t.title}</div>
+      </div>
+      <div class="t-check ${isSel ? 'active' : ''}"></div>`;
+    row.onclick = () => toggleTeacher(t);
+    list.appendChild(row);
+  });
 
-    if (!anyVisible) {
-        list.innerHTML = '<div class="no-results">Sonuç bulunamadı</div>';
-    }
+  if (!any) list.innerHTML = '<div class="no-results">Sonuç bulunamadı</div>';
 }
 
 function renderChips() {
-    const chips = document.getElementById('chips');
-    const total = document.getElementById('totalPct');
-    const btn = document.getElementById('assignBtn');
-    
-    if (selected.length === 0) {
-        chips.innerHTML = '<span class="empty-chips">Henüz seçim yapılmadı</span>';
-        total.textContent = '0%';
-        total.className = 'warn';
-        btn.disabled = true;
-        return;
-    }
+  const chips = document.getElementById('chips');
+  const total = document.getElementById('totalPct');
+  const btn   = document.getElementById('assignBtn');
 
-    chips.innerHTML = '';
-    let sum = 0;
-    selected.forEach(s => {
-        sum += s.pct;
-        const chip = document.createElement('div');
-        chip.className = 'chip';
-        chip.innerHTML = `<span>${s.name.split(' ')[0]}</span><span class="pct">${s.pct}%</span><button type="button" class="rm" onclick="removeTeacher(${s.id}, event)">×</button>`;
-        chips.appendChild(chip);
-    });
+  if (!selected.length) {
+    chips.innerHTML = '<span class="empty-chips">Henüz hoca seçilmedi</span>';
+    total.textContent = '0%'; total.className = 'warn';
+    btn.disabled = true; return;
+  }
 
-    total.textContent = sum + '%';
-    total.className = sum === 100 ? 'ok' : 'warn';
-    btn.disabled = sum !== 100;
+  chips.innerHTML = '';
+  let sum = 0;
+  selected.forEach(s => {
+    sum += s.pct;
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `<span>${s.name.split(' ')[0]}</span>
+      <span class="chip-pct">${s.pct}%</span>
+      <button class="chip-rm" onclick="removeTeacher(${s.id},event)">×</button>`;
+    chips.appendChild(chip);
+  });
+
+  total.textContent = sum + '%';
+  total.className = sum === 100 ? 'ok' : 'warn';
+  btn.disabled = sum !== 100;
 }
 
 function toggleTeacher(t) {
-    if (selected.some(s => s.id === t.id)) {
-        selected = selected.filter(s => s.id !== t.id);
-    } else {
-        selected.push({ ...t, pct: 0 });
-    }
-    redistribute();
-    renderList(document.getElementById('searchInput').value);
-    renderChips();
+  if (selected.some(s => s.id === t.id)) selected = selected.filter(s => s.id !== t.id);
+  else selected.push({ ...t, pct: 0 });
+  redistribute();
+  renderList(document.getElementById('searchInput').value);
+  renderChips();
 }
 
 function removeTeacher(id, e) {
-    e.stopPropagation();
-    selected = selected.filter(s => s.id !== id);
-    redistribute();
-    renderList(document.getElementById('searchInput').value);
-    renderChips();
+  e.stopPropagation();
+  selected = selected.filter(s => s.id !== id);
+  redistribute();
+  renderList(document.getElementById('searchInput').value);
+  renderChips();
 }
 
-function submitAssignForm() {
-    const container = document.getElementById('hiddenInputsContainer');
-    container.innerHTML = '';
-    
-    selected.forEach(s => {
-        const idInput = document.createElement('input');
-        idInput.type = 'hidden';
-        idInput.name = 'hocaIds';
-        idInput.value = s.id;
-        
-        const pctInput = document.createElement('input');
-        pctInput.type = 'hidden';
-        pctInput.name = 'yuzdeler';
-        pctInput.value = s.pct;
-        
-        container.appendChild(idInput);
-        container.appendChild(pctInput);
-    });
-    
-    document.getElementById('assignForm').submit();
+function openModal(id, title, student) {
+  document.getElementById('modalMakaleId').value = id;
+  document.getElementById('modalArticleTitle').textContent = title;
+  document.getElementById('modalStudentName').textContent  = student + ' — çalışması';
+  document.getElementById('searchInput').value = '';
+  selected = [];
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderList('');
+  renderChips();
 }
 
-document.getElementById('searchInput').addEventListener('input', e => renderList(e.target.value));
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function submitForm() {
+  const container = document.getElementById('hiddenInputsContainer');
+  container.innerHTML = '';
+  selected.forEach(s => {
+    const a = document.createElement('input'); a.type='hidden'; a.name='hocaIds'; a.value=s.id;
+    const b = document.createElement('input'); b.type='hidden'; b.name='yuzdeler'; b.value=s.pct;
+    container.appendChild(a); container.appendChild(b);
+  });
+  document.getElementById('assignForm').submit();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 </script>
-
-<style>
-.table { width:100%; border-collapse:collapse; margin-top:10px; }
-.table th, .table td { padding:12px; border-bottom:1px solid #eee; text-align:left; }
-.btn-iptal { background:#eee; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; }
-
-/* Sizin hazırladığınız stiller */
-.modal-assign-overlay { background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 2rem; }
-.modal { background: #fff; border-radius: 12px; width: 100%; max-width: 520px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-.modal-header { padding: 1.25rem 1.5rem 1rem; border-bottom: 0.5px solid #eee; display: flex; align-items: flex-start; justify-content: space-between; }
-.modal-header h2 { font-size: 16px; font-weight: 600; color: #333; }
-.close-btn { background: none; border: none; cursor: pointer; color: #999; font-size: 18px; }
-.search-wrap { padding: 1rem 1.5rem 0.75rem; }
-.search-box { display: flex; align-items: center; gap: 8px; background: #f5f5f5; border-radius: 8px; padding: 0 12px; }
-.search-box input { background: none; border: none; outline: none; padding: 9px 0; font-size: 14px; width: 100%; }
-.teacher-list { max-height: 260px; overflow-y: auto; padding: 0 1.5rem; }
-.teacher-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid #f0f0f0; cursor: pointer; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; background: #F0F4F8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #001F3F; }
-.teacher-name { font-size: 14px; color: #333; font-weight: 500; }
-.teacher-title { font-size: 11px; color: #777; }
-.check { width: 18px; height: 18px; border: 1.5px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: transparent; font-size: 12px; }
-.check.active { background: #D32F2F; border-color: #D32F2F; color: white; }
-.selected-section { padding: 0.75rem 1.5rem; border-top: 0.5px solid #eee; background: #fafafa; }
-.selected-label { font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-.selected-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { display: flex; align-items: center; gap: 5px; background: #fff; border: 0.5px solid #ddd; border-radius: 20px; padding: 3px 10px; font-size: 12px; }
-.chip .pct { font-weight: 700; color: #D32F2F; margin-left: 4px; }
-.chip .rm { border: none; background: none; cursor: pointer; color: #cc0000; font-weight: bold; }
-.modal-footer { padding: 1rem 1.5rem; border-top: 0.5px solid #eee; display: flex; align-items: center; justify-content: space-between; }
-.total-badge { font-size: 13px; font-weight: 500; }
-.total-badge .ok { color: #001F3F; }
-.total-badge .warn { color: #b45309; }
-.btn-assign { background: #001F3F; color: white; border: none; padding: 9px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-.btn-assign:disabled { opacity: 0.4; cursor: not-allowed; }
-</style>
