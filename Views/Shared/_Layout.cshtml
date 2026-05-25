@@ -72,7 +72,7 @@
           @if (rol == "ogrenci")         { <span>Öğrenci</span> }
           else if (rol == "teacher")     { <span>Öğretmen</span> }
           else if (rol == "admin")       { <span>Admin</span> }
-          else if (rol == "superadmin")  { <span>Süper Admin</span> }
+          else if (rol == "superadmin")  { <span>Dekan</span> }
         </div>
       </div>
     </div>
@@ -86,7 +86,7 @@
           <i class="ti ti-home"></i><span>Ana Sayfa</span>
         </a>
 
-        <div class="nav-section">Akademik</div>
+        <div class="nav-section"><span>Akademik Çalışmalar</span></div>
         <a href="/Student/Akademik" class="nav-item @(ViewData["Active"]?.ToString()=="Akademik"?"active":"")">
           <i class="ti ti-file-text"></i><span>Akademik Çalışmalar</span>
         </a>
@@ -262,6 +262,59 @@
 </div>
 
 <script src="~/js/site.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+<script>
+// ── Real-time Bildirimler (SignalR) ──────────────────
+@if (User.Identity?.IsAuthenticated == true)
+{
+    @Html.Raw(@"
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl('/notificationHub')
+        .withAutomaticReconnect()
+        .build();
+
+    connection.on('YeniBildirim', function(mesaj, tur) {
+        showToast(mesaj, tur);
+        updateNotifCount();
+    });
+
+    connection.start().catch(err => console.warn('SignalR bağlantı hatası:', err));
+
+    function showToast(mesaj, tur) {
+        const toast = document.createElement('div');
+        const isSuccess = tur === 'success';
+        toast.style.cssText = `
+            position:fixed;bottom:24px;right:24px;z-index:9999;
+            display:flex;align-items:center;gap:12px;
+            background:${isSuccess ? 'var(--green)' : 'var(--red)'};
+            color:#fff;padding:14px 20px;border-radius:12px;
+            font-family:'Sora',sans-serif;font-size:13.5px;font-weight:600;
+            box-shadow:0 8px 30px rgba(0,0,0,.2);
+            max-width:360px;animation:slideIn .3s ease;
+        `;
+        toast.innerHTML = `<i class='ti ti-${isSuccess ? 'circle-check' : 'alert-circle'}' style='font-size:20px;flex-shrink:0;'></i><span>${mesaj}</span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'slideOut .3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
+
+    function updateNotifCount() {
+        fetch('/Student/UnreadCount')
+            .then(r => r.json())
+            .then(data => {
+                const badge = document.getElementById('notifBadge');
+                if (badge) badge.textContent = data.count;
+            }).catch(() => {});
+    }
+    ")
+}
+</script>
+<style>
+@@keyframes slideIn  { from { transform:translateX(120%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+@@keyframes slideOut { from { transform:translateX(0); opacity:1; } to { transform:translateX(120%); opacity:0; } }
+</style>
 <script>
   // ── Theme ──────────────────────────────────────────────
   const themeBtn  = document.getElementById('themeToggleBtn');

@@ -48,6 +48,20 @@ namespace RewardSystem.Controllers
                 return View(model);
             }
 
+            // Hesap onay kontrolü — sadece öğrenciler için
+            if (user.Role.ToLower() == "ogrenci" && !user.IsActive)
+            {
+                ModelState.AddModelError("", "Hesabınız henüz onaylanmamış. Lütfen yönetici onayını bekleyin.");
+                return View(model);
+            }
+
+            // Hesap aktiflik kontrolü — tüm kullanıcılar için
+            if (!user.IsActive)
+            {
+                ModelState.AddModelError("", "Hesabınız devre dışı bırakılmış. Lütfen yönetici ile iletişime geçin.");
+                return View(model);
+            }
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -125,6 +139,28 @@ namespace RewardSystem.Controllers
                 newUser.CreatedAt);
 
             TempData["SuccessMessage"] = "Kayıt başarılı! Ancak sisteme giriş yapabilmeniz için kaydınızın yönetici tarafından onaylanması gerekmektedir.";
+
+            // Öğrenciye hoş geldin maili
+            try {
+                if (!string.IsNullOrEmpty(newUser.Email))
+                {
+                    await _emailService.SendEmailAsync(
+                        newUser.Email,
+                        "TÖS — Kayıt Talebiniz Alındı",
+                        $@"<div style='font-family:sans-serif;max-width:500px;margin:auto;padding:30px;border:1px solid #e2e8f0;border-radius:12px;'>
+                            <h2 style='color:#1a2b4c;'>Merhaba {newUser.FirstName},</h2>
+                            <p>Teşvik ve Ödüllendirme Sistemine kayıt talebiniz başarıyla alınmıştır.</p>
+                            <p>Hesabınız yönetici onayından sonra aktifleştirilecektir. Onay sonrasında sisteme giriş yapabileceksiniz.</p>
+                            <div style='background:#f0f4f8;padding:16px;border-radius:8px;margin:20px 0;'>
+                                <b>Kullanıcı Adı:</b> {newUser.Username}<br/>
+                                <b>Bölüm:</b> {newUser.Department ?? "—"}
+                            </div>
+                            <p style='color:#64748b;font-size:13px;'>Bu mail otomatik gönderilmiştir. Lütfen yanıtlamayın.</p>
+                        </div>"
+                    );
+                }
+            } catch { /* mail hatası kaydı engellemesin */ }
+
             return RedirectToAction("Giris");
         }
 

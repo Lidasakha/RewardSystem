@@ -38,7 +38,7 @@ namespace RewardSystem.Controllers
                 ViewBag.BenimDegerlendirme = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && a.IsCompleted);
                 ViewBag.BekleyenDegerlendirme = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && !a.IsCompleted);
                 ViewBag.OrtPuan = _db.ArticleTeacherAssignments
-                    .Where(a => a.TeacherId == UserId && a.IsCompleted && a.GivenScore.HasValue)
+                    .Where(a => a.TeacherId == UserId && a.IsCompleted && a.GivenScore > 0)
                     .Select(a => (double?)a.GivenScore)
                     .Average() ?? 0;
 
@@ -94,13 +94,83 @@ namespace RewardSystem.Controllers
         [Authorize(Roles = "admin,superadmin")]
         public IActionResult AdminYonetimi()
         {
-            var bekleyenMakaleler = _db.Articles
+            var tumCalismalar = _db.Articles
                 .Include(m => m.User)
-                .Where(m => m.Status == "OnayBekliyor")
+                .Where(m => m.Status != null)
+                .OrderByDescending(m => m.CreatedAt)
                 .ToList();
 
-            ViewBag.Hocalar = _db.Users.Where(u => u.UserType != null && (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin" || u.UserType.ToLower() == "superadmin") && u.IsActive).OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ToList();
-            return View(bekleyenMakaleler);
+            // Atamaları da çek — değerlendirme durumu için
+            var atamalar = _db.ArticleTeacherAssignments
+                .Include(a => a.Article)
+                .ToList();
+            ViewBag.Atamalar = atamalar;
+
+            ViewBag.Hocalar = _db.Users
+                .Where(u => u.UserType != null && 
+                    (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin" || u.UserType.ToLower() == "superadmin") 
+                    && u.IsActive)
+                .OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ToList();
+            return View(tumCalismalar);
+        }
+
+        [Authorize(Roles = "admin,superadmin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult MakaleOnayVer(long makaleId)
+        {
+            var makale = _db.Articles.Include(a => a.User).FirstOrDefault(a => a.Id == makaleId);
+            if (makale != null)
+            {
+                makale.Status = "OnaylandiBekliyor"; // Onaylandı ama hoca atanmayı bekliyor
+                _db.SaveChanges();
+
+                // Öğrenciye bildirim
+                if (makale.UserId > 0)
+                {
+                    _db.Notifications.Add(new Notification {
+                        UserId = (int)makale.UserId,
+                        Message = $"'{makale.Title}' başlıklı çalışmanız onaylandı ve hoca ataması bekleniyor.",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    _db.SaveChanges();
+                }
+                TempData["Mesaj"] = "Çalışma onaylandı. Artık hoca atayabilirsiniz.";
+
+            }
+            return RedirectToAction("AdminYonetimi");
+        }
+
+        [Authorize(Roles = "admin,superadmin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult MakaleReddet(long makaleId, string? red_neden)
+        {
+            var makale = _db.Articles.Include(a => a.User).FirstOrDefault(a => a.Id == makaleId);
+            if (makale != null)
+            {
+                makale.Status = "Reddedildi";
+                _db.SaveChanges();
+
+                // Öğrenciye bildirim
+                if (makale.UserId > 0)
+                {
+                    var mesaj = string.IsNullOrEmpty(red_neden)
+                        ? $"'{makale.Title}' başlıklı çalışmanız reddedildi."
+                        : $"'{makale.Title}' başlıklı çalışmanız reddedildi. Sebep: {red_neden}";
+                    _db.Notifications.Add(new Notification {
+                        UserId = (int)makale.UserId,
+                        Message = mesaj,
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    _db.SaveChanges();
+                }
+                TempData["Mesaj"] = "Çalışma reddedildi ve öğrenciye bildirim gönderildi.";
+
+            }
+            return RedirectToAction("AdminYonetimi");
         }
 
         [Authorize(Roles = "admin,superadmin")]
@@ -127,6 +197,16 @@ namespace RewardSystem.Controllers
                         TeacherId = hocaIds[i],
                         WeightPercentage = yuzdeler[i],
                         IsCompleted = false
+                    });
+                }
+                // Öğrenciye bildirim
+                if (makale.UserId > 0)
+                {
+                    _db.Notifications.Add(new Notification {
+                        UserId = (int)makale.UserId,
+                        Message = $"'{makale.Title}' başlıklı çalışmanız değerlendirme sürecine alındı. Sonuç bildirilecektir.",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
                     });
                 }
                 _db.SaveChanges();
@@ -177,6 +257,18 @@ namespace RewardSystem.Controllers
                         makale.Score = (int)Math.Round(finalOrtalama);
                         makale.Status = "Onaylandi";
                         _db.SaveChanges();
+
+                        // Öğrenciye puan bildirimi
+                        if (makale.UserId > 0)
+                        {
+                            _db.Notifications.Add(new Notification {
+                                UserId = (int)makale.UserId,
+                                Message = $"'{makale.Title}' başlıklı çalışmanız değerlendirildi ve {makale.Score} puan aldı! 🎉",
+                                IsRead = false,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                            _db.SaveChanges();
+                        }
                     }
                 }
             }
@@ -187,17 +279,21 @@ namespace RewardSystem.Controllers
         [Authorize(Roles = "superadmin")]
         public IActionResult Raporlar()
         {
-            ViewBag.ToplamOgrenci    = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive);
-            ViewBag.ToplamHoca       = _db.Users.Count(u => u.UserType != null && (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin") && u.IsActive);
-            ViewBag.ToplamMakale     = _db.Articles.Count();
-            ViewBag.ToplamOnaylanan  = _db.Articles.Count(a => a.Status == "Onaylandi");
-            ViewBag.ToplamBekleyen   = _db.Articles.Count(a => a.Status == "OnayBekliyor");
-            ViewBag.ToplamDegerlendirme = _db.Articles.Count(a => a.Status == "Degerlendirmede");
+            ViewBag.ToplamOgrenci       = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive);
+            ViewBag.ToplamHoca          = _db.Users.Count(u => u.UserType != null && (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin") && u.IsActive);
+            // Gerçek çalışma sayısı: sadece aktif olanlar (Reddedilenler hariç)
+            ViewBag.ToplamMakale        = _db.Articles.Count(a => a.Status != "Reddedildi");
+            ViewBag.ToplamOnaylanan     = _db.Articles.Count(a => a.Status == "Onaylandi");
+            ViewBag.ToplamBekleyen      = _db.Articles.Count(a => a.Status == "OnayBekliyor");
+            ViewBag.ToplamDegerlendirme = _db.Articles.Count(a => a.Status == "Degerlendirmede" || a.Status == "OnaylandiBekliyor");
+            ViewBag.ToplamReddedilen    = _db.Articles.Count(a => a.Status == "Reddedildi");
 
             var durumlar = new[] {
-                new { durum = "Onaylandı",       sayi = _db.Articles.Count(a => a.Status == "Onaylandi") },
-                new { durum = "Onay Bekliyor",   sayi = _db.Articles.Count(a => a.Status == "OnayBekliyor") },
-                new { durum = "Değerlendirmede", sayi = _db.Articles.Count(a => a.Status == "Degerlendirmede") }
+                new { durum = "Onaylandı",          sayi = _db.Articles.Count(a => a.Status == "Onaylandi") },
+                new { durum = "Onay Bekliyor",      sayi = _db.Articles.Count(a => a.Status == "OnayBekliyor") },
+                new { durum = "Hoca Ataması Bekl.",  sayi = _db.Articles.Count(a => a.Status == "OnaylandiBekliyor") },
+                new { durum = "Değerlendirmede",    sayi = _db.Articles.Count(a => a.Status == "Degerlendirmede") },
+                new { durum = "Reddedildi",         sayi = _db.Articles.Count(a => a.Status == "Reddedildi") }
             };
             ViewBag.DurumDagilimi = durumlar;
 
@@ -260,6 +356,63 @@ namespace RewardSystem.Controllers
         }
 
 
+
+        [Authorize(Roles = "superadmin")]
+        public IActionResult RaporlarExcelIndir()
+        {
+            var ogrenciler = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive)
+                .ToList();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Ad Soyad,Bölüm,Toplam Çalışma,Onaylanan,Bekleyen,Toplam Puan");
+
+            foreach (var o in ogrenciler)
+            {
+                var toplam    = _db.Articles.Count(a => a.UserId == o.Id);
+                var onaylanan = _db.Articles.Count(a => a.UserId == o.Id && a.Status == "Onaylandi");
+                var bekleyen  = _db.Articles.Count(a => a.UserId == o.Id && a.Status == "OnayBekliyor");
+                var puan      = _db.Articles.Where(a => a.UserId == o.Id && a.Status == "Onaylandi").Sum(a => (int?)a.Score) ?? 0;
+
+                sb.AppendLine($"{o.FullName},{o.Department ?? "—"},{toplam},{onaylanan},{bekleyen},{puan}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetPreamble()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+                .ToArray();
+
+            return File(bytes, "text/csv", $"TOS_Rapor_{DateTime.Now:yyyyMMdd}.csv");
+        }
+
+        [Authorize(Roles = "superadmin")]
+        public IActionResult BolumExcelIndir()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Bölüm,Öğrenci Sayısı,Toplam Çalışma,Onaylanan,Reddedilen");
+
+            var bolumler = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive && u.Department != null)
+                .Select(u => new { u.Id, u.Department })
+                .ToList()
+                .GroupBy(u => u.Department);
+
+            foreach (var g in bolumler)
+            {
+                var ids       = g.Select(u => u.Id).ToList();
+                var toplam    = _db.Articles.Count(a => ids.Contains(a.UserId));
+                var onaylanan = _db.Articles.Count(a => ids.Contains(a.UserId) && a.Status == "Onaylandi");
+                var reddedilen= _db.Articles.Count(a => ids.Contains(a.UserId) && a.Status == "Reddedildi");
+
+                sb.AppendLine($"{g.Key},{g.Count()},{toplam},{onaylanan},{reddedilen}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetPreamble()
+                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+                .ToArray();
+
+            return File(bytes, "text/csv", $"TOS_Bolum_Rapor_{DateTime.Now:yyyyMMdd}.csv");
+        }
+
         [Authorize(Roles = "teacher,admin")]
         public IActionResult BolumSiralama()
         {
@@ -301,7 +454,7 @@ namespace RewardSystem.Controllers
             ViewBag.BenimDegerlendirme  = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && a.IsCompleted);
             ViewBag.BekleyenAtama       = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && !a.IsCompleted);
             ViewBag.OrtPuan = _db.ArticleTeacherAssignments
-                .Where(a => a.TeacherId == UserId && a.IsCompleted && a.GivenScore.HasValue)
+                .Where(a => a.TeacherId == UserId && a.IsCompleted && a.GivenScore > 0)
                 .Select(a => (double?)a.GivenScore).Average() ?? 0;
 
             var durumlar = new[] {
@@ -354,12 +507,31 @@ namespace RewardSystem.Controllers
             return RedirectToAction("Bildirimler");
         }
 
+
+        [Authorize(Roles = "superadmin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult KullaniciDurumDegistir(int id)
+        {
+            var user = _db.Users.Find(id);
+            if (user != null)
+            {
+                user.IsActive = !user.IsActive;
+                _db.SaveChanges();
+                var durum = user.IsActive ? "aktifleştirildi" : "pasifleştirildi";
+                TempData["Mesaj"] = $"{user.FullName} başarıyla {durum}.";
+            }
+            return RedirectToAction("KullaniciYonetimi");
+        }
+
         [Authorize(Roles = "superadmin")]
         public IActionResult KullaniciYonetimi()
         {
             var admins = _db.Users
-                .Where(u => u.UserType != null && (u.UserType.ToLower() == "admin" || u.UserType.ToLower() == "superadmin"))
-                .OrderBy(u => u.UserType)
+                .Where(u => u.UserType != null && u.UserType.ToLower() != "ogrenci")
+                .OrderByDescending(u => u.IsActive)
+                .ThenBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
                 .ToList();
             return View(admins);
         }

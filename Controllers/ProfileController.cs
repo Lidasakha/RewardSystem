@@ -55,12 +55,20 @@ namespace RewardSystem.Controllers
                 return View("Index", user);
             }
 
-            // Update password
+            // Update password - both tables
             var newHash = RewardSystemDbContext.HashPassword(model.NewPassword);
             
             await _db.Database.ExecuteSqlRawAsync(@"
                 UPDATE public.users SET password_hash = {0} WHERE id = {1}",
                 newHash, user.Id);
+
+            // UserAuth tablosunu da güncelle — eski şifre ile giriş engellensin
+            if (userAuth != null)
+            {
+                await _db.Database.ExecuteSqlRawAsync(@"
+                    UPDATE public.user_auth SET password_hash = {0} WHERE user_id = {1}",
+                    newHash, user.Id);
+            }
 
             _db.ChangeTracker.Clear();
 

@@ -166,59 +166,116 @@ namespace RewardSystem.Controllers
             return View(vm);
         }
 
-        // 📁 Dosya Kaydet
-        private async Task<string?> SaveFileAsync(IFormFile? file)
+        // 📁 Dosya Kaydet — boyut ve tip kontrolü ile
+        private static readonly string[] _izinliTipler = {
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+            ".jpg", ".jpeg", ".png", ".zip", ".rar"
+        };
+        private const long _maxDosyaBoyutu = 10 * 1024 * 1024; // 10 MB
+
+        private async Task<(string? path, string? error)> SaveFileAsync(IFormFile? file)
         {
-            if (file == null || file.Length == 0) return null;
+            if (file == null || file.Length == 0) return (null, null);
+
+            // Boyut kontrolü
+            if (file.Length > _maxDosyaBoyutu)
+                return (null, $"Dosya boyutu 10 MB'ı aşamaz. Yüklenen: {file.Length / 1024 / 1024} MB");
+
+            // Tip kontrolü
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!_izinliTipler.Contains(ext))
+                return (null, $"Geçersiz dosya türü: {ext}. İzin verilenler: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP");
+
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(file.FileName);
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
             using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(fileStream);
             }
-            return "/uploads/" + uniqueFileName;
+            return ("/uploads/" + uniqueFileName, null);
         }
 
         [HttpPost]
         public async Task<IActionResult> MakaleEkle(Article model, IFormFile? file)
         {
+            var (mPath, mErr) = await SaveFileAsync(file);
+            if (mErr != null) { TempData["Hata"] = mErr; return RedirectToAction("YeniCalisma"); }
             model.UserId   = KullaniciId;
             model.Status   = "OnayBekliyor";
-            model.FilePath = await SaveFileAsync(file);
+            model.FilePath = mPath;
+            model.CreatedAt = DateTime.UtcNow;
             _db.Articles.Add(model);
             await _db.SaveChangesAsync();
+            _db.Notifications.Add(new RewardSystem.Models.Notification {
+                UserId = KullaniciId,
+                Message = $"'{model.Title}' başlıklı makaleniz sisteme gönderildi. Onay süreci başlatıldı.",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+            TempData["Mesaj"] = "Makale başarıyla gönderildi.";
             return RedirectToAction("Akademik");
         }
 
         [HttpPost]
         public async Task<IActionResult> ProjeEkle(Project model, IFormFile? file)
         {
+            var (pPath, pErr) = await SaveFileAsync(file);
+            if (pErr != null) { TempData["Hata"] = pErr; return RedirectToAction("YeniCalisma"); }
             model.UserId   = KullaniciId;
-            model.FilePath = await SaveFileAsync(file);
+            model.FilePath = pPath;
             _db.Projects.Add(model);
             await _db.SaveChangesAsync();
+            _db.Notifications.Add(new RewardSystem.Models.Notification {
+                UserId = KullaniciId,
+                Message = $"'{model.Title}' başlıklı projeniz sisteme gönderildi. Onay süreci başlatıldı.",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+            TempData["Mesaj"] = "Proje başarıyla gönderildi.";
             return RedirectToAction("Akademik");
         }
 
         [HttpPost]
         public async Task<IActionResult> BildiriEkle(Presentation model, IFormFile? file)
         {
+            var (bPath, bErr) = await SaveFileAsync(file);
+            if (bErr != null) { TempData["Hata"] = bErr; return RedirectToAction("YeniCalisma"); }
             model.UserId   = KullaniciId;
-            model.FilePath = await SaveFileAsync(file);
+            model.FilePath = bPath;
             _db.Presentations.Add(model);
             await _db.SaveChangesAsync();
+            _db.Notifications.Add(new RewardSystem.Models.Notification {
+                UserId = KullaniciId,
+                Message = $"'{model.Title}' başlıklı sönümünüz sisteme gönderildi. Onay süreci başlatıldı.",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+            TempData["Mesaj"] = "Sönum başarıyla gönderildi.";
             return RedirectToAction("Akademik");
         }
 
         [HttpPost]
         public async Task<IActionResult> PatentEkle(Patent model, IFormFile? file)
         {
+            var (ptPath, ptErr) = await SaveFileAsync(file);
+            if (ptErr != null) { TempData["Hata"] = ptErr; return RedirectToAction("YeniCalisma"); }
             model.UserId   = KullaniciId;
-            model.FilePath = await SaveFileAsync(file);
+            model.FilePath = ptPath;
             _db.Patents.Add(model);
             await _db.SaveChangesAsync();
+            _db.Notifications.Add(new RewardSystem.Models.Notification {
+                UserId = KullaniciId,
+                Message = $"'{model.Title}' başlıklı patentiniz sisteme gönderildi. Onay süreci başlatıldı.",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+            TempData["Mesaj"] = "Patent başarıyla gönderildi.";
             return RedirectToAction("Akademik");
         }
 

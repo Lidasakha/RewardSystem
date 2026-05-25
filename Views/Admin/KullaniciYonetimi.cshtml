@@ -19,6 +19,7 @@
     <div id="editUserForm" class="add-form" style="display:none; margin-bottom:25px; padding:20px; background:#F0F4F8; border-radius:15px; border:1px solid #E3F2FD;">
         <h3 style="margin-bottom:15px; color:#001F3F;">Yetkili Düzenle</h3>
         <form asp-action="KullaniciDuzenle" method="post">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="Id" id="editUserId" />
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div class="fg">
@@ -60,6 +61,7 @@
     <div id="addUserForm" class="add-form" style="display:none; margin-bottom:25px; padding:20px; background:#F0F4F8; border-radius:15px; border:1px solid #E3F2FD;">
         <h3 style="margin-bottom:15px; color:#001F3F;">Yeni Yetkili Tanımla</h3>
         <form asp-action="KullaniciEkle" method="post">
+            @Html.AntiForgeryToken()
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div class="fg">
                     <label>Ad Soyad</label>
@@ -122,16 +124,43 @@
             </thead>
             <tbody id="userTableBody">
                 @foreach(var u in Model) {
-                    <tr class="kullanici-satir" data-id="@u.Id" data-fullname="@u.FullName" data-username="@u.Username" data-email="@u.Email" data-department="@u.Department" data-role="@u.Role.ToLower()" data-search="@u.FullName.ToLower() @u.Username.ToLower() @u.Email.ToLower() @u.Department?.ToLower()">
-                        <td style="white-space: nowrap;"><strong>@u.FullName</strong></td>
-                        <td style="word-break: break-all;">@u.Email</td>
+                    <tr class="kullanici-satir @(!u.IsActive ? "row-pasif" : "")" data-id="@u.Id" data-fullname="@u.FullName" data-username="@u.Username" data-email="@u.Email" data-department="@u.Department" data-role="@u.Role.ToLower()" data-search="@u.FullName.ToLower() @u.Username.ToLower() @u.Email.ToLower() @u.Department?.ToLower()">
+                        <td style="white-space: nowrap;"><strong style="@(!u.IsActive ? "opacity:.5;" : "")">@u.FullName</strong></td>
+                        <td style="word-break: break-all; @(!u.IsActive ? "opacity:.5;" : "")">@u.Email</td>
                         <td>
-                            <span class="status-active" style="color:#D32F2F;">Aktif</span>
+                            @if (u.IsActive)
+                            {
+                                <span style="display:inline-flex;align-items:center;gap:5px;background:var(--green-bg);color:var(--green);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;">
+                                    <span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;"></span> Aktif
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="display:inline-flex;align-items:center;gap:5px;background:var(--gray-100);color:var(--text-muted);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;">
+                                    <span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;"></span> Pasif
+                                </span>
+                            }
                         </td>
                         <td style="text-align: right; white-space: nowrap;">
                             <button class="btn-action" style="background:#f1f5f9; color:#1a2b4c; border:1px solid #cbd5e1;" onclick="openEditForm(this)">Düzenle</button>
-                            <form asp-action="KullaniciSil" asp-route-id="@u.Id" method="post" style="display:inline;" class="delete-form">
-                            <button type="button" class="btn-action btn-reject" onclick="confirmDelete(this, '@u.FullName')">Sil</button>
+                            <form asp-action="KullaniciDurumDegistir" method="post" style="display:inline;">
+                              @Html.AntiForgeryToken()
+                              <input type="hidden" name="id" value="@u.Id" />
+                              @if (u.IsActive)
+                              {
+                                <button type="button" class="btn-action btn-reject"
+                                    onclick="confirmPasif(this, '@u.FullName')">
+                                    Pasifleştir
+                                </button>
+                              }
+                              else
+                              {
+                                <button type="button" class="btn-action"
+                                    style="background:var(--green);color:#fff;border:none;"
+                                    onclick="confirmAktif(this, '@u.FullName')">
+                                    Aktifleştir
+                                </button>
+                              }
                             </form>
                         </td>
                     </tr>
@@ -161,6 +190,7 @@
     .badge-teacher { background:#d1ecf1; color:#0c5460; }
     
     .status-active { color:#28a745; font-weight:600; font-size:12px; }
+    .row-pasif { opacity:.75; background: var(--surface-2); }
     
     .btn-secondary { background:#eee; color:#333; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; }
 </style>
@@ -215,22 +245,56 @@
         noResults.style.display = visibleCount === 0 ? 'block' : 'none';
         table.style.display = visibleCount === 0 ? 'none' : '';
     }
-    function confirmDelete(button, userName) {
+    function confirmPasif(button, userName) {
         Swal.fire({
-            title: 'Emin misiniz?',
-            text: userName + " adlı yetkiliyi silmek istediğinize emin misiniz?",
+            title: 'Pasifleştirmek istiyor musunuz?',
+            text: userName + " adlı üye pasifleştirilecek ve sisteme giriş yapamayacak.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#001F3F',
-            confirmButtonText: 'Evet, Sil!',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#1a2b4c',
+            confirmButtonText: 'Evet, Pasifleştir',
             cancelButtonText: 'Vazgeç',
-            background: document.body.classList.contains('dark-mode') ? '#1a1a1a' : '#fff',
-            color: document.body.classList.contains('dark-mode') ? '#fff' : '#000'
-            }).then((result) => {
+            background: document.body.classList.contains('dark-mode') ? '#0f172a' : '#fff',
+            color: document.body.classList.contains('dark-mode') ? '#e2e8f0' : '#0f172a'
+        }).then((result) => {
             if (result.isConfirmed) {
-            // Forma ulaşıp gönderiyoruz
-            button.closest('form').submit();}
+                Swal.fire({
+                    title: 'Son onay',
+                    text: 'Bu işlemi geri almak için tekrar "Aktifleştir" butonuna basmanız gerekecek.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Onaylıyorum, Pasifleştir',
+                    cancelButtonText: 'Vazgeç',
+                    background: document.body.classList.contains('dark-mode') ? '#0f172a' : '#fff',
+                    color: document.body.classList.contains('dark-mode') ? '#e2e8f0' : '#0f172a'
+                }).then((result2) => {
+                    if (result2.isConfirmed) {
+                        button.closest('form').submit();
+                    }
+                });
+            }
+        });
+    }
+
+    function confirmAktif(button, userName) {
+        Swal.fire({
+            title: 'Aktifleştirmek istiyor musunuz?',
+            text: userName + " adlı üye aktifleştirilecek ve sisteme giriş yapabilecek.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#16a34a',
+            cancelButtonColor: '#1a2b4c',
+            confirmButtonText: 'Evet, Aktifleştir',
+            cancelButtonText: 'Vazgeç',
+            background: document.body.classList.contains('dark-mode') ? '#0f172a' : '#fff',
+            color: document.body.classList.contains('dark-mode') ? '#e2e8f0' : '#0f172a'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                button.closest('form').submit();
+            }
         });
     }
     // Input odaklanma stilleri

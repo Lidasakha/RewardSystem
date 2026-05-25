@@ -26,8 +26,7 @@
   .rp-banner p  { font-size:13px;color:rgba(255,255,255,.6); }
 
   /* KPI grid */
-  .rp-kpi { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; }
-  @@media(max-width:1200px){ .rp-kpi { grid-template-columns:repeat(3,1fr); } }
+  .rp-kpi { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; }
   @@media(max-width:700px) { .rp-kpi { grid-template-columns:repeat(2,1fr); } }
 
   .rp-kpi-card {
@@ -103,6 +102,16 @@
     font-weight:600; color:var(--text); cursor:pointer; outline:none;
   }
   body.dark-mode .period-sel { background:var(--surface); }
+
+@@media print {
+  .topbar, .sidebar, .overlay { display:none !important; }
+  .main { margin-left:0 !important; }
+  .rp-banner { background:#1a2b4c !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rp-kpi-card, .rp-panel { break-inside:avoid; border:1px solid #ccc !important; }
+  body { background:white !important; }
+  .rp-page { gap:12px !important; }
+  canvas { max-height:200px !important; }
+}
 </style>
 
 <div class="rp-page">
@@ -113,7 +122,7 @@
       <h2>Raporlar & İstatistikler</h2>
       <p>Üniversite geneli akademik performans verileri</p>
     </div>
-    <div style="display:flex;gap:8px;z-index:1;">
+    <div style="display:flex;gap:8px;z-index:1;flex-wrap:wrap;align-items:center;">
       <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 18px;text-align:center;">
         <div style="font-size:22px;font-weight:800;color:#34d399;">@toplamOnaylanan</div>
         <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;">Onaylanan</div>
@@ -121,6 +130,17 @@
       <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 18px;text-align:center;">
         <div style="font-size:22px;font-weight:800;color:#fbbf24;">@toplamBekleyen</div>
         <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;">Bekleyen</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <a href="/Admin/RaporlarExcelIndir" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+          <i class="ti ti-table-export"></i> Excel İndir
+        </a>
+        <a href="/Admin/BolumExcelIndir" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+          <i class="ti ti-building-export"></i> Bölüm Excel
+        </a>
+        <button onclick="printRapor()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+          <i class="ti ti-printer"></i> PDF Yazdır
+        </button>
       </div>
     </div>
   </div>
@@ -267,16 +287,7 @@
     </div>
   </div>
 
-  <!-- Öğretmen Performansı -->
-  <div class="rp-panel">
-    <div class="rp-panel-head">
-      <span><i class="ti ti-users" style="color:var(--green);margin-right:7px;"></i>Öğretim Üyesi Değerlendirme Performansı</span>
-    </div>
-    <div class="rp-panel-body">
-      <div style="position:relative;height:200px;">
-        <canvas id="hocaChart"></canvas>
-      </div>
-    </div>
+</div>
   </div>
 
 </div>
@@ -356,7 +367,7 @@ function buildDurum(type) {
       labels,
       datasets: [{
         data,
-        backgroundColor: ['#16a34a','#d97706','#4a70c4'],
+        backgroundColor: ['#16a34a','#d97706','#4a70c4','#2563eb','#dc2626'],
         borderColor: isDark ? '#0f172a' : '#fff',
         borderWidth: 3,
         hoverOffset: 8
@@ -425,39 +436,19 @@ function switchBolumView(view, btn) {
   }
 }
 
-// ── Hoca Performansı ──
-function buildHoca() {
-  const labels = hocaData.map(x => x.ad);
-  const data   = hocaData.map(x => x.degerlendirme);
-  new Chart(document.getElementById('hocaChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets:[{
-        label:'Değerlendirilen',
-        data,
-        backgroundColor:'rgba(22,163,74,.7)',
-        borderColor:'#16a34a',
-        borderWidth:2,
-        borderRadius:8
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{
-        y:{beginAtZero:true,grid:{color:gridC},ticks:{stepSize:1,color:textC}},
-        x:{grid:{display:false},ticks:{color:textC}}
       }
     }
   });
 }
 
 // ── Init ──
+function printRapor() {
+  window.print();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   buildTrend('bar');
   buildDurum('doughnut');
   buildBolum();
-  buildHoca();
 });
 </script>

@@ -67,7 +67,7 @@ namespace RewardSystem.Models
         public string Faculty { get; set; } = "";
 
         [Column("department")]
-        public string Department { get; set; } = "";
+        public string? Department { get; set; }
 
         [Column("student_number")]
         public string? StudentNumber { get; set; }

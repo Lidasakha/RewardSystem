@@ -4,265 +4,233 @@
     ViewData["Title"] = "Akademik Yönetim";
     ViewData["Active"] = "AdminYonetimi";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var hocalar = ViewBag.Hocalar as List<RewardSystem.Models.User> ?? new();
-
-    int toplamBekliyor     = Model.Count;
-    int toplamDegerlendirme = 0; // Sadece bekleyenler listeleniyor
+    var hocalar          = ViewBag.Hocalar as List<RewardSystem.Models.User> ?? new();
+    var bekleyenler      = Model.Where(m => m.Status == "OnayBekliyor").ToList();
+    var hocaBekleyenler  = Model.Where(m => m.Status == "OnaylandiBekliyor").ToList();
+    var reddedilenler    = Model.Where(m => m.Status == "Reddedildi").ToList();
 }
 
 <style>
-  .ay-page { display:flex; flex-direction:column; gap:20px; }
+.aym { display:flex; flex-direction:column; gap:20px; }
 
-  /* Banner */
-  .ay-banner {
-    background:#111827; border-radius:var(--radius-lg);
-    padding:24px 28px; color:#fff; display:flex; align-items:center; justify-content:space-between;
-    position:relative; overflow:hidden;
-  }
-  .ay-banner::before { content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04); }
-  body.dark-mode .ay-banner { background:var(--brand-700); }
-  .ay-banner-left h2 { font-size:19px;font-weight:700;margin-bottom:4px; }
-  .ay-banner-left p  { font-size:13px;color:rgba(255,255,255,.6); }
-  .ay-banner-stat {
-    background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
-    border-radius:12px;padding:12px 22px;text-align:center;z-index:1;
-  }
-  .ay-banner-num { font-size:28px;font-weight:800;color:#fbbf24;line-height:1; }
-  .ay-banner-lbl { font-size:10.5px;color:rgba(255,255,255,.55);margin-top:3px; }
+/* Banner */
+.aym-banner {
+  background:#111827; border-radius:var(--radius-lg);
+  padding:22px 28px; color:#fff;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  position:relative; overflow:hidden;
+}
+.aym-banner::before { content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04); }
+body.dark-mode .aym-banner { background:var(--brand-700); }
+.aym-banner h2 { font-size:18px;font-weight:700;margin-bottom:4px; }
+.aym-banner p  { font-size:13px;color:rgba(255,255,255,.6); }
+.aym-stats { display:flex;gap:8px;z-index:1;flex-shrink:0; }
+.aym-stat { background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 18px;text-align:center;cursor:pointer;transition:background .15s; }
+.aym-stat:hover { background:rgba(255,255,255,.18); }
+.aym-stat-num { font-size:22px;font-weight:800;line-height:1; }
+.aym-stat-lbl { font-size:10px;color:rgba(255,255,255,.55);margin-top:3px; }
 
-  /* Alerts */
-  .ay-alert {
-    display:flex;align-items:center;gap:12px;
-    padding:14px 18px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;
-  }
-  .ay-alert-success { background:var(--green-bg);border:1px solid rgba(22,163,74,.25);color:var(--green); }
-  .ay-alert-danger  { background:var(--red-bg);  border:1px solid rgba(220,38,38,.25); color:var(--red); }
-  .ay-alert-close   { margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:18px; }
+/* Alerts */
+.aym-alert { display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600; }
+.aym-alert-ok  { background:var(--green-bg);border:1px solid rgba(22,163,74,.25);color:var(--green); }
+.aym-alert-err { background:var(--red-bg);border:1px solid rgba(220,38,38,.25);color:var(--red); }
+.aym-alert-x   { margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:18px; }
 
-  /* Table */
-  .ay-panel { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden; }
+/* Toolbar */
+.aym-toolbar {
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow-sm);
+}
+.aym-search {
+  flex:1;min-width:200px;display:flex;align-items:center;gap:9px;
+  background:var(--surface-2);border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);padding:0 14px;
+}
+.aym-search:focus-within { border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(74,112,196,.1); }
+.aym-search i  { font-size:17px;color:var(--text-muted); }
+.aym-search input { flex:1;border:none;outline:none;padding:10px 0;font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent; }
+.aym-search input::placeholder { color:var(--text-light); }
+.aym-sel { padding:10px 14px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none;cursor:pointer; }
 
-  .ay-panel-head {
-    display:flex;align-items:center;justify-content:space-between;
-    padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface-2);
-  }
-  .ay-panel-title { font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px; }
+/* Panel */
+.aym-panel { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden; }
+.aym-head  { display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text);background:var(--surface-2); }
 
-  .ay-table { width:100%;border-collapse:separate;border-spacing:0; }
-  .ay-table th {
-    text-align:left;padding:13px 20px;
-    font-size:11px;font-weight:700;color:var(--text-muted);
-    text-transform:uppercase;letter-spacing:.6px;
-    border-bottom:2px solid var(--border);background:var(--surface-2);white-space:nowrap;
-  }
-  .ay-table td {
-    padding:14px 20px;font-size:13.5px;color:var(--text);
-    border-bottom:1px solid var(--border);vertical-align:middle;
-  }
-  .ay-table tbody tr:last-child td { border-bottom:none; }
-  .ay-table tbody tr { transition:background .15s; }
-  .ay-table tbody tr:hover { background:var(--surface-2); }
+/* Table */
+.aym-table { width:100%;border-collapse:separate;border-spacing:0; }
+.aym-table th { text-align:left;padding:12px 20px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);background:var(--surface-2);white-space:nowrap; }
+.aym-table td { padding:14px 20px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.aym-table tbody tr:last-child td { border-bottom:none; }
+.aym-table tbody tr { transition:background .15s; }
+.aym-table tbody tr:hover { background:var(--surface-2); }
 
-  /* Student cell */
-  .ay-student { display:flex;align-items:center;gap:11px; }
-  .ay-av {
-    width:38px;height:38px;border-radius:10px;flex-shrink:0;
-    background:var(--brand-600);color:#fff;
-    font-weight:800;font-size:15px;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .ay-st-name { font-weight:700;font-size:13.5px;color:var(--text); }
-  .ay-st-dept { font-size:11.5px;color:var(--text-muted);margin-top:1px; }
+/* Student */
+.aym-user { display:flex;align-items:center;gap:11px; }
+.aym-av   { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0; }
+.aym-name { font-weight:700;font-size:13.5px;color:var(--text); }
+.aym-dept { font-size:11.5px;color:var(--text-muted);margin-top:1px; }
+.aym-title { font-weight:600;color:var(--text);font-size:13.5px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.aym-year  { font-size:11.5px;color:var(--text-muted);margin-top:2px; }
+.aym-file  { display:inline-flex;align-items:center;gap:5px;color:var(--blue);font-weight:600;font-size:12.5px;text-decoration:none; }
+.aym-file:hover { text-decoration:underline; }
+.aym-nofile { color:var(--text-light);font-size:12.5px; }
 
-  /* Title cell */
-  .ay-title { font-weight:600;color:var(--text);font-size:13.5px;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-  .ay-year  { font-size:11.5px;color:var(--text-muted);margin-top:2px; }
+/* Badges */
+.aym-badge { font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap; }
+.aym-dot   { width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2s ease-in-out infinite; }
+@@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.bd-y { background:var(--yellow-bg);color:var(--yellow); }
+.bd-g { background:var(--green-bg);color:var(--green); }
+.bd-r { background:var(--red-bg);color:var(--red); }
 
-  /* File link */
-  .ay-file { display:inline-flex;align-items:center;gap:5px;color:var(--blue);font-weight:600;font-size:12.5px;text-decoration:none; }
-  .ay-file:hover { text-decoration:underline; }
-  .ay-no-file { color:var(--text-light);font-size:12.5px; }
+/* Buttons */
+.aym-actions { display:flex;gap:7px;align-items:center; }
+.aym-btn { display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap; }
+.aym-btn-ok  { background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.25); }
+.aym-btn-ok:hover  { transform:translateY(-1px);box-shadow:0 5px 14px rgba(22,163,74,.35); }
+.aym-btn-red { background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2); }
+.aym-btn-red:hover { background:var(--red);color:#fff;border-color:transparent;transform:translateY(-1px); }
+.aym-btn-ata { background:var(--brand-600);color:#fff;box-shadow:0 2px 8px rgba(26,43,76,.25); }
+.aym-btn-ata:hover { background:var(--brand-700);transform:translateY(-1px); }
 
-  /* Status badge */
-  .ay-badge { font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px; }
-  .ay-badge-yellow { background:var(--yellow-bg);color:var(--yellow); }
-  .ay-badge-dot { width:5px;height:5px;border-radius:50%;background:currentColor; }
+/* Empty */
+.aym-empty { padding:50px 20px;text-align:center;color:var(--text-muted); }
+.aym-empty i { font-size:40px;display:block;margin-bottom:12px;opacity:.3; }
+.aym-no-res  { padding:30px;text-align:center;color:var(--text-muted);display:none; }
 
-  /* Action buttons */
-  .ay-actions { display:flex;gap:8px;align-items:center; }
-  .ay-btn {
-    display:inline-flex;align-items:center;gap:6px;
-    padding:8px 15px;border:none;border-radius:var(--radius-sm);
-    font-family:'Sora',sans-serif;font-size:12.5px;font-weight:700;
-    cursor:pointer;transition:all .18s;white-space:nowrap;
-  }
-  .ay-btn-assign { background:var(--brand-600);color:#fff;box-shadow:0 2px 8px rgba(26,43,76,.25); }
-  .ay-btn-assign:hover { background:var(--brand-700);transform:translateY(-1px); }
+/* Red Modal */
+.rm-ov { display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px; }
+.rm-ov.open { display:flex; }
+.rm-box { background:var(--surface);border-radius:16px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden; }
+.rm-head { padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+.rm-title { font-size:15px;font-weight:800;color:var(--text); }
+.rm-x { background:var(--gray-100);border:none;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:16px;color:var(--text-muted);display:flex;align-items:center;justify-content:center; }
+body.dark-mode .rm-x { background:var(--gray-800); }
+.rm-body { padding:20px 22px; }
+.rm-lbl  { display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px; }
+.rm-ta   { width:100%;padding:11px 14px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);outline:none;resize:vertical; }
+.rm-ta:focus { border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.1); }
+.rm-foot { padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end; }
+.rm-cancel { padding:9px 18px;background:var(--gray-100);border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;color:var(--text); }
+body.dark-mode .rm-cancel { background:var(--gray-800); }
+.rm-submit { padding:9px 20px;background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer; }
+.rm-submit:hover { opacity:.85; }
 
-  /* Empty */
-  .ay-empty { padding:60px 20px;text-align:center; }
-  .ay-empty i { font-size:48px;display:block;margin-bottom:16px;color:var(--green);opacity:.7; }
-  .ay-empty h3 { font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px; }
-  .ay-empty p  { font-size:13.5px;color:var(--text-muted); }
-
-  /* ── Modal ── */
-  .modal-overlay {
-    display:none;position:fixed;inset:0;
-    background:rgba(0,0,0,.5);z-index:9999;
-    align-items:center;justify-content:center;padding:20px;
-  }
-  .modal-overlay.open { display:flex; }
-
-  .modal-box {
-    background:var(--surface);border-radius:18px;
-    width:100%;max-width:520px;overflow:hidden;
-    box-shadow:0 20px 60px rgba(0,0,0,.2);
-    display:flex;flex-direction:column;max-height:90vh;
-  }
-
-  .modal-head {
-    padding:20px 24px 16px;border-bottom:1px solid var(--border);
-    display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;
-  }
-  .modal-head-title { font-size:16px;font-weight:800;color:var(--text);margin-bottom:3px; }
-  .modal-head-sub   { font-size:12px;color:var(--text-muted); }
-  .modal-close {
-    background:var(--gray-100);border:none;width:32px;height:32px;
-    border-radius:8px;cursor:pointer;font-size:18px;color:var(--text-muted);
-    display:flex;align-items:center;justify-content:center;
-  }
-  body.dark-mode .modal-close { background:var(--gray-800); }
-  .modal-close:hover { background:var(--gray-200); }
-
-  .modal-search { padding:14px 20px 10px;flex-shrink:0; }
-  .modal-search-box {
-    display:flex;align-items:center;gap:9px;
-    background:var(--surface-2);border:1.5px solid var(--border);
-    border-radius:var(--radius-sm);padding:0 14px;
-  }
-  .modal-search-box i { font-size:17px;color:var(--text-muted); }
-  .modal-search-box input {
-    flex:1;border:none;outline:none;padding:10px 0;
-    font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent;
-  }
-  .modal-search-box input::placeholder { color:var(--text-light); }
-
-  .modal-teacher-list { flex:1;overflow-y:auto;padding:4px 8px; }
-
-  .teacher-row {
-    display:flex;align-items:center;gap:12px;
-    padding:11px 12px;border-radius:10px;cursor:pointer;
-    transition:background .15s;
-  }
-  .teacher-row:hover { background:var(--surface-2); }
-  .t-av {
-    width:36px;height:36px;border-radius:50%;flex-shrink:0;
-    background:var(--brand-600);color:#fff;
-    font-size:13px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .t-name  { font-size:13.5px;font-weight:600;color:var(--text); }
-  .t-title { font-size:11.5px;color:var(--text-muted); }
-  .t-check {
-    margin-left:auto;width:20px;height:20px;border-radius:5px;
-    border:1.5px solid var(--border);flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    transition:all .15s;
-  }
-  .t-check.active { background:var(--accent);border-color:var(--accent); }
-  .t-check.active::after { content:'✓';font-size:12px;color:#fff;font-weight:700; }
-
-  .modal-selected {
-    padding:12px 20px;border-top:1px solid var(--border);
-    background:var(--surface-2);flex-shrink:0;
-  }
-  .modal-selected-label { font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px; }
-  .chips-wrap { display:flex;flex-wrap:wrap;gap:6px; }
-  .chip {
-    display:flex;align-items:center;gap:5px;
-    background:var(--surface);border:1px solid var(--border);
-    border-radius:20px;padding:4px 12px;font-size:12px;
-  }
-  .chip-pct { font-weight:800;color:var(--accent); }
-  .chip-rm  { background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:15px;padding:0;line-height:1; }
-  .chip-rm:hover { color:var(--red); }
-  .empty-chips { font-size:12.5px;color:var(--text-light);font-style:italic; }
-
-  .modal-foot {
-    padding:14px 20px;border-top:1px solid var(--border);
-    display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
-  }
-  .total-info { font-size:13px;color:var(--text-muted); }
-  .total-info span { font-weight:800;font-size:15px; }
-  .total-info .ok   { color:var(--green); }
-  .total-info .warn { color:var(--yellow); }
-  .modal-submit {
-    display:inline-flex;align-items:center;gap:7px;
-    padding:10px 22px;background:var(--brand-600);color:#fff;border:none;
-    border-radius:var(--radius-sm);font-family:'Sora',sans-serif;
-    font-size:13.5px;font-weight:700;cursor:pointer;transition:all .18s;
-  }
-  .modal-submit:hover { background:var(--brand-700);transform:translateY(-1px); }
-  .modal-submit:disabled { opacity:.4;cursor:not-allowed;transform:none; }
-  .no-results { text-align:center;padding:24px;color:var(--text-muted);font-size:13px; }
+/* Hoca Modal */
+.hm-ov { display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;padding:20px; }
+.hm-ov.open { display:flex; }
+.hm-box { background:var(--surface);border-radius:18px;width:100%;max-width:520px;display:flex;flex-direction:column;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden; }
+.hm-head { padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0; }
+.hm-title { font-size:16px;font-weight:800;color:var(--text);margin-bottom:3px; }
+.hm-sub   { font-size:12px;color:var(--text-muted); }
+.hm-x     { background:var(--gray-100);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;color:var(--text-muted);display:flex;align-items:center;justify-content:center; }
+body.dark-mode .hm-x { background:var(--gray-800); }
+.hm-search { padding:14px 20px 10px;flex-shrink:0; }
+.hm-sbox { display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 14px; }
+.hm-sbox i { font-size:17px;color:var(--text-muted); }
+.hm-sbox input { flex:1;border:none;outline:none;padding:10px 0;font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent; }
+.hm-list { flex:1;overflow-y:auto;padding:4px 8px; }
+.hm-row  { display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;cursor:pointer;transition:background .15s; }
+.hm-row:hover { background:var(--surface-2); }
+.hm-av   { width:36px;height:36px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.hm-hn   { font-size:13.5px;font-weight:600;color:var(--text); }
+.hm-ht   { font-size:11.5px;color:var(--text-muted); }
+.hm-chk  { margin-left:auto;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0; }
+.hm-chk.on { background:var(--accent);border-color:var(--accent); }
+.hm-chk.on::after { content:'✓';font-size:12px;color:#fff;font-weight:700; }
+.hm-sel  { padding:12px 20px;border-top:1px solid var(--border);background:var(--surface-2);flex-shrink:0; }
+.hm-sel-lbl { font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px; }
+.hm-chips { display:flex;flex-wrap:wrap;gap:6px; }
+.hm-chip  { display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px; }
+.hm-pct   { font-weight:800;color:var(--accent); }
+.hm-rm    { background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:15px;padding:0;line-height:1; }
+.hm-rm:hover { color:var(--red); }
+.hm-empty-chip { font-size:12.5px;color:var(--text-light);font-style:italic; }
+.hm-foot  { padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
+.hm-total { font-size:13px;color:var(--text-muted); }
+.hm-total span { font-weight:800;font-size:15px; }
+.hm-total .ok   { color:var(--green); }
+.hm-total .warn { color:var(--yellow); }
+.hm-submit { display:inline-flex;align-items:center;gap:7px;padding:10px 22px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;transition:all .18s; }
+.hm-submit:hover { background:var(--brand-700);transform:translateY(-1px); }
+.hm-submit:disabled { opacity:.4;cursor:not-allowed;transform:none; }
+.hm-no-res { text-align:center;padding:24px;color:var(--text-muted);font-size:13px; }
 </style>
 
-<div class="ay-page">
+<div class="aym">
 
   @if (TempData["Mesaj"] != null)
   {
-    <div class="ay-alert ay-alert-success">
+    <div class="aym-alert aym-alert-ok">
       <i class="ti ti-circle-check" style="font-size:20px;"></i>
       <span>@TempData["Mesaj"]</span>
-      <button class="ay-alert-close" onclick="this.parentElement.remove()">×</button>
+      <button class="aym-alert-x" onclick="this.parentElement.remove()">×</button>
     </div>
   }
   @if (TempData["Hata"] != null)
   {
-    <div class="ay-alert ay-alert-danger">
+    <div class="aym-alert aym-alert-err">
       <i class="ti ti-alert-circle" style="font-size:20px;"></i>
       <span>@TempData["Hata"]</span>
-      <button class="ay-alert-close" onclick="this.parentElement.remove()">×</button>
+      <button class="aym-alert-x" onclick="this.parentElement.remove()">×</button>
     </div>
   }
 
   <!-- Banner -->
-  <div class="ay-banner">
-    <div class="ay-banner-left">
+  <div class="aym-banner">
+    <div>
       <h2>Akademik Yönetim</h2>
-      <p>Onay bekleyen çalışmalar — hoca atayarak değerlendirme sürecini başlatın.</p>
+      <p>Çalışmaları önce onaylayın veya reddedin, ardından hoca atayın.</p>
     </div>
-    <div class="ay-banner-stat">
-      <div class="ay-banner-num">@toplamBekliyor</div>
-      <div class="ay-banner-lbl">Bekleyen Çalışma</div>
+    <div class="aym-stats">
+      <div class="aym-stat" onclick="setFilter('OnayBekliyor')">
+        <div class="aym-stat-num" style="color:#fbbf24;">@bekleyenler.Count</div>
+        <div class="aym-stat-lbl">Onay Bekliyor</div>
+      </div>
+      <div class="aym-stat" onclick="setFilter('OnaylandiBekliyor')">
+        <div class="aym-stat-num" style="color:#34d399;">@hocaBekleyenler.Count</div>
+        <div class="aym-stat-lbl">Hoca Bekliyor</div>
+      </div>
+      <div class="aym-stat" onclick="setFilter('Reddedildi')">
+        <div class="aym-stat-num" style="color:#f87171;">@reddedilenler.Count</div>
+        <div class="aym-stat-lbl">Reddedilen</div>
+      </div>
     </div>
   </div>
 
-  <!-- Table -->
-  <div class="ay-panel">
-    <div class="ay-panel-head">
-      <div class="ay-panel-title">
-        <i class="ti ti-clock" style="color:var(--yellow);font-size:18px;"></i>
-        Onay Bekleyen Çalışmalar
-      </div>
-      @if (Model.Any())
-      {
-        <span style="font-size:12px;color:var(--text-muted);">@Model.Count çalışma bekliyor</span>
-      }
+  <!-- Toolbar -->
+  <div class="aym-toolbar">
+    <div class="aym-search">
+      <i class="ti ti-search"></i>
+      <input type="text" id="aymQ" placeholder="Öğrenci adı veya çalışma başlığı ile ara..." oninput="doFilter()">
+    </div>
+    <select class="aym-sel" id="aymSel" onchange="doFilter()">
+      <option value="">Tüm Durumlar (@Model.Count)</option>
+      <option value="OnayBekliyor">Onay Bekliyor (@bekleyenler.Count)</option>
+      <option value="OnaylandiBekliyor">Hoca Ataması Bekliyor (@hocaBekleyenler.Count)</option>
+      <option value="Reddedildi">Reddedilen (@reddedilenler.Count)</option>
+    </select>
+  </div>
+
+  <!-- Tek Panel -->
+  <div class="aym-panel">
+    <div class="aym-head">
+      <span><i class="ti ti-files" style="color:var(--accent);margin-right:7px;"></i>Çalışma Listesi</span>
+      <span style="font-size:12px;color:var(--text-muted);" id="aymCnt">@Model.Count çalışma</span>
     </div>
 
     @if (!Model.Any())
     {
-      <div class="ay-empty">
-        <i class="ti ti-checks"></i>
-        <h3>Bekleyen çalışma yok!</h3>
-        <p>Tüm çalışmalar değerlendirmeye alındı.</p>
+      <div class="aym-empty">
+        <i class="ti ti-inbox"></i>
+        Henüz çalışma bulunmuyor.
       </div>
     }
     else
     {
       <div style="overflow-x:auto;">
-        <table class="ay-table">
+        <table class="aym-table">
           <thead>
             <tr>
               <th>Öğrenci</th>
@@ -272,91 +240,148 @@
               <th>İşlem</th>
             </tr>
           </thead>
-          <tbody>
-            @foreach (var m in Model)
+          <tbody id="aymBody">
+
+            @foreach (var m in bekleyenler)
             {
-              var initial = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
-              <tr>
+              var ini = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
+              <tr data-s="OnayBekliyor" data-q="@(m.User?.FullName ?? "").ToLower() @(m.Title ?? "").ToLower()">
                 <td>
-                  <div class="ay-student">
-                    <div class="ay-av">@initial</div>
-                    <div>
-                      <div class="ay-st-name">@m.User?.FullName</div>
-                      <div class="ay-st-dept">@(m.User?.Department ?? "—")</div>
-                    </div>
+                  <div class="aym-user">
+                    <div class="aym-av" style="background:var(--brand-600);">@ini</div>
+                    <div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department ?? "—")</div></div>
                   </div>
                 </td>
+                <td><div class="aym-title">@m.Title</div>@if(m.Year.HasValue){<div class="aym-year">@m.Year</div>}</td>
                 <td>
-                  <div class="ay-title">@m.Title</div>
-                  @if (m.Year.HasValue) { <div class="ay-year">@m.Year</div> }
+                  @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a> }
+                  else { <span class="aym-nofile">Yok</span> }
                 </td>
+                <td><span class="aym-badge bd-y"><span class="aym-dot"></span>Onay Bekliyor</span></td>
                 <td>
-                  @if (!string.IsNullOrEmpty(m.FilePath))
-                  {
-                    <a href="@m.FilePath" target="_blank" class="ay-file">
-                      <i class="ti ti-paperclip"></i> İncele
-                    </a>
-                  }
-                  else { <span class="ay-no-file">Dosya yok</span> }
-                </td>
-                <td>
-                  <span class="ay-badge ay-badge-yellow">
-                    <span class="ay-badge-dot"></span> Onay Bekliyor
-                  </span>
-                </td>
-                <td>
-                  <div class="ay-actions">
-                    <button class="ay-btn ay-btn-assign"
-                            onclick="openModal('@m.Id', '@(m.Title?.Replace("'", "\\'"))', '@(m.User?.FullName?.Replace("'", "\\'"))')">
-                      <i class="ti ti-user-plus"></i> Hoca Ata
+                  <div class="aym-actions">
+                    <form asp-action="MakaleOnayVer" method="post" style="display:inline;">
+                      @Html.AntiForgeryToken()
+                      <input type="hidden" name="makaleId" value="@m.Id">
+                      <button type="submit" class="aym-btn aym-btn-ok"><i class="ti ti-check"></i> Onayla</button>
+                    </form>
+                    <button class="aym-btn aym-btn-red" onclick="openRM('@m.Id','@(m.Title?.Replace("'","\\'")??"")','@(m.User?.FullName?.Replace("'","\\'")??"")' )">
+                      <i class="ti ti-x"></i> Reddet
                     </button>
                   </div>
                 </td>
               </tr>
             }
+
+            @foreach (var m in hocaBekleyenler)
+            {
+              var ini = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
+              <tr data-s="OnaylandiBekliyor" data-q="@(m.User?.FullName ?? "").ToLower() @(m.Title ?? "").ToLower()">
+                <td>
+                  <div class="aym-user">
+                    <div class="aym-av" style="background:var(--green);">@ini</div>
+                    <div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department ?? "—")</div></div>
+                  </div>
+                </td>
+                <td><div class="aym-title">@m.Title</div>@if(m.Year.HasValue){<div class="aym-year">@m.Year</div>}</td>
+                <td>
+                  @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a> }
+                  else { <span class="aym-nofile">Yok</span> }
+                </td>
+                <td><span class="aym-badge bd-g"><span class="aym-dot"></span>Hoca Ataması Bekliyor</span></td>
+                <td>
+                  <button class="aym-btn aym-btn-ata" onclick="openHM('@m.Id','@(m.Title?.Replace("'","\\'")??"")','@(m.User?.FullName?.Replace("'","\\'")??"")' )">
+                    <i class="ti ti-user-plus"></i> Hoca Ata
+                  </button>
+                </td>
+              </tr>
+            }
+
+            @foreach (var m in reddedilenler)
+            {
+              var ini = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
+              <tr data-s="Reddedildi" data-q="@(m.User?.FullName ?? "").ToLower() @(m.Title ?? "").ToLower()">
+                <td>
+                  <div class="aym-user">
+                    <div class="aym-av" style="background:var(--red);">@ini</div>
+                    <div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department ?? "—")</div></div>
+                  </div>
+                </td>
+                <td><div class="aym-title">@m.Title</div>@if(m.Year.HasValue){<div class="aym-year">@m.Year</div>}</td>
+                <td>
+                  @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a> }
+                  else { <span class="aym-nofile">Yok</span> }
+                </td>
+                <td><span class="aym-badge bd-r"><span class="aym-dot"></span>Reddedildi</span></td>
+                <td><span style="font-size:12px;color:var(--text-muted);">—</span></td>
+              </tr>
+            }
+
           </tbody>
         </table>
       </div>
+      <div class="aym-no-res" id="aymNoRes">
+        <i class="ti ti-search-off" style="font-size:32px;display:block;margin-bottom:8px;opacity:.3;"></i>
+        Aramanızla eşleşen çalışma bulunamadı.
+      </div>
     }
+  </div>
+
+</div>
+
+<!-- ═══ Red Modal ═══ -->
+<div class="rm-ov" id="rmOv" onclick="if(event.target===this)closeRM()">
+  <div class="rm-box">
+    <div class="rm-head">
+      <div>
+        <div class="rm-title">Çalışmayı Reddet</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;" id="rmSub"></div>
+      </div>
+      <button class="rm-x" onclick="closeRM()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="rm-body">
+      <form id="rmForm" asp-action="MakaleReddet" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="rmId" name="makaleId">
+        <label class="rm-lbl">Red Sebebi (isteğe bağlı)</label>
+        <textarea class="rm-ta" name="red_neden" rows="3" placeholder="Öğrenciye iletilecek red sebebini yazın..."></textarea>
+        <div class="rm-foot" style="padding:14px 0 0;border:none;">
+          <button type="button" class="rm-cancel" onclick="closeRM()">Vazgeç</button>
+          <button type="submit" class="rm-submit"><i class="ti ti-x"></i> Reddet</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
-<!-- ══ Hoca Atama Modal ══ -->
-<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
-  <div class="modal-box">
-    <div class="modal-head">
+<!-- ═══ Hoca Modal ═══ -->
+<div class="hm-ov" id="hmOv" onclick="if(event.target===this)closeHM()">
+  <div class="hm-box">
+    <div class="hm-head">
       <div>
-        <div class="modal-head-title" id="modalArticleTitle">Hoca Ata</div>
-        <div class="modal-head-sub" id="modalStudentName">Öğrenci</div>
+        <div class="hm-title" id="hmTitle">Hoca Ata</div>
+        <div class="hm-sub"  id="hmSub">Öğrenci</div>
       </div>
-      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+      <button class="hm-x" onclick="closeHM()"><i class="ti ti-x"></i></button>
     </div>
-
-    <div class="modal-search">
-      <div class="modal-search-box">
+    <div class="hm-search">
+      <div class="hm-sbox">
         <i class="ti ti-search"></i>
-        <input id="searchInput" type="text" placeholder="Hoca adı ile ara…" autocomplete="off" oninput="renderList(this.value)">
+        <input id="hmQ" type="text" placeholder="Hoca adı ile ara…" oninput="renderHocas(this.value)">
       </div>
     </div>
-
-    <div class="modal-teacher-list" id="teacherList"></div>
-
-    <div class="modal-selected">
-      <div class="modal-selected-label">Seçilen Hocalar</div>
-      <div class="chips-wrap" id="chips">
-        <span class="empty-chips">Henüz hoca seçilmedi</span>
-      </div>
+    <div class="hm-list" id="hmList"></div>
+    <div class="hm-sel">
+      <div class="hm-sel-lbl">Seçilen Hocalar</div>
+      <div class="hm-chips" id="hmChips"><span class="hm-empty-chip">Henüz hoca seçilmedi</span></div>
     </div>
-
-    <div class="modal-foot">
-      <div class="total-info">
-        Toplam ağırlık: <span id="totalPct" class="warn">0%</span>
-      </div>
-      <form id="assignForm" asp-controller="Admin" asp-action="MakaleHocaAtama" method="post">
+    <div class="hm-foot">
+      <div class="hm-total">Toplam ağırlık: <span id="hmPct" class="warn">0%</span></div>
+      <form id="hmForm" asp-controller="Admin" asp-action="MakaleHocaAtama" method="post">
         @Html.AntiForgeryToken()
-        <input type="hidden" id="modalMakaleId" name="makaleId">
-        <div id="hiddenInputsContainer"></div>
-        <button type="button" class="modal-submit" id="assignBtn" disabled onclick="submitForm()">
+        <input type="hidden" id="hmMakaleId" name="makaleId">
+        <div id="hmHiddens"></div>
+        <button type="button" class="hm-submit" id="hmBtn" disabled onclick="submitHM()">
           <i class="ti ti-check"></i> Hoca Ata & Gönder
         </button>
       </form>
@@ -365,126 +390,100 @@
 </div>
 
 <script>
-const teachers = @Html.Raw(Json.Serialize(hocalar.Select(h => new {
-  id = h.Id,
-  name = h.FullName ?? "",
-  title = h.UserType ?? "Öğretim Üyesi"
-})));
+const teachers = @Html.Raw(Json.Serialize(hocalar.Select(h => new { id=h.Id, name=h.FullName??"", title=h.UserType??"Öğretim Üyesi" })));
+let sel = [];
 
-let selected = [];
+function ini(n){ return n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
 
-function initials(name) {
-  return name.split(' ').slice(0,2).map(w => w[0] || '').join('').toUpperCase();
+function redist(){
+  if(!sel.length) return;
+  const b=Math.floor(100/sel.length), r=100-b*sel.length;
+  sel=sel.map((s,i)=>({...s,pct:b+(i<r?1:0)}));
 }
 
-function redistribute() {
-  if (!selected.length) return;
-  const base = Math.floor(100 / selected.length);
-  const rem  = 100 - base * selected.length;
-  selected = selected.map((s, i) => ({ ...s, pct: base + (i < rem ? 1 : 0) }));
-}
-
-function renderList(filter) {
-  const list = document.getElementById('teacherList');
-  list.innerHTML = '';
-  const q = (filter || '').toLowerCase();
-  let any = false;
-
-  teachers.forEach(t => {
-    if (q && !t.name.toLowerCase().includes(q)) return;
-    any = true;
-    const isSel = selected.some(s => s.id === t.id);
-    const row   = document.createElement('div');
-    row.className = 'teacher-row';
-    row.innerHTML = `
-      <div class="t-av">${initials(t.name)}</div>
-      <div style="flex:1;">
-        <div class="t-name">${t.name}</div>
-        <div class="t-title">${t.title}</div>
-      </div>
-      <div class="t-check ${isSel ? 'active' : ''}"></div>`;
-    row.onclick = () => toggleTeacher(t);
+function renderHocas(f){
+  const list=document.getElementById('hmList'); list.innerHTML='';
+  const q=(f||'').toLowerCase(); let any=false;
+  teachers.forEach(t=>{
+    if(q&&!t.name.toLowerCase().includes(q)) return; any=true;
+    const on=sel.some(s=>s.id===t.id);
+    const row=document.createElement('div'); row.className='hm-row';
+    row.innerHTML=`<div class="hm-av">${ini(t.name)}</div>
+      <div style="flex:1;"><div class="hm-hn">${t.name}</div><div class="hm-ht">${t.title}</div></div>
+      <div class="hm-chk ${on?'on':''}"></div>`;
+    row.onclick=()=>toggleH(t);
     list.appendChild(row);
   });
-
-  if (!any) list.innerHTML = '<div class="no-results">Sonuç bulunamadı</div>';
+  if(!any) list.innerHTML='<div class="hm-no-res">Sonuç bulunamadı</div>';
 }
 
-function renderChips() {
-  const chips = document.getElementById('chips');
-  const total = document.getElementById('totalPct');
-  const btn   = document.getElementById('assignBtn');
-
-  if (!selected.length) {
-    chips.innerHTML = '<span class="empty-chips">Henüz hoca seçilmedi</span>';
-    total.textContent = '0%'; total.className = 'warn';
-    btn.disabled = true; return;
-  }
-
-  chips.innerHTML = '';
-  let sum = 0;
-  selected.forEach(s => {
-    sum += s.pct;
-    const chip = document.createElement('div');
-    chip.className = 'chip';
-    chip.innerHTML = `<span>${s.name.split(' ')[0]}</span>
-      <span class="chip-pct">${s.pct}%</span>
-      <button class="chip-rm" onclick="removeTeacher(${s.id},event)">×</button>`;
-    chips.appendChild(chip);
+function renderChips(){
+  const chips=document.getElementById('hmChips');
+  const pct=document.getElementById('hmPct');
+  const btn=document.getElementById('hmBtn');
+  if(!sel.length){ chips.innerHTML='<span class="hm-empty-chip">Henüz hoca seçilmedi</span>'; pct.textContent='0%'; pct.className='warn'; btn.disabled=true; return; }
+  chips.innerHTML=''; let sum=0;
+  sel.forEach(s=>{
+    sum+=s.pct;
+    const c=document.createElement('div'); c.className='hm-chip';
+    c.innerHTML=`<span>${s.name.split(' ')[0]}</span><span class="hm-pct">${s.pct}%</span><button class="hm-rm" onclick="removeH(${s.id},event)">×</button>`;
+    chips.appendChild(c);
   });
-
-  total.textContent = sum + '%';
-  total.className = sum === 100 ? 'ok' : 'warn';
-  btn.disabled = sum !== 100;
+  pct.textContent=sum+'%'; pct.className=sum===100?'ok':'warn'; btn.disabled=sum!==100;
 }
 
-function toggleTeacher(t) {
-  if (selected.some(s => s.id === t.id)) selected = selected.filter(s => s.id !== t.id);
-  else selected.push({ ...t, pct: 0 });
-  redistribute();
-  renderList(document.getElementById('searchInput').value);
-  renderChips();
+function toggleH(t){ if(sel.some(s=>s.id===t.id)) sel=sel.filter(s=>s.id!==t.id); else sel.push({...t,pct:0}); redist(); renderHocas(document.getElementById('hmQ').value); renderChips(); }
+function removeH(id,e){ e.stopPropagation(); sel=sel.filter(s=>s.id!==id); redist(); renderHocas(document.getElementById('hmQ').value); renderChips(); }
+
+function openHM(id,title,student){
+  document.getElementById('hmMakaleId').value=id;
+  document.getElementById('hmTitle').textContent=title;
+  document.getElementById('hmSub').textContent=student+' — çalışması';
+  document.getElementById('hmQ').value='';
+  sel=[];
+  document.getElementById('hmOv').classList.add('open');
+  document.body.style.overflow='hidden';
+  renderHocas(''); renderChips();
+}
+function closeHM(){ document.getElementById('hmOv').classList.remove('open'); document.body.style.overflow=''; }
+
+function submitHM(){
+  const c=document.getElementById('hmHiddens'); c.innerHTML='';
+  sel.forEach(s=>{ const a=document.createElement('input'); a.type='hidden'; a.name='hocaIds'; a.value=s.id; const b=document.createElement('input'); b.type='hidden'; b.name='yuzdeler'; b.value=s.pct; c.appendChild(a); c.appendChild(b); });
+  document.getElementById('hmForm').submit();
 }
 
-function removeTeacher(id, e) {
-  e.stopPropagation();
-  selected = selected.filter(s => s.id !== id);
-  redistribute();
-  renderList(document.getElementById('searchInput').value);
-  renderChips();
+function openRM(id,title,student){
+  document.getElementById('rmId').value=id;
+  document.getElementById('rmSub').textContent=student+' — '+title;
+  document.querySelector('#rmForm textarea').value='';
+  document.getElementById('rmOv').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeRM(){ document.getElementById('rmOv').classList.remove('open'); document.body.style.overflow=''; }
+
+function setFilter(val){
+  document.getElementById('aymSel').value=val;
+  doFilter();
 }
 
-function openModal(id, title, student) {
-  document.getElementById('modalMakaleId').value = id;
-  document.getElementById('modalArticleTitle').textContent = title;
-  document.getElementById('modalStudentName').textContent  = student + ' — çalışması';
-  document.getElementById('searchInput').value = '';
-  selected = [];
-  document.getElementById('modalOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  renderList('');
-  renderChips();
-}
-
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('modalOverlay')) closeModal();
-}
-
-function submitForm() {
-  const container = document.getElementById('hiddenInputsContainer');
-  container.innerHTML = '';
-  selected.forEach(s => {
-    const a = document.createElement('input'); a.type='hidden'; a.name='hocaIds'; a.value=s.id;
-    const b = document.createElement('input'); b.type='hidden'; b.name='yuzdeler'; b.value=s.pct;
-    container.appendChild(a); container.appendChild(b);
+function doFilter(){
+  const q=document.getElementById('aymQ').value.toLowerCase().trim();
+  const s=document.getElementById('aymSel').value;
+  const rows=document.querySelectorAll('#aymBody tr');
+  const noRes=document.getElementById('aymNoRes');
+  const cnt=document.getElementById('aymCnt');
+  let vis=0;
+  rows.forEach(r=>{
+    const rs=r.getAttribute('data-s')||'';
+    const rq=r.getAttribute('data-q')||'';
+    const show=(!q||rq.includes(q))&&(!s||rs===s);
+    r.style.display=show?'':'none';
+    if(show) vis++;
   });
-  document.getElementById('assignForm').submit();
+  if(noRes) noRes.style.display=vis===0?'block':'none';
+  if(cnt)   cnt.textContent=vis+' çalışma';
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeHM();closeRM();} });
 </script>

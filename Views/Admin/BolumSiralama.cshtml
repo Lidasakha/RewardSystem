@@ -4,6 +4,8 @@
     ViewData["Active"] = "BolumSiralama";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var dept = ViewBag.BenimDept as string ?? "Bölüm";
+    int maxScore = Model.Any() ? Model.Max(r => r.Score) : 1;
+    if (maxScore == 0) maxScore = 1;
 }
 
 <style>
@@ -97,10 +99,6 @@
     }
     else
     {
-      @{
-        int maxScore = Model.Any() ? Model.Max(r => r.Score) : 1;
-        if (maxScore == 0) maxScore = 1;
-      }
       <div id="rowList">
         @for (int i = 0; i < Model.Count; i++)
         {
