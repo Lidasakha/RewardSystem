@@ -4,158 +4,168 @@
     ViewData["Title"] = "Akademik Yönetim";
     ViewData["Active"] = "AdminYonetimi";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var hocalar          = ViewBag.Hocalar as List<RewardSystem.Models.User> ?? new();
-    var bekleyenler      = Model.Where(m => m.Status == "OnayBekliyor").ToList();
-    var hocaBekleyenler  = Model.Where(m => m.Status == "OnaylandiBekliyor").ToList();
-    var reddedilenler    = Model.Where(m => m.Status == "Reddedildi").ToList();
+    var hocalar         = ViewBag.Hocalar as List<RewardSystem.Models.User> ?? new();
+    var atamalar        = ViewBag.Atamalar as List<RewardSystem.Models.ArticleTeacherAssignment> ?? new();
+
+    var bekleyenler     = Model.Where(m => m.Status == "OnayBekliyor").ToList();
+    var hocaBekleyenler = Model.Where(m => m.Status == "OnaylandiBekliyor").ToList();
+    var degerlendirme   = Model.Where(m => m.Status == "Degerlendirmede").ToList();
+    var reddedilenler   = Model.Where(m => m.Status == "Reddedildi").ToList();
+    var yayinlananlar   = Model.Where(m => m.Status == "Onaylandi").ToList();
 }
 
 <style>
-.aym { display:flex; flex-direction:column; gap:20px; }
+.aym{display:flex;flex-direction:column;gap:20px;}
 
-/* Banner */
-.aym-banner {
-  background:#111827; border-radius:var(--radius-lg);
-  padding:22px 28px; color:#fff;
-  display:flex; align-items:center; justify-content:space-between; gap:16px;
-  position:relative; overflow:hidden;
-}
-.aym-banner::before { content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04); }
-body.dark-mode .aym-banner { background:var(--brand-700); }
-.aym-banner h2 { font-size:18px;font-weight:700;margin-bottom:4px; }
-.aym-banner p  { font-size:13px;color:rgba(255,255,255,.6); }
-.aym-stats { display:flex;gap:8px;z-index:1;flex-shrink:0; }
-.aym-stat { background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 18px;text-align:center;cursor:pointer;transition:background .15s; }
-.aym-stat:hover { background:rgba(255,255,255,.18); }
-.aym-stat-num { font-size:22px;font-weight:800;line-height:1; }
-.aym-stat-lbl { font-size:10px;color:rgba(255,255,255,.55);margin-top:3px; }
+.aym-banner{background:#111827;border-radius:var(--radius-lg);padding:22px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;overflow:hidden;}
+.aym-banner::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);}
+body.dark-mode .aym-banner{background:var(--brand-700);}
+.aym-banner h2{font-size:18px;font-weight:700;margin-bottom:4px;}
+.aym-banner p{font-size:13px;color:rgba(255,255,255,.6);}
+.aym-stats{display:flex;gap:8px;z-index:1;flex-shrink:0;flex-wrap:wrap;}
+.aym-stat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:8px 12px;text-align:center;cursor:pointer;transition:background .15s;min-width:60px;}
+.aym-stat:hover{background:rgba(255,255,255,.2);}
+.aym-stat-num{font-size:18px;font-weight:800;line-height:1;}
+.aym-stat-lbl{font-size:9.5px;color:rgba(255,255,255,.55);margin-top:3px;}
 
-/* Alerts */
-.aym-alert { display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600; }
-.aym-alert-ok  { background:var(--green-bg);border:1px solid rgba(22,163,74,.25);color:var(--green); }
-.aym-alert-err { background:var(--red-bg);border:1px solid rgba(220,38,38,.25);color:var(--red); }
-.aym-alert-x   { margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:18px; }
+/* Süreç adımları */
+.aym-steps{display:flex;gap:0;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-sm);overflow-x:auto;}
+.aym-step{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.aym-step-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:2px solid transparent;}
+.aym-step-info{display:flex;flex-direction:column;}
+.aym-step-name{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;}
+.aym-step-count{font-size:11px;color:var(--text-muted);}
+.aym-step-arrow{color:var(--gray-300);font-size:20px;margin:0 12px;flex-shrink:0;}
+
+.step-bekliyor  .aym-step-icon{background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow);}
+.step-hoca      .aym-step-icon{background:var(--blue-bg);color:var(--blue);border-color:var(--blue);}
+.step-deger     .aym-step-icon{background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
+.step-yayinlandi .aym-step-icon{background:var(--green-bg);color:var(--green);border-color:var(--green);}
+.step-red       .aym-step-icon{background:var(--red-bg);color:var(--red);border-color:var(--red);}
 
 /* Toolbar */
-.aym-toolbar {
-  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow-sm);
-}
-.aym-search {
-  flex:1;min-width:200px;display:flex;align-items:center;gap:9px;
-  background:var(--surface-2);border:1.5px solid var(--border);
-  border-radius:var(--radius-sm);padding:0 14px;
-}
-.aym-search:focus-within { border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(74,112,196,.1); }
-.aym-search i  { font-size:17px;color:var(--text-muted); }
-.aym-search input { flex:1;border:none;outline:none;padding:10px 0;font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent; }
-.aym-search input::placeholder { color:var(--text-light); }
-.aym-sel { padding:10px 14px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none;cursor:pointer; }
+.aym-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow-sm);}
+.aym-search{flex:1;min-width:200px;display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 14px;}
+.aym-search:focus-within{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(74,112,196,.1);}
+.aym-search i{font-size:17px;color:var(--text-muted);}
+.aym-search input{flex:1;border:none;outline:none;padding:10px 0;font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent;}
+.aym-search input::placeholder{color:var(--text-light);}
+.aym-sel{padding:10px 14px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none;cursor:pointer;}
+
+/* Alerts */
+.aym-alert{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;}
+.aym-alert-ok {background:var(--green-bg);border:1px solid rgba(22,163,74,.25);color:var(--green);}
+.aym-alert-err{background:var(--red-bg);border:1px solid rgba(220,38,38,.25);color:var(--red);}
+.aym-alert-x{margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:18px;}
 
 /* Panel */
-.aym-panel { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden; }
-.aym-head  { display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text);background:var(--surface-2); }
+.aym-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;}
+.aym-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text);background:var(--surface-2);}
 
 /* Table */
-.aym-table { width:100%;border-collapse:separate;border-spacing:0; }
-.aym-table th { text-align:left;padding:12px 20px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);background:var(--surface-2);white-space:nowrap; }
-.aym-table td { padding:14px 20px;border-bottom:1px solid var(--border);vertical-align:middle; }
-.aym-table tbody tr:last-child td { border-bottom:none; }
-.aym-table tbody tr { transition:background .15s; }
-.aym-table tbody tr:hover { background:var(--surface-2); }
+.aym-table{width:100%;border-collapse:separate;border-spacing:0;}
+.aym-table th{text-align:left;padding:12px 20px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);background:var(--surface-2);white-space:nowrap;}
+.aym-table td{padding:14px 20px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.aym-table tbody tr:last-child td{border-bottom:none;}
+.aym-table tbody tr{transition:background .15s;}
+.aym-table tbody tr:hover{background:var(--surface-2);}
 
-/* Student */
-.aym-user { display:flex;align-items:center;gap:11px; }
-.aym-av   { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0; }
-.aym-name { font-weight:700;font-size:13.5px;color:var(--text); }
-.aym-dept { font-size:11.5px;color:var(--text-muted);margin-top:1px; }
-.aym-title { font-weight:600;color:var(--text);font-size:13.5px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.aym-year  { font-size:11.5px;color:var(--text-muted);margin-top:2px; }
-.aym-file  { display:inline-flex;align-items:center;gap:5px;color:var(--blue);font-weight:600;font-size:12.5px;text-decoration:none; }
-.aym-file:hover { text-decoration:underline; }
-.aym-nofile { color:var(--text-light);font-size:12.5px; }
+.aym-user{display:flex;align-items:center;gap:11px;}
+.aym-av{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0;}
+.aym-name{font-weight:700;font-size:13.5px;color:var(--text);}
+.aym-dept{font-size:11.5px;color:var(--text-muted);margin-top:1px;}
+.aym-title{font-weight:600;color:var(--text);font-size:13.5px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aym-year{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
+.aym-file{display:inline-flex;align-items:center;gap:5px;color:var(--blue);font-weight:600;font-size:12.5px;text-decoration:none;}
+.aym-file:hover{text-decoration:underline;}
+.aym-nofile{color:var(--text-light);font-size:12.5px;}
 
 /* Badges */
-.aym-badge { font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap; }
-.aym-dot   { width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2s ease-in-out infinite; }
+.aym-badge{font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.aym-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2s ease-in-out infinite;}
 @@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
-.bd-y { background:var(--yellow-bg);color:var(--yellow); }
-.bd-g { background:var(--green-bg);color:var(--green); }
-.bd-r { background:var(--red-bg);color:var(--red); }
+.bd-y{background:var(--yellow-bg);color:var(--yellow);}
+.bd-b{background:var(--blue-bg);color:var(--blue);}
+.bd-p{background:var(--purple-bg);color:var(--purple);}
+.bd-g{background:var(--green-bg);color:var(--green);}
+.bd-r{background:var(--red-bg);color:var(--red);}
 
 /* Buttons */
-.aym-actions { display:flex;gap:7px;align-items:center; }
-.aym-btn { display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap; }
-.aym-btn-ok  { background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.25); }
-.aym-btn-ok:hover  { transform:translateY(-1px);box-shadow:0 5px 14px rgba(22,163,74,.35); }
-.aym-btn-red { background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2); }
-.aym-btn-red:hover { background:var(--red);color:#fff;border-color:transparent;transform:translateY(-1px); }
-.aym-btn-ata { background:var(--brand-600);color:#fff;box-shadow:0 2px 8px rgba(26,43,76,.25); }
-.aym-btn-ata:hover { background:var(--brand-700);transform:translateY(-1px); }
+.aym-actions{display:flex;gap:7px;align-items:center;}
+.aym-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap;}
+.btn-ok {background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.25);}
+.btn-ok:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(22,163,74,.35);}
+.btn-rd{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2);}
+.btn-rd:hover{background:var(--red);color:#fff;border-color:transparent;transform:translateY(-1px);}
+.btn-at{background:var(--brand-600);color:#fff;box-shadow:0 2px 8px rgba(26,43,76,.25);}
+.btn-at:hover{background:var(--brand-700);transform:translateY(-1px);}
+
+/* Teacher chips in table */
+.teacher-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.t-chip{font-size:10.5px;font-weight:600;background:var(--purple-bg);color:var(--purple);padding:2px 8px;border-radius:20px;}
+
+/* Score */
+.aym-score{font-size:18px;font-weight:800;color:var(--green);}
 
 /* Empty */
-.aym-empty { padding:50px 20px;text-align:center;color:var(--text-muted); }
-.aym-empty i { font-size:40px;display:block;margin-bottom:12px;opacity:.3; }
-.aym-no-res  { padding:30px;text-align:center;color:var(--text-muted);display:none; }
+.aym-empty{padding:40px 20px;text-align:center;color:var(--text-muted);}
+.aym-empty i{font-size:36px;display:block;margin-bottom:10px;opacity:.3;}
+.aym-no-res{padding:30px;text-align:center;color:var(--text-muted);display:none;}
 
 /* Red Modal */
-.rm-ov { display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px; }
-.rm-ov.open { display:flex; }
-.rm-box { background:var(--surface);border-radius:16px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden; }
-.rm-head { padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
-.rm-title { font-size:15px;font-weight:800;color:var(--text); }
-.rm-x { background:var(--gray-100);border:none;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:16px;color:var(--text-muted);display:flex;align-items:center;justify-content:center; }
-body.dark-mode .rm-x { background:var(--gray-800); }
-.rm-body { padding:20px 22px; }
-.rm-lbl  { display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px; }
-.rm-ta   { width:100%;padding:11px 14px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);outline:none;resize:vertical; }
-.rm-ta:focus { border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.1); }
-.rm-foot { padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end; }
-.rm-cancel { padding:9px 18px;background:var(--gray-100);border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;color:var(--text); }
-body.dark-mode .rm-cancel { background:var(--gray-800); }
-.rm-submit { padding:9px 20px;background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer; }
-.rm-submit:hover { opacity:.85; }
+.rm-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;}
+.rm-ov.open{display:flex;}
+.rm-box{background:var(--surface);border-radius:16px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;}
+.rm-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.rm-title{font-size:15px;font-weight:800;color:var(--text);}
+.rm-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.rm-x{background:var(--gray-100);border:none;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:16px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;}
+.rm-body{padding:20px 22px;}
+.rm-lbl{display:block;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+.rm-ta{width:100%;padding:11px 14px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);outline:none;resize:vertical;}
+.rm-ta:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.1);}
+.rm-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.rm-cancel{padding:9px 18px;background:var(--gray-100);border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);}
+.rm-submit{padding:9px 20px;background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
 
 /* Hoca Modal */
-.hm-ov { display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;padding:20px; }
-.hm-ov.open { display:flex; }
-.hm-box { background:var(--surface);border-radius:18px;width:100%;max-width:520px;display:flex;flex-direction:column;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden; }
-.hm-head { padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0; }
-.hm-title { font-size:16px;font-weight:800;color:var(--text);margin-bottom:3px; }
-.hm-sub   { font-size:12px;color:var(--text-muted); }
-.hm-x     { background:var(--gray-100);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;color:var(--text-muted);display:flex;align-items:center;justify-content:center; }
-body.dark-mode .hm-x { background:var(--gray-800); }
-.hm-search { padding:14px 20px 10px;flex-shrink:0; }
-.hm-sbox { display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 14px; }
-.hm-sbox i { font-size:17px;color:var(--text-muted); }
-.hm-sbox input { flex:1;border:none;outline:none;padding:10px 0;font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent; }
-.hm-list { flex:1;overflow-y:auto;padding:4px 8px; }
-.hm-row  { display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;cursor:pointer;transition:background .15s; }
-.hm-row:hover { background:var(--surface-2); }
-.hm-av   { width:36px;height:36px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
-.hm-hn   { font-size:13.5px;font-weight:600;color:var(--text); }
-.hm-ht   { font-size:11.5px;color:var(--text-muted); }
-.hm-chk  { margin-left:auto;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0; }
-.hm-chk.on { background:var(--accent);border-color:var(--accent); }
-.hm-chk.on::after { content:'✓';font-size:12px;color:#fff;font-weight:700; }
-.hm-sel  { padding:12px 20px;border-top:1px solid var(--border);background:var(--surface-2);flex-shrink:0; }
-.hm-sel-lbl { font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px; }
-.hm-chips { display:flex;flex-wrap:wrap;gap:6px; }
-.hm-chip  { display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px; }
-.hm-pct   { font-weight:800;color:var(--accent); }
-.hm-rm    { background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:15px;padding:0;line-height:1; }
-.hm-rm:hover { color:var(--red); }
-.hm-empty-chip { font-size:12.5px;color:var(--text-light);font-style:italic; }
-.hm-foot  { padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
-.hm-total { font-size:13px;color:var(--text-muted); }
-.hm-total span { font-weight:800;font-size:15px; }
-.hm-total .ok   { color:var(--green); }
-.hm-total .warn { color:var(--yellow); }
-.hm-submit { display:inline-flex;align-items:center;gap:7px;padding:10px 22px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;transition:all .18s; }
-.hm-submit:hover { background:var(--brand-700);transform:translateY(-1px); }
-.hm-submit:disabled { opacity:.4;cursor:not-allowed;transform:none; }
-.hm-no-res { text-align:center;padding:24px;color:var(--text-muted);font-size:13px; }
+.hm-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;padding:20px;}
+.hm-ov.open{display:flex;}
+.hm-box{background:var(--surface);border-radius:18px;width:100%;max-width:520px;display:flex;flex-direction:column;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;}
+.hm-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;}
+.hm-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:3px;}
+.hm-sub{font-size:12px;color:var(--text-muted);}
+.hm-x{background:var(--gray-100);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;}
+.hm-search{padding:14px 20px 10px;flex-shrink:0;}
+.hm-sbox{display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 14px;}
+.hm-sbox i{font-size:17px;color:var(--text-muted);}
+.hm-sbox input{flex:1;border:none;outline:none;padding:10px 0;font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent;}
+.hm-list{flex:1;overflow-y:auto;padding:4px 8px;}
+.hm-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;cursor:pointer;transition:background .15s;}
+.hm-row:hover{background:var(--surface-2);}
+.hm-av{width:36px;height:36px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hm-hn{font-size:13.5px;font-weight:600;color:var(--text);}
+.hm-ht{font-size:11.5px;color:var(--text-muted);}
+.hm-chk{margin-left:auto;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+.hm-chk.on{background:var(--accent);border-color:var(--accent);}
+.hm-chk.on::after{content:'✓';font-size:12px;color:#fff;font-weight:700;}
+.hm-sel{padding:12px 20px;border-top:1px solid var(--border);background:var(--surface-2);flex-shrink:0;}
+.hm-sel-lbl{font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.hm-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.hm-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;}
+.hm-pct{font-weight:800;color:var(--accent);}
+.hm-rm{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:15px;padding:0;line-height:1;}
+.hm-rm:hover{color:var(--red);}
+.hm-empty-chip{font-size:12.5px;color:var(--text-light);font-style:italic;}
+.hm-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.hm-total{font-size:13px;color:var(--text-muted);}
+.hm-total span{font-weight:800;font-size:15px;}
+.hm-total .ok{color:var(--green);}
+.hm-total .warn{color:var(--yellow);}
+.hm-submit{display:inline-flex;align-items:center;gap:7px;padding:10px 22px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;transition:all .18s;}
+.hm-submit:hover{background:var(--brand-700);transform:translateY(-1px);}
+.hm-submit:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.hm-no-res{text-align:center;padding:24px;color:var(--text-muted);font-size:13px;}
 </style>
 
 <div class="aym">
@@ -181,20 +191,75 @@ body.dark-mode .hm-x { background:var(--gray-800); }
   <div class="aym-banner">
     <div>
       <h2>Akademik Yönetim</h2>
-      <p>Çalışmaları önce onaylayın veya reddedin, ardından hoca atayın.</p>
+      <p>Tüm çalışmaların süreç takibi — onay, hoca ataması, değerlendirme ve yayınlama.</p>
     </div>
     <div class="aym-stats">
-      <div class="aym-stat" onclick="setFilter('OnayBekliyor')">
+      <div class="aym-stat" onclick="setFilter('OnayBekliyor')" title="Onay Bekliyor">
         <div class="aym-stat-num" style="color:#fbbf24;">@bekleyenler.Count</div>
-        <div class="aym-stat-lbl">Onay Bekliyor</div>
+        <div class="aym-stat-lbl">Onay</div>
       </div>
-      <div class="aym-stat" onclick="setFilter('OnaylandiBekliyor')">
-        <div class="aym-stat-num" style="color:#34d399;">@hocaBekleyenler.Count</div>
-        <div class="aym-stat-lbl">Hoca Bekliyor</div>
+      <div class="aym-stat" onclick="setFilter('OnaylandiBekliyor')" title="Hoca Ataması Bekliyor">
+        <div class="aym-stat-num" style="color:#60a5fa;">@hocaBekleyenler.Count</div>
+        <div class="aym-stat-lbl">Hoca</div>
       </div>
-      <div class="aym-stat" onclick="setFilter('Reddedildi')">
+      <div class="aym-stat" onclick="setFilter('Degerlendirmede')" title="Değerlendirmede">
+        <div class="aym-stat-num" style="color:#a78bfa;">@degerlendirme.Count</div>
+        <div class="aym-stat-lbl">Değerl.</div>
+      </div>
+      <div class="aym-stat" onclick="setFilter('Onaylandi')" title="Yayınlanan">
+        <div class="aym-stat-num" style="color:#34d399;">@yayinlananlar.Count</div>
+        <div class="aym-stat-lbl">Yayında</div>
+      </div>
+      <div class="aym-stat" onclick="setFilter('Reddedildi')" title="Reddedilen">
         <div class="aym-stat-num" style="color:#f87171;">@reddedilenler.Count</div>
-        <div class="aym-stat-lbl">Reddedilen</div>
+        <div class="aym-stat-lbl">Red</div>
+      </div>
+      <div class="aym-stat" onclick="setFilter('')" title="Tümü">
+        <div class="aym-stat-num" style="color:#fff;">@Model.Count</div>
+        <div class="aym-stat-lbl">Tümü</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Süreç Akışı -->
+  <div class="aym-steps">
+    <div class="aym-step step-bekliyor">
+      <div class="aym-step-icon"><i class="ti ti-clock"></i></div>
+      <div class="aym-step-info">
+        <div class="aym-step-name">Onay Bekliyor</div>
+        <div class="aym-step-count">@bekleyenler.Count çalışma</div>
+      </div>
+    </div>
+    <i class="ti ti-arrow-right aym-step-arrow"></i>
+    <div class="aym-step step-hoca">
+      <div class="aym-step-icon"><i class="ti ti-user-plus"></i></div>
+      <div class="aym-step-info">
+        <div class="aym-step-name">Hoca Ataması</div>
+        <div class="aym-step-count">@hocaBekleyenler.Count çalışma</div>
+      </div>
+    </div>
+    <i class="ti ti-arrow-right aym-step-arrow"></i>
+    <div class="aym-step step-deger">
+      <div class="aym-step-icon"><i class="ti ti-clipboard-check"></i></div>
+      <div class="aym-step-info">
+        <div class="aym-step-name">Değerlendirme</div>
+        <div class="aym-step-count">@degerlendirme.Count çalışma</div>
+      </div>
+    </div>
+    <i class="ti ti-arrow-right aym-step-arrow"></i>
+    <div class="aym-step step-yayinlandi">
+      <div class="aym-step-icon"><i class="ti ti-circle-check"></i></div>
+      <div class="aym-step-info">
+        <div class="aym-step-name">Yayınlandı</div>
+        <div class="aym-step-count">@yayinlananlar.Count çalışma</div>
+      </div>
+    </div>
+    <i class="ti ti-arrow-right aym-step-arrow"></i>
+    <div class="aym-step step-red">
+      <div class="aym-step-icon"><i class="ti ti-circle-x"></i></div>
+      <div class="aym-step-info">
+        <div class="aym-step-name">Reddedildi</div>
+        <div class="aym-step-count">@reddedilenler.Count çalışma</div>
       </div>
     </div>
   </div>
@@ -209,6 +274,8 @@ body.dark-mode .hm-x { background:var(--gray-800); }
       <option value="">Tüm Durumlar (@Model.Count)</option>
       <option value="OnayBekliyor">Onay Bekliyor (@bekleyenler.Count)</option>
       <option value="OnaylandiBekliyor">Hoca Ataması Bekliyor (@hocaBekleyenler.Count)</option>
+      <option value="Degerlendirmede">Değerlendirmede (@degerlendirme.Count)</option>
+      <option value="Onaylandi">Yayınlanan (@yayinlananlar.Count)</option>
       <option value="Reddedildi">Reddedilen (@reddedilenler.Count)</option>
     </select>
   </div>
@@ -216,16 +283,13 @@ body.dark-mode .hm-x { background:var(--gray-800); }
   <!-- Tek Panel -->
   <div class="aym-panel">
     <div class="aym-head">
-      <span><i class="ti ti-files" style="color:var(--accent);margin-right:7px;"></i>Çalışma Listesi</span>
+      <span><i class="ti ti-files" style="color:var(--accent);margin-right:7px;"></i>Tüm Çalışmalar</span>
       <span style="font-size:12px;color:var(--text-muted);" id="aymCnt">@Model.Count çalışma</span>
     </div>
 
     @if (!Model.Any())
     {
-      <div class="aym-empty">
-        <i class="ti ti-inbox"></i>
-        Henüz çalışma bulunmuyor.
-      </div>
+      <div class="aym-empty"><i class="ti ti-inbox"></i>Henüz çalışma bulunmuyor.</div>
     }
     else
     {
@@ -236,36 +300,33 @@ body.dark-mode .hm-x { background:var(--gray-800); }
               <th>Öğrenci</th>
               <th>Çalışma Başlığı</th>
               <th>Dosya</th>
+              <th>Atanan Hocalar</th>
               <th>Durum</th>
+              <th>Puan</th>
               <th>İşlem</th>
             </tr>
           </thead>
           <tbody id="aymBody">
 
+            @* Onay Bekleyenler *@
             @foreach (var m in bekleyenler)
             {
               var ini = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
-              <tr data-s="OnayBekliyor" data-q="@(m.User?.FullName ?? "").ToLower() @(m.Title ?? "").ToLower()">
-                <td>
-                  <div class="aym-user">
-                    <div class="aym-av" style="background:var(--brand-600);">@ini</div>
-                    <div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department ?? "—")</div></div>
-                  </div>
-                </td>
+              <tr data-s="OnayBekliyor" data-q="@(m.User?.FullName??"").ToLower() @(m.Title??"").ToLower()">
+                <td><div class="aym-user"><div class="aym-av" style="background:var(--brand-600);">@ini</div><div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department??"—")</div></div></div></td>
                 <td><div class="aym-title">@m.Title</div>@if(m.Year.HasValue){<div class="aym-year">@m.Year</div>}</td>
-                <td>
-                  @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a> }
-                  else { <span class="aym-nofile">Yok</span> }
-                </td>
+                <td>@if(!string.IsNullOrEmpty(m.FilePath)){<a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a>}else{<span class="aym-nofile">Yok</span>}</td>
+                <td><span style="font-size:12px;color:var(--text-light);">—</span></td>
                 <td><span class="aym-badge bd-y"><span class="aym-dot"></span>Onay Bekliyor</span></td>
+                <td><span style="font-size:12px;color:var(--text-light);">—</span></td>
                 <td>
                   <div class="aym-actions">
                     <form asp-action="MakaleOnayVer" method="post" style="display:inline;">
                       @Html.AntiForgeryToken()
                       <input type="hidden" name="makaleId" value="@m.Id">
-                      <button type="submit" class="aym-btn aym-btn-ok"><i class="ti ti-check"></i> Onayla</button>
+                      <button type="submit" class="aym-btn btn-ok"><i class="ti ti-check"></i> Onayla</button>
                     </form>
-                    <button class="aym-btn aym-btn-red" onclick="openRM('@m.Id','@(m.Title?.Replace("'","\\'")??"")','@(m.User?.FullName?.Replace("'","\\'")??"")' )">
+                    <button class="aym-btn btn-rd" onclick="openRM('@m.Id','@(m.Title?.Replace("'","\\'")??"")','@(m.User?.FullName?.Replace("'","\\'")??"")' )">
                       <i class="ti ti-x"></i> Reddet
                     </button>
                   </div>
@@ -273,46 +334,90 @@ body.dark-mode .hm-x { background:var(--gray-800); }
               </tr>
             }
 
+            @* Hoca Ataması Bekleyenler *@
             @foreach (var m in hocaBekleyenler)
             {
               var ini = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
-              <tr data-s="OnaylandiBekliyor" data-q="@(m.User?.FullName ?? "").ToLower() @(m.Title ?? "").ToLower()">
-                <td>
-                  <div class="aym-user">
-                    <div class="aym-av" style="background:var(--green);">@ini</div>
-                    <div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department ?? "—")</div></div>
-                  </div>
-                </td>
+              <tr data-s="OnaylandiBekliyor" data-q="@(m.User?.FullName??"").ToLower() @(m.Title??"").ToLower()">
+                <td><div class="aym-user"><div class="aym-av" style="background:var(--blue);">@ini</div><div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department??"—")</div></div></div></td>
                 <td><div class="aym-title">@m.Title</div>@if(m.Year.HasValue){<div class="aym-year">@m.Year</div>}</td>
+                <td>@if(!string.IsNullOrEmpty(m.FilePath)){<a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a>}else{<span class="aym-nofile">Yok</span>}</td>
+                <td><span style="font-size:12px;color:var(--text-light);">Atanmadı</span></td>
+                <td><span class="aym-badge bd-b"><span class="aym-dot"></span>Hoca Ataması Bekliyor</span></td>
+                <td><span style="font-size:12px;color:var(--text-light);">—</span></td>
                 <td>
-                  @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a> }
-                  else { <span class="aym-nofile">Yok</span> }
-                </td>
-                <td><span class="aym-badge bd-g"><span class="aym-dot"></span>Hoca Ataması Bekliyor</span></td>
-                <td>
-                  <button class="aym-btn aym-btn-ata" onclick="openHM('@m.Id','@(m.Title?.Replace("'","\\'")??"")','@(m.User?.FullName?.Replace("'","\\'")??"")' )">
+                  <button class="aym-btn btn-at" onclick="openHM('@m.Id','@(m.Title?.Replace("'","\\'")??"")','@(m.User?.FullName?.Replace("'","\\'")??"")' )">
                     <i class="ti ti-user-plus"></i> Hoca Ata
                   </button>
                 </td>
               </tr>
             }
 
+            @* Değerlendirmedekiler *@
+            @foreach (var m in degerlendirme)
+            {
+              var ini = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
+              var mAtamalar = atamalar.Where(a => a.ArticleId == m.Id).ToList();
+              var tamamlanan = mAtamalar.Count(a => a.IsCompleted);
+              var toplam = mAtamalar.Count;
+              <tr data-s="Degerlendirmede" data-q="@(m.User?.FullName??"").ToLower() @(m.Title??"").ToLower()">
+                <td><div class="aym-user"><div class="aym-av" style="background:var(--purple);">@ini</div><div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department??"—")</div></div></div></td>
+                <td><div class="aym-title">@m.Title</div>@if(m.Year.HasValue){<div class="aym-year">@m.Year</div>}</td>
+                <td>@if(!string.IsNullOrEmpty(m.FilePath)){<a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a>}else{<span class="aym-nofile">Yok</span>}</td>
+                <td>
+                  <div class="teacher-chips">
+                    @foreach (var a in mAtamalar)
+                    {
+                      var hoca = hocalar.FirstOrDefault(h => h.Id == a.TeacherId);
+                      var hocaAd = hoca?.FullName?.Split(' ').FirstOrDefault() ?? "Hoca";
+                      <span class="t-chip" style="@(a.IsCompleted ? "background:var(--green-bg);color:var(--green);" : "")">
+                        @hocaAd @(a.IsCompleted ? "✓" : "") %@a.WeightPercentage
+                      </span>
+                    }
+                  </div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">@tamamlanan/@toplam değerlendirdi</div>
+                </td>
+                <td><span class="aym-badge bd-p"><span class="aym-dot"></span>Değerlendirmede</span></td>
+                <td><span style="font-size:12px;color:var(--text-light);">Bekleniyor</span></td>
+                <td><span style="font-size:12px;color:var(--text-muted);">—</span></td>
+              </tr>
+            }
+
+            @* Yayınlananlar *@
+            @foreach (var m in yayinlananlar)
+            {
+              var ini = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
+              <tr data-s="Onaylandi" data-q="@(m.User?.FullName??"").ToLower() @(m.Title??"").ToLower()">
+                <td><div class="aym-user"><div class="aym-av" style="background:var(--green);">@ini</div><div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department??"—")</div></div></div></td>
+                <td><div class="aym-title">@m.Title</div>@if(m.Year.HasValue){<div class="aym-year">@m.Year</div>}</td>
+                <td>@if(!string.IsNullOrEmpty(m.FilePath)){<a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a>}else{<span class="aym-nofile">Yok</span>}</td>
+                <td>
+                  <div class="teacher-chips">
+                    @foreach (var a in atamalar.Where(a => a.ArticleId == m.Id))
+                    {
+                      var hoca = hocalar.FirstOrDefault(h => h.Id == a.TeacherId);
+                      var hocaAd = hoca?.FullName?.Split(' ').FirstOrDefault() ?? "Hoca";
+                      <span class="t-chip" style="background:var(--green-bg);color:var(--green);">@hocaAd ✓</span>
+                    }
+                  </div>
+                </td>
+                <td><span class="aym-badge bd-g"><span class="aym-dot"></span>Yayınlandı</span></td>
+                <td><span class="aym-score">@(m.Score.HasValue ? m.Score + " p" : "—")</span></td>
+                <td><span style="font-size:12px;color:var(--text-muted);">—</span></td>
+              </tr>
+            }
+
+            @* Reddedilenler *@
             @foreach (var m in reddedilenler)
             {
               var ini = m.User?.FullName?.Length > 0 ? m.User.FullName[0].ToString().ToUpper() : "?";
-              <tr data-s="Reddedildi" data-q="@(m.User?.FullName ?? "").ToLower() @(m.Title ?? "").ToLower()">
-                <td>
-                  <div class="aym-user">
-                    <div class="aym-av" style="background:var(--red);">@ini</div>
-                    <div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department ?? "—")</div></div>
-                  </div>
-                </td>
+              <tr data-s="Reddedildi" data-q="@(m.User?.FullName??"").ToLower() @(m.Title??"").ToLower()">
+                <td><div class="aym-user"><div class="aym-av" style="background:var(--red);">@ini</div><div><div class="aym-name">@m.User?.FullName</div><div class="aym-dept">@(m.User?.Department??"—")</div></div></div></td>
                 <td><div class="aym-title">@m.Title</div>@if(m.Year.HasValue){<div class="aym-year">@m.Year</div>}</td>
-                <td>
-                  @if (!string.IsNullOrEmpty(m.FilePath)) { <a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a> }
-                  else { <span class="aym-nofile">Yok</span> }
-                </td>
+                <td>@if(!string.IsNullOrEmpty(m.FilePath)){<a href="@m.FilePath" target="_blank" class="aym-file"><i class="ti ti-paperclip"></i> İncele</a>}else{<span class="aym-nofile">Yok</span>}</td>
+                <td><span style="font-size:12px;color:var(--text-light);">—</span></td>
                 <td><span class="aym-badge bd-r"><span class="aym-dot"></span>Reddedildi</span></td>
+                <td><span style="font-size:12px;color:var(--text-light);">—</span></td>
                 <td><span style="font-size:12px;color:var(--text-muted);">—</span></td>
               </tr>
             }
@@ -326,16 +431,15 @@ body.dark-mode .hm-x { background:var(--gray-800); }
       </div>
     }
   </div>
-
 </div>
 
-<!-- ═══ Red Modal ═══ -->
+<!-- Red Modal -->
 <div class="rm-ov" id="rmOv" onclick="if(event.target===this)closeRM()">
   <div class="rm-box">
     <div class="rm-head">
       <div>
         <div class="rm-title">Çalışmayı Reddet</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;" id="rmSub"></div>
+        <div class="rm-sub" id="rmSub"></div>
       </div>
       <button class="rm-x" onclick="closeRM()"><i class="ti ti-x"></i></button>
     </div>
@@ -354,13 +458,13 @@ body.dark-mode .hm-x { background:var(--gray-800); }
   </div>
 </div>
 
-<!-- ═══ Hoca Modal ═══ -->
+<!-- Hoca Modal -->
 <div class="hm-ov" id="hmOv" onclick="if(event.target===this)closeHM()">
   <div class="hm-box">
     <div class="hm-head">
       <div>
         <div class="hm-title" id="hmTitle">Hoca Ata</div>
-        <div class="hm-sub"  id="hmSub">Öğrenci</div>
+        <div class="hm-sub" id="hmSub"></div>
       </div>
       <button class="hm-x" onclick="closeHM()"><i class="ti ti-x"></i></button>
     </div>
@@ -390,83 +494,37 @@ body.dark-mode .hm-x { background:var(--gray-800); }
 </div>
 
 <script>
-const teachers = @Html.Raw(Json.Serialize(hocalar.Select(h => new { id=h.Id, name=h.FullName??"", title=h.UserType??"Öğretim Üyesi" })));
-let sel = [];
-
-function ini(n){ return n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
-
-function redist(){
-  if(!sel.length) return;
-  const b=Math.floor(100/sel.length), r=100-b*sel.length;
-  sel=sel.map((s,i)=>({...s,pct:b+(i<r?1:0)}));
-}
-
+const teachers=@Html.Raw(Json.Serialize(hocalar.Select(h=>new{id=h.Id,name=h.FullName??"",title=h.UserType??"Öğretim Üyesi"})));
+let sel=[];
+function ini(n){return n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();}
+function redist(){if(!sel.length)return;const b=Math.floor(100/sel.length),r=100-b*sel.length;sel=sel.map((s,i)=>({...s,pct:b+(i<r?1:0)}));}
 function renderHocas(f){
-  const list=document.getElementById('hmList'); list.innerHTML='';
-  const q=(f||'').toLowerCase(); let any=false;
+  const list=document.getElementById('hmList');list.innerHTML='';
+  const q=(f||'').toLowerCase();let any=false;
   teachers.forEach(t=>{
-    if(q&&!t.name.toLowerCase().includes(q)) return; any=true;
+    if(q&&!t.name.toLowerCase().includes(q))return;any=true;
     const on=sel.some(s=>s.id===t.id);
-    const row=document.createElement('div'); row.className='hm-row';
-    row.innerHTML=`<div class="hm-av">${ini(t.name)}</div>
-      <div style="flex:1;"><div class="hm-hn">${t.name}</div><div class="hm-ht">${t.title}</div></div>
-      <div class="hm-chk ${on?'on':''}"></div>`;
-    row.onclick=()=>toggleH(t);
-    list.appendChild(row);
+    const row=document.createElement('div');row.className='hm-row';
+    row.innerHTML=`<div class="hm-av">${ini(t.name)}</div><div style="flex:1;"><div class="hm-hn">${t.name}</div><div class="hm-ht">${t.title}</div></div><div class="hm-chk ${on?'on':''}"></div>`;
+    row.onclick=()=>toggleH(t);list.appendChild(row);
   });
-  if(!any) list.innerHTML='<div class="hm-no-res">Sonuç bulunamadı</div>';
+  if(!any)list.innerHTML='<div class="hm-no-res">Sonuç bulunamadı</div>';
 }
-
 function renderChips(){
-  const chips=document.getElementById('hmChips');
-  const pct=document.getElementById('hmPct');
-  const btn=document.getElementById('hmBtn');
-  if(!sel.length){ chips.innerHTML='<span class="hm-empty-chip">Henüz hoca seçilmedi</span>'; pct.textContent='0%'; pct.className='warn'; btn.disabled=true; return; }
-  chips.innerHTML=''; let sum=0;
-  sel.forEach(s=>{
-    sum+=s.pct;
-    const c=document.createElement('div'); c.className='hm-chip';
-    c.innerHTML=`<span>${s.name.split(' ')[0]}</span><span class="hm-pct">${s.pct}%</span><button class="hm-rm" onclick="removeH(${s.id},event)">×</button>`;
-    chips.appendChild(c);
-  });
-  pct.textContent=sum+'%'; pct.className=sum===100?'ok':'warn'; btn.disabled=sum!==100;
+  const chips=document.getElementById('hmChips'),pct=document.getElementById('hmPct'),btn=document.getElementById('hmBtn');
+  if(!sel.length){chips.innerHTML='<span class="hm-empty-chip">Henüz hoca seçilmedi</span>';pct.textContent='0%';pct.className='warn';btn.disabled=true;return;}
+  chips.innerHTML='';let sum=0;
+  sel.forEach(s=>{sum+=s.pct;const c=document.createElement('div');c.className='hm-chip';c.innerHTML=`<span>${s.name.split(' ')[0]}</span><span class="hm-pct">${s.pct}%</span><button class="hm-rm" onclick="removeH(${s.id},event)">×</button>`;chips.appendChild(c);});
+  pct.textContent=sum+'%';pct.className=sum===100?'ok':'warn';btn.disabled=sum!==100;
 }
-
-function toggleH(t){ if(sel.some(s=>s.id===t.id)) sel=sel.filter(s=>s.id!==t.id); else sel.push({...t,pct:0}); redist(); renderHocas(document.getElementById('hmQ').value); renderChips(); }
-function removeH(id,e){ e.stopPropagation(); sel=sel.filter(s=>s.id!==id); redist(); renderHocas(document.getElementById('hmQ').value); renderChips(); }
-
-function openHM(id,title,student){
-  document.getElementById('hmMakaleId').value=id;
-  document.getElementById('hmTitle').textContent=title;
-  document.getElementById('hmSub').textContent=student+' — çalışması';
-  document.getElementById('hmQ').value='';
-  sel=[];
-  document.getElementById('hmOv').classList.add('open');
-  document.body.style.overflow='hidden';
-  renderHocas(''); renderChips();
-}
-function closeHM(){ document.getElementById('hmOv').classList.remove('open'); document.body.style.overflow=''; }
-
-function submitHM(){
-  const c=document.getElementById('hmHiddens'); c.innerHTML='';
-  sel.forEach(s=>{ const a=document.createElement('input'); a.type='hidden'; a.name='hocaIds'; a.value=s.id; const b=document.createElement('input'); b.type='hidden'; b.name='yuzdeler'; b.value=s.pct; c.appendChild(a); c.appendChild(b); });
-  document.getElementById('hmForm').submit();
-}
-
-function openRM(id,title,student){
-  document.getElementById('rmId').value=id;
-  document.getElementById('rmSub').textContent=student+' — '+title;
-  document.querySelector('#rmForm textarea').value='';
-  document.getElementById('rmOv').classList.add('open');
-  document.body.style.overflow='hidden';
-}
-function closeRM(){ document.getElementById('rmOv').classList.remove('open'); document.body.style.overflow=''; }
-
-function setFilter(val){
-  document.getElementById('aymSel').value=val;
-  doFilter();
-}
-
+function toggleH(t){if(sel.some(s=>s.id===t.id))sel=sel.filter(s=>s.id!==t.id);else sel.push({...t,pct:0});redist();renderHocas(document.getElementById('hmQ').value);renderChips();}
+function removeH(id,e){e.stopPropagation();sel=sel.filter(s=>s.id!==id);redist();renderHocas(document.getElementById('hmQ').value);renderChips();}
+function openHM(id,title,student){document.getElementById('hmMakaleId').value=id;document.getElementById('hmTitle').textContent=title;document.getElementById('hmSub').textContent=student+' — çalışması';document.getElementById('hmQ').value='';sel=[];document.getElementById('hmOv').classList.add('open');document.body.style.overflow='hidden';renderHocas('');renderChips();}
+function closeHM(){document.getElementById('hmOv').classList.remove('open');document.body.style.overflow='';}
+function submitHM(){const c=document.getElementById('hmHiddens');c.innerHTML='';sel.forEach(s=>{const a=document.createElement('input');a.type='hidden';a.name='hocaIds';a.value=s.id;const b=document.createElement('input');b.type='hidden';b.name='yuzdeler';b.value=s.pct;c.appendChild(a);c.appendChild(b);});document.getElementById('hmForm').submit();}
+function openRM(id,title,student){document.getElementById('rmId').value=id;document.getElementById('rmSub').textContent=student+' — '+title;document.querySelector('#rmForm textarea').value='';document.getElementById('rmOv').classList.add('open');document.body.style.overflow='hidden';}
+function closeRM(){document.getElementById('rmOv').classList.remove('open');document.body.style.overflow='';}
+function setFilter(val){document.getElementById('aymSel').value=val;doFilter();}
 function doFilter(){
   const q=document.getElementById('aymQ').value.toLowerCase().trim();
   const s=document.getElementById('aymSel').value;
@@ -474,16 +532,9 @@ function doFilter(){
   const noRes=document.getElementById('aymNoRes');
   const cnt=document.getElementById('aymCnt');
   let vis=0;
-  rows.forEach(r=>{
-    const rs=r.getAttribute('data-s')||'';
-    const rq=r.getAttribute('data-q')||'';
-    const show=(!q||rq.includes(q))&&(!s||rs===s);
-    r.style.display=show?'':'none';
-    if(show) vis++;
-  });
-  if(noRes) noRes.style.display=vis===0?'block':'none';
-  if(cnt)   cnt.textContent=vis+' çalışma';
+  rows.forEach(r=>{const rs=r.getAttribute('data-s')||'',rq=r.getAttribute('data-q')||'';const show=(!q||rq.includes(q))&&(!s||rs===s);r.style.display=show?'':'none';if(show)vis++;});
+  if(noRes)noRes.style.display=vis===0?'block':'none';
+  if(cnt)cnt.textContent=vis+' çalışma';
 }
-
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeHM();closeRM();} });
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeHM();closeRM();}});
 </script>

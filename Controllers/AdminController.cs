@@ -268,6 +268,9 @@ namespace RewardSystem.Controllers
                                 CreatedAt = DateTime.UtcNow
                             });
                             _db.SaveChanges();
+
+                            // Ödül kontrolü — yeni puana göre ödül kazanıldı mı?
+                            OdulKontrolEt(makale.UserId);
                         }
                     }
                 }
@@ -303,21 +306,23 @@ namespace RewardSystem.Controllers
                 .ToList();
 
             var bolumIstatistik = bolumIds
-                .GroupBy(u => u.Department)
+                .GroupBy(u => u.Department ?? "Belirsiz")
                 .Select(g => new {
                     bolum   = g.Key,
                     ogrenci = g.Count(),
                     makale  = _db.Articles.Count(a => g.Select(u => u.Id).Contains(a.UserId))
                 })
                 .OrderByDescending(x => x.makale)
+                .ThenByDescending(x => x.ogrenci)
                 .Take(8)
                 .ToList<object>();
             ViewBag.BolumIstatistik = bolumIstatistik;
 
-            var yillikTrend = _db.Articles
-                .Where(a => a.Year.HasValue)
-                .GroupBy(a => a.Year)
-                .Select(g => new { yil = g.Key, sayi = g.Count() })
+            // Year null ise CreatedAt yılını kullan
+            var tumMakaleler = _db.Articles.ToList();
+            var yillikTrend = tumMakaleler
+                .GroupBy(a => a.Year.HasValue ? a.Year.Value : a.CreatedAt.Year)
+                .Select(g => new { yil = (int?)g.Key, sayi = g.Count() })
                 .OrderBy(x => x.yil)
                 .ToList<object>();
             ViewBag.YillikTrend = yillikTrend;
@@ -411,6 +416,192 @@ namespace RewardSystem.Controllers
                 .ToArray();
 
             return File(bytes, "text/csv", $"TOS_Bolum_Rapor_{DateTime.Now:yyyyMMdd}.csv");
+        }
+
+
+        // ══════════════════════════════════════════════
+        // ÖDÜL YÖNETİMİ
+        // ══════════════════════════════════════════════
+
+        [Authorize(Roles = "superadmin")]
+        public IActionResult OdulYonetimi()
+        {
+            var oduller = _db.Rewards
+                .OrderByDescending(r => r.IsActive)
+                .ThenBy(r => r.MinPoints)
+                .ToList();
+
+            ViewBag.OdulSayilari = oduller.ToDictionary(
+                r => r.Id,
+                r => _db.Badges.Count(b => b.BadgeName == r.Name)
+            );
+
+            // Aktif öğrenciler (manuel ödül verme için)
+            ViewBag.Ogrenciler = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive)
+                .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+                .ToList();
+
+            // Verilen tüm rozetler (geri alma için)
+            ViewBag.VerilenRozetler = _db.Badges
+                .Include(b => b.User)
+                .OrderByDescending(b => b.EarnedAt)
+                .Take(50)
+                .ToList();
+
+            return View(oduller);
+        }
+
+        [Authorize(Roles = "superadmin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult OdulEkle(Reward model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Name) || model.MinPoints < 0)
+            {
+                TempData["Hata"] = "Ödül adı ve minimum puan zorunludur.";
+                return RedirectToAction("OdulYonetimi");
+            }
+            model.IsActive  = true;
+            model.CreatedAt = DateTime.UtcNow;
+            _db.Rewards.Add(model);
+            _db.SaveChanges();
+            TempData["Mesaj"] = $"'{model.Name}' ödülü başarıyla eklendi.";
+            return RedirectToAction("OdulYonetimi");
+        }
+
+        [Authorize(Roles = "superadmin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult OdulDurumDegistir(int id)
+        {
+            var odul = _db.Rewards.Find(id);
+            if (odul != null)
+            {
+                odul.IsActive = !odul.IsActive;
+                _db.SaveChanges();
+                TempData["Mesaj"] = $"'{odul.Name}' ödülü {(odul.IsActive ? "aktifleştirildi" : "pasifleştirildi")}.";
+            }
+            return RedirectToAction("OdulYonetimi");
+        }
+
+        [Authorize(Roles = "superadmin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult OdulSil(int id)
+        {
+            var odul = _db.Rewards.Find(id);
+            if (odul != null)
+            {
+                _db.Rewards.Remove(odul);
+                _db.SaveChanges();
+                TempData["Mesaj"] = $"'{odul.Name}' ödülü silindi.";
+            }
+            return RedirectToAction("OdulYonetimi");
+        }
+
+
+        [Authorize(Roles = "superadmin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ManuelOdulVer(int userId, int rewardId)
+        {
+            var odul    = _db.Rewards.Find(rewardId);
+            var ogrenci = _db.Users.Find(userId);
+            if (odul == null || ogrenci == null)
+            {
+                TempData["Hata"] = "Öğrenci veya ödül bulunamadı.";
+                return RedirectToAction("OdulYonetimi");
+            }
+
+            var almisMi = _db.Badges.Any(b => b.UserId == userId && b.BadgeName == odul.Name);
+            if (almisMi)
+            {
+                TempData["Hata"] = $"{ogrenci.FullName} zaten '{odul.Name}' ödülüne sahip.";
+                return RedirectToAction("OdulYonetimi");
+            }
+
+            _db.Badges.Add(new Badge {
+                UserId      = userId,
+                BadgeName   = odul.Name,
+                Description = odul.Description + " (Manuel verildi)",
+                Icon        = odul.Icon,
+                Color       = odul.Color,
+                EarnedAt    = DateTime.UtcNow
+            });
+
+            _db.Notifications.Add(new Notification {
+                UserId    = userId,
+                Message   = $"🏆 Tebrikler! Dekan tarafından '{odul.Name}' ödülü size verildi!",
+                IsRead    = false,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            _db.SaveChanges();
+            TempData["Mesaj"] = $"'{odul.Name}' ödülü {ogrenci.FullName} adlı öğrenciye verildi.";
+            return RedirectToAction("OdulYonetimi");
+        }
+
+        [Authorize(Roles = "superadmin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult OdulGeriAl(long badgeId)
+        {
+            var badge = _db.Badges.Include(b => b.User).FirstOrDefault(b => b.Id == badgeId);
+            if (badge != null)
+            {
+                var adSoyad   = badge.User?.FullName ?? "Öğrenci";
+                var odulAdi   = badge.BadgeName;
+
+                _db.Notifications.Add(new Notification {
+                    UserId    = badge.UserId,
+                    Message   = $"'{odulAdi}' rozeti hesabınızdan kaldırıldı.",
+                    IsRead    = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                _db.Badges.Remove(badge);
+                _db.SaveChanges();
+                TempData["Mesaj"] = $"{adSoyad} adlı öğrencinin '{odulAdi}' rozeti geri alındı.";
+            }
+            return RedirectToAction("OdulYonetimi");
+        }
+
+        // Puan güncellenince otomatik ödül kontrolü
+        private void OdulKontrolEt(int userId)
+        {
+            var toplamPuan = _db.Articles
+                .Where(a => a.UserId == userId && a.Status == "Onaylandi")
+                .Sum(a => (int?)a.Score) ?? 0;
+
+            var aktifOduller = _db.Rewards
+                .Where(r => r.IsActive && r.MinPoints <= toplamPuan)
+                .ToList();
+
+            foreach (var odul in aktifOduller)
+            {
+                // Bu ödülü daha önce almış mı?
+                var almisMi = _db.Badges.Any(b => b.UserId == userId && b.BadgeName == odul.Name);
+                if (!almisMi)
+                {
+                    _db.Badges.Add(new Badge {
+                        UserId      = userId,
+                        BadgeName   = odul.Name,
+                        Description = odul.Description,
+                        Icon        = odul.Icon,
+                        Color       = odul.Color,
+                        EarnedAt    = DateTime.UtcNow
+                    });
+
+                    _db.Notifications.Add(new Notification {
+                        UserId    = userId,
+                        Message   = $"🏆 Tebrikler! '{odul.Name}' ödülünü kazandınız! {toplamPuan} puana ulaştınız.",
+                        IsRead    = false,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+            _db.SaveChanges();
         }
 
         [Authorize(Roles = "teacher,admin")]

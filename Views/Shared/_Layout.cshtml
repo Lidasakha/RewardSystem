@@ -96,6 +96,9 @@
         <a href="/Student/Siralama" class="nav-item @(ViewData["Active"]?.ToString()=="Siralama"?"active":"")">
           <i class="ti ti-trophy"></i><span>Sıralama</span>
         </a>
+        <a href="/Student/Oduller" class="nav-item @(ViewData["Active"]?.ToString()=="Oduller"?"active":"")">
+          <i class="ti ti-medal"></i><span>Ödüllerim</span>
+        </a>
 
         <div class="nav-section">Diğer</div>
         <a href="/Student/Bildirimler" class="nav-item @(ViewData["Active"]?.ToString()=="Bildirimler"?"active":"")">
@@ -134,6 +137,9 @@
           <div class="nav-section">Akademik</div>
           <a href="/Admin/AdminYonetimi" class="nav-item @(ViewData["Active"]?.ToString()=="AdminYonetimi"?"active":"")">
             <i class="ti ti-settings-2"></i><span>Akademik Yönetim</span>
+          </a>
+          <a href="/Admin/OdulYonetimi" class="nav-item @(ViewData["Active"]?.ToString()=="OdulYonetimi"?"active":"")">
+            <i class="ti ti-trophy"></i><span>Ödül Yönetimi</span>
           </a>
           <div class="nav-section">Sistem</div>
           <a href="/Admin/Raporlar" class="nav-item @(ViewData["Active"]?.ToString()=="Raporlar"?"active":"")">

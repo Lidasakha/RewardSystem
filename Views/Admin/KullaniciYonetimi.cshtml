@@ -196,6 +196,15 @@
 </style>
 
 <script>
+    // Mesaj varsa formları kapat
+    document.addEventListener('DOMContentLoaded', function() {
+        @if (TempData["Mesaj"] != null || TempData["Hata"] != null || TempData["DebugMessage"] != null)
+        {
+            @Html.Raw("document.getElementById('editUserForm').style.display = 'none';")
+            @Html.Raw("document.getElementById('addUserForm').style.display = 'none';")
+        }
+    });
+
     function toggleAddForm() {
         var form = document.getElementById('addUserForm');
         form.style.display = form.style.display === 'none' ? 'block' : 'none';

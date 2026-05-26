@@ -62,6 +62,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cS3VsbGFuaWNpWW9uZXRpbWkuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/workspace/payanname-sale4/RewardSystem/Views/Admin/OdulYonetimi.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cT2R1bFlvbmV0aW1pLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/workspace/payanname-sale4/RewardSystem/Views/Admin/Ogrenciler.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cT2dyZW5jaWxlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -92,6 +96,14 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/workspace/payanname-sale4/RewardSystem/Views/Student/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3R1ZGVudFxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/workspace/payanname-sale4/RewardSystem/Views/Student/Oduller.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3R1ZGVudFxPZHVsbGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/workspace/payanname-sale4/RewardSystem/Views/Student/Sertifika.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3R1ZGVudFxTZXJ0aWZpa2EuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/workspace/payanname-sale4/RewardSystem/Views/Student/Siralama.cshtml]

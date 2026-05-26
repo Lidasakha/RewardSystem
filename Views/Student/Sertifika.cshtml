@@ -1,0 +1,237 @@
+@model RewardSystem.Models.Badge
+@{
+    ViewData["Title"] = "Sertifika";
+    Layout = null;
+    var toplamPuan = (int)(ViewBag.ToplamPuan ?? 0);
+    var tarih = Model.EarnedAt.ToLocalTime().ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"));
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sertifika — @Model.BadgeName</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:'Sora',sans-serif;
+      background:#f0f4f8;
+      min-height:100vh;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      padding:20px;
+    }
+
+    /* Araç çubuğu (print'te gizlenir) */
+    .toolbar{
+      display:flex;gap:12px;margin-bottom:24px;
+      background:#fff;padding:12px 20px;border-radius:12px;
+      box-shadow:0 2px 10px rgba(0,0,0,.08);
+    }
+    .tb-btn{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:10px 20px;border-radius:9px;
+      font-family:'Sora',sans-serif;font-size:13.5px;font-weight:700;
+      cursor:pointer;border:none;transition:all .18s;text-decoration:none;
+    }
+    .tb-print{background:#1a2b4c;color:#fff;box-shadow:0 3px 10px rgba(26,43,76,.25);}
+    .tb-print:hover{opacity:.88;}
+    .tb-back{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;}
+    .tb-back:hover{background:#e2e8f0;}
+
+    /* Sertifika kartı */
+    .cert-wrap{
+      width:100%;max-width:800px;
+      background:#fff;
+      border-radius:20px;
+      overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,.12);
+      position:relative;
+    }
+
+    /* Üst dekorasyon */
+    .cert-header{
+      background:linear-gradient(135deg,#1a2b4c 0%,#0a1e3d 100%);
+      padding:36px 40px 28px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+    }
+    .cert-header::before{
+      content:'';position:absolute;top:-60px;left:-60px;
+      width:200px;height:200px;border-radius:50%;
+      background:rgba(255,255,255,.05);
+    }
+    .cert-header::after{
+      content:'';position:absolute;bottom:-40px;right:-40px;
+      width:150px;height:150px;border-radius:50%;
+      background:rgba(255,255,255,.04);
+    }
+    .cert-logo{
+      font-family:'Sora',sans-serif;font-size:13px;font-weight:700;
+      color:rgba(255,255,255,.7);letter-spacing:2px;text-transform:uppercase;
+      margin-bottom:10px;
+    }
+    .cert-univ{
+      font-family:'Playfair Display',serif;font-size:26px;font-weight:800;
+      color:#fff;margin-bottom:4px;letter-spacing:-.5px;
+    }
+    .cert-subtitle{
+      font-size:12px;color:rgba(255,255,255,.55);letter-spacing:1px;text-transform:uppercase;
+    }
+
+    /* Dekoratif çizgi */
+    .cert-divider{
+      height:6px;
+      background:linear-gradient(90deg,@(Model.Color ?? "#f59e0b"),@(Model.Color ?? "#f59e0b")88,transparent);
+    }
+
+    /* İçerik */
+    .cert-body{padding:40px 48px;text-align:center;}
+
+    .cert-presents{
+      font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;
+      margin-bottom:18px;
+    }
+
+    .cert-name{
+      font-family:'Playfair Display',serif;font-size:38px;font-weight:800;
+      color:#0f172a;margin-bottom:20px;letter-spacing:-.5px;
+      border-bottom:2px solid #f1f5f9;padding-bottom:20px;
+    }
+
+    .cert-body-text{font-size:15px;color:#475569;margin-bottom:8px;line-height:1.6;}
+    .cert-body-text b{color:#0f172a;}
+
+    /* Rozet */
+    .cert-badge-wrap{
+      display:flex;flex-direction:column;align-items:center;
+      margin:28px auto;
+    }
+    .cert-badge-icon{
+      width:100px;height:100px;border-radius:24px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:50px;
+      box-shadow:0 12px 40px rgba(0,0,0,.12);
+      margin-bottom:14px;
+    }
+    .cert-badge-name{
+      font-family:'Playfair Display',serif;font-size:22px;font-weight:700;
+      margin-bottom:6px;
+    }
+    .cert-badge-desc{font-size:13px;color:#64748b;}
+
+    /* Puan */
+    .cert-score{
+      display:inline-flex;align-items:center;gap:10px;
+      background:#f8fafc;border:1px solid #e2e8f0;
+      border-radius:12px;padding:12px 24px;margin:20px auto;
+      font-size:14px;color:#475569;
+    }
+    .cert-score strong{font-size:22px;font-weight:800;color:#0f172a;}
+
+    /* Alt imza */
+    .cert-footer{
+      display:flex;justify-content:space-between;align-items:flex-end;
+      padding:24px 48px;
+      border-top:1px solid #f1f5f9;
+      background:#fafbfc;
+    }
+    .cert-sig{text-align:center;}
+    .cert-sig-line{width:140px;border-top:1px solid #cbd5e1;margin-bottom:6px;}
+    .cert-sig-name{font-size:12px;font-weight:700;color:#334155;}
+    .cert-sig-title{font-size:11px;color:#94a3b8;}
+
+    .cert-date{text-align:right;}
+    .cert-date-val{font-size:13px;font-weight:700;color:#334155;}
+    .cert-date-lbl{font-size:11px;color:#94a3b8;margin-top:2px;}
+
+    .cert-seal{
+      width:64px;height:64px;border-radius:50%;
+      background:linear-gradient(135deg,#1a2b4c,#0a1e3d);
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:800;color:#fff;text-align:center;
+      line-height:1.2;letter-spacing:-.3px;
+      box-shadow:0 4px 14px rgba(26,43,76,.3);
+    }
+
+    /* Print */
+    @@media print {
+      body{background:#fff;padding:0;}
+      .toolbar{display:none!important;}
+      .cert-wrap{box-shadow:none;border-radius:0;max-width:100%;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <a href="/Student/Oduller" class="tb-btn tb-back">
+    <i class="ti ti-arrow-left"></i> Geri Dön
+  </a>
+  <button class="tb-btn tb-print" onclick="window.print()">
+    <i class="ti ti-printer"></i> PDF Olarak Kaydet / Yazdır
+  </button>
+</div>
+
+<div class="cert-wrap">
+
+  <!-- Header -->
+  <div class="cert-header">
+    <div class="cert-logo">TÖS · Teşvik ve Ödüllendirme Sistemi</div>
+    <div class="cert-univ">Akademik Başarı Sertifikası</div>
+    <div class="cert-subtitle">Certificate of Academic Achievement</div>
+  </div>
+
+  <!-- Renk çizgisi -->
+  <div class="cert-divider" style="background:linear-gradient(90deg,@(Model.Color ?? "#f59e0b"),transparent);"></div>
+
+  <!-- Gövde -->
+  <div class="cert-body">
+    <div class="cert-presents">Bu sertifika şu kişiye takdim edilmiştir</div>
+
+    <div class="cert-name">@Model.User?.FullName</div>
+
+    <div class="cert-body-text">
+      Akademik teşvik ve ödüllendirme sisteminde gösterdiği üstün başarı nedeniyle
+    </div>
+
+    <div class="cert-badge-wrap">
+      <div class="cert-badge-icon" style="background:@(Model.Color ?? "#f59e0b")22;color:@(Model.Color ?? "#f59e0b");">
+        <i class="ti @(Model.Icon ?? "ti-trophy")"></i>
+      </div>
+      <div class="cert-badge-name" style="color:@(Model.Color ?? "#f59e0b");">@Model.BadgeName</div>
+      <div class="cert-badge-desc">@(Model.Description ?? "Akademik başarı ödülü")</div>
+    </div>
+
+    <div class="cert-body-text">
+      rozetine layık görülmüştür. Bu ödül, öğrencinin akademik çalışmalarındaki
+      <b>özveri ve başarısının</b> bir göstergesidir.
+    </div>
+
+    <div class="cert-score">
+      <i class="ti ti-star" style="font-size:20px;color:#f59e0b;"></i>
+      <div>Toplam Akademik Puan: <strong>@toplamPuan</strong></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="cert-footer">
+    <div class="cert-sig">
+      <div class="cert-sig-line"></div>
+      <div class="cert-sig-name">Dekan / Dean</div>
+      <div class="cert-sig-title">Üniversite Yönetimi</div>
+    </div>
+    <div class="cert-seal">TÖS<br>✦</div>
+    <div class="cert-date" style="text-align:right;">
+      <div class="cert-date-val">@tarih</div>
+      <div class="cert-date-lbl">Veriliş Tarihi</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

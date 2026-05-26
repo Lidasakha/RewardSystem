@@ -21,6 +21,7 @@ namespace RewardSystem.Data
         public DbSet<Patent> Patents { get; set; }
         public DbSet<UserAuth> UserAuths { get; set; }
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+        public DbSet<Reward> Rewards { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -182,6 +183,19 @@ namespace RewardSystem.Data
                 e.Property(x => x.CreatedAt).HasColumnName("created_at");
                 e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
                 e.Property(x => x.FilePath).HasColumnName("file_path");
+            });
+
+            // --- rewards ---
+            modelBuilder.Entity<Reward>().ToTable("rewards");
+            modelBuilder.Entity<Reward>(e => {
+                e.Property(x => x.Id).HasColumnName("id");
+                e.Property(x => x.Name).HasColumnName("name");
+                e.Property(x => x.Description).HasColumnName("description");
+                e.Property(x => x.MinPoints).HasColumnName("min_points");
+                e.Property(x => x.Icon).HasColumnName("icon");
+                e.Property(x => x.Color).HasColumnName("color");
+                e.Property(x => x.IsActive).HasColumnName("is_active");
+                e.Property(x => x.CreatedAt).HasColumnName("created_at");
             });
         }
 

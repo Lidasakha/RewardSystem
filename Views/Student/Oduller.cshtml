@@ -1,0 +1,183 @@
+@model List<RewardSystem.Models.Badge>
+@{
+    ViewData["Title"] = "Ödüllerim";
+    ViewData["Active"] = "Oduller";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var toplamPuan    = (int)(ViewBag.ToplamPuan ?? 0);
+    var tumOduller    = ViewBag.TumOduller as List<RewardSystem.Models.Reward> ?? new();
+    var kazanilanAdlar= ViewBag.KazanilanAdlar as List<string> ?? new();
+}
+
+<style>
+  .od-page { display:flex;flex-direction:column;gap:20px; }
+
+  /* Banner */
+  .od-banner {
+    background:#111827;border-radius:var(--radius-lg);
+    padding:24px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between;
+    position:relative;overflow:hidden;
+  }
+  .od-banner::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);}
+  body.dark-mode .od-banner { background:var(--accent); }
+  .od-banner h2 { font-size:20px;font-weight:700;margin-bottom:4px; }
+  .od-banner p  { font-size:13px;color:rgba(255,255,255,.65); }
+  .od-puan-box {
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);
+    border-radius:14px;padding:14px 24px;text-align:center;z-index:1;
+  }
+  .od-puan-num { font-size:32px;font-weight:800;color:#fbbf24;line-height:1; }
+  .od-puan-lbl { font-size:11px;color:rgba(255,255,255,.55);margin-top:3px; }
+
+  /* Kazanılan ödüller */
+  .od-section-title {
+    font-size:13px;font-weight:700;color:var(--text-muted);
+    text-transform:uppercase;letter-spacing:.6px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .od-section-title::after { content:'';flex:1;height:1px;background:var(--border); }
+
+  .od-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px; }
+
+  .od-card {
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px;text-align:center;box-shadow:var(--shadow-sm);
+    transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden;
+  }
+  .od-card:hover { box-shadow:var(--shadow);transform:translateY(-3px); }
+  .od-card.kazanildi::before {
+    content:'';position:absolute;top:0;left:0;right:0;height:4px;
+  }
+
+  .od-icon-wrap {
+    width:70px;height:70px;border-radius:18px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:34px;margin:0 auto 14px;
+    box-shadow:0 6px 20px rgba(0,0,0,.12);
+  }
+  .od-name { font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px; }
+  .od-desc { font-size:12.5px;color:var(--text-muted);margin-bottom:12px;line-height:1.45; }
+  .od-date { font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;gap:5px; }
+
+  /* Kilitli ödüller */
+  .od-locked {
+    background:var(--surface-2);border:1px dashed var(--border);border-radius:var(--radius);
+    padding:20px;display:flex;align-items:center;gap:14px;opacity:.7;
+    transition:opacity .2s;
+  }
+  .od-locked:hover { opacity:1; }
+  .od-locked-icon {
+    width:48px;height:48px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+    background:var(--gray-100);color:var(--gray-400);
+  }
+  body.dark-mode .od-locked-icon { background:var(--gray-800); }
+  .od-locked-name { font-size:13.5px;font-weight:700;color:var(--text-muted); }
+  .od-locked-req  { font-size:12px;color:var(--text-light);margin-top:2px; }
+  .od-progress-wrap { flex:1; }
+  .od-progress-bar {
+    height:6px;background:var(--gray-100);border-radius:20px;overflow:hidden;margin-top:8px;
+  }
+  body.dark-mode .od-progress-bar { background:var(--gray-800); }
+  .od-progress-fill { height:100%;border-radius:20px;background:var(--accent);transition:width .6s ease; }
+  .od-progress-lbl { font-size:11px;color:var(--text-muted);margin-top:4px; }
+
+  .empty-state { padding:50px 20px;text-align:center;color:var(--text-muted); }
+  .empty-state i { font-size:48px;display:block;margin-bottom:14px;opacity:.3; }
+</style>
+
+<div class="od-page">
+
+  <!-- Banner -->
+  <div class="od-banner">
+    <div>
+      <h2>🏆 Ödüllerim</h2>
+      <p>Akademik çalışmalarınla kazandığın ödüller ve rozetler.</p>
+    </div>
+    <div class="od-puan-box">
+      <div class="od-puan-num">@toplamPuan</div>
+      <div class="od-puan-lbl">Toplam Puan</div>
+    </div>
+  </div>
+
+  <!-- Kazanılan Ödüller -->
+  <div class="od-section-title">
+    <i class="ti ti-trophy" style="color:#f59e0b;font-size:16px;"></i>
+    Kazanılan Ödüller (@Model.Count)
+  </div>
+
+  @if (!Model.Any())
+  {
+    <div class="empty-state">
+      <i class="ti ti-trophy"></i>
+      <p style="font-size:14px;margin-bottom:8px;">Henüz ödül kazanmadınız.</p>
+      <p style="font-size:13px;">Akademik çalışmalarınızı gönderin ve puan kazanarak ödüllere ulaşın!</p>
+    </div>
+  }
+  else
+  {
+    <div class="od-grid">
+      @foreach (var b in Model)
+      {
+        <div class="od-card kazanildi" style="border-top:4px solid @(b.Color ?? "#f59e0b");">
+          <div class="od-icon-wrap" style="background:@(b.Color ?? "#f59e0b")22;color:@(b.Color ?? "#f59e0b");">
+            <i class="ti @(b.Icon ?? "ti-trophy")"></i>
+          </div>
+          <div class="od-name">@b.BadgeName</div>
+          <div class="od-desc">@(b.Description ?? "Akademik başarı ödülü")</div>
+          <div class="od-date">
+            <i class="ti ti-calendar" style="font-size:13px;"></i>
+            @b.EarnedAt.ToLocalTime().ToString("dd MMM yyyy")
+          </div>
+          <a href="/Student/Sertifika/@b.Id" target="_blank"
+             style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+                    padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;
+                    background:#f8fafc;border:1px solid #e2e8f0;color:#334155;text-decoration:none;
+                    transition:all .15s;"
+             onmouseover="this.style.background='#1a2b4c';this.style.color='#fff';this.style.borderColor='#1a2b4c';"
+             onmouseout="this.style.background='#f8fafc';this.style.color='#334155';this.style.borderColor='#e2e8f0';">
+            <i class="ti ti-certificate"></i> Sertifikayı Gör
+          </a>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Kilitli / Hedef Ödüller -->
+  @{
+    var kilitliOduller = tumOduller.Where(o => !kazanilanAdlar.Contains(o.Name)).ToList();
+  }
+  @if (kilitliOduller.Any())
+  {
+    <div class="od-section-title" style="margin-top:8px;">
+      <i class="ti ti-lock" style="color:var(--text-muted);font-size:16px;"></i>
+      Hedef Ödüller (@kilitliOduller.Count)
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      @foreach (var o in kilitliOduller)
+      {
+        var pct = o.MinPoints > 0 ? Math.Min(100, (int)((double)toplamPuan / o.MinPoints * 100)) : 0;
+        var kalan = Math.Max(0, o.MinPoints - toplamPuan);
+        <div class="od-locked">
+          <div class="od-locked-icon" style="@(pct >= 75 ? $"background:{o.Color}22;color:{o.Color};" : "")">
+            <i class="ti @(pct >= 75 ? o.Icon : "ti-lock")"></i>
+          </div>
+          <div class="od-progress-wrap">
+            <div class="od-locked-name">@o.Name</div>
+            <div class="od-locked-req">@(o.Description ?? "") — @o.MinPoints puan gerekli</div>
+            <div class="od-progress-bar">
+              <div class="od-progress-fill" style="width:@pct%;background:@o.Color;"></div>
+            </div>
+            <div class="od-progress-lbl">
+              @toplamPuan / @o.MinPoints puan
+              @if (kalan > 0) { <span>— @kalan puan daha lazım</span> }
+              else { <span style="color:var(--green);font-weight:700;">✓ Hedefe ulaştınız!</span> }
+            </div>
+          </div>
+          <div style="font-size:20px;font-weight:800;color:var(--text-muted);flex-shrink:0;">@pct%</div>
+        </div>
+      }
+    </div>
+  }
+
+</div>

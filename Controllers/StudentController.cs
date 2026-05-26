@@ -293,6 +293,51 @@ namespace RewardSystem.Controllers
             return View();
         }
 
+
+
+        // 🎓 SERTİFİKA
+        public IActionResult Sertifika(long id)
+        {
+            var badge = _db.Badges
+                .Include(b => b.User)
+                .FirstOrDefault(b => b.Id == id && b.UserId == KullaniciId);
+
+            if (badge == null) return NotFound();
+
+            var toplamPuan = _db.Articles
+                .Where(a => a.UserId == KullaniciId && a.Status == "Onaylandi")
+                .Sum(a => (int?)a.Score) ?? 0;
+
+            ViewBag.ToplamPuan = toplamPuan;
+            return View(badge);
+        }
+
+        // 🏆 ÖDÜLLER
+        public IActionResult Oduller()
+        {
+            var benimOdullerim = _db.Badges
+                .Where(b => b.UserId == KullaniciId)
+                .OrderByDescending(b => b.EarnedAt)
+                .ToList();
+
+            var toplamPuan = _db.Articles
+                .Where(a => a.UserId == KullaniciId && a.Status == "Onaylandi")
+                .Sum(a => (int?)a.Score) ?? 0;
+
+            ViewBag.ToplamPuan = toplamPuan;
+
+            // Tüm aktif ödüller ve hangilerini kazandı/kazanamadı
+            var tumOduller = _db.Rewards
+                .Where(r => r.IsActive)
+                .OrderBy(r => r.MinPoints)
+                .ToList();
+
+            ViewBag.TumOduller = tumOduller;
+            ViewBag.KazanilanAdlar = benimOdullerim.Select(b => b.BadgeName).ToList();
+
+            return View(benimOdullerim);
+        }
+
         // 🏆 SIRALAMA
         public IActionResult Siralama()
         {

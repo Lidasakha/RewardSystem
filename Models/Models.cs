@@ -343,4 +343,20 @@ namespace RewardSystem.Models
         [ForeignKey("PlatformUserId")]
         public User? User { get; set; }
     }
+
+
+    // Tablo: rewards (ödül tanımları)
+    public class Reward
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string? Description { get; set; }
+        public int MinPoints { get; set; }
+        public string Icon { get; set; } = "ti-trophy";
+        public string Color { get; set; } = "#f59e0b";
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+
 }

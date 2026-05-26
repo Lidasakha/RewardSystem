@@ -1,0 +1,397 @@
+@model List<RewardSystem.Models.Reward>
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Ödül Yönetimi";
+    ViewData["Active"] = "OdulYonetimi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var odulSayilari   = ViewBag.OdulSayilari as Dictionary<int, int> ?? new();
+    var ogrenciler     = ViewBag.Ogrenciler as List<RewardSystem.Models.User> ?? new();
+    var verilenRozetler= ViewBag.VerilenRozetler as List<RewardSystem.Models.Badge> ?? new();
+}
+
+<style>
+  .oy-page { display:flex; flex-direction:column; gap:20px; }
+
+  .oy-banner {
+    background:#111827; border-radius:var(--radius-lg);
+    padding:22px 28px; color:#fff; display:flex; align-items:center; justify-content:space-between;
+    position:relative; overflow:hidden;
+  }
+  .oy-banner::before { content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04); }
+  body.dark-mode .oy-banner { background:var(--brand-700); }
+  .oy-banner h2 { font-size:18px;font-weight:700;margin-bottom:4px; }
+  .oy-banner p  { font-size:13px;color:rgba(255,255,255,.6); }
+
+  /* Ödül tanımlama formu */
+  .oy-form-panel { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden; }
+  .oy-form-head  { padding:14px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text);background:var(--surface-2);display:flex;align-items:center;justify-content:space-between; }
+  .oy-form-body  { padding:20px; }
+  .oy-form-grid  { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px; }
+  @@media(max-width:800px){ .oy-form-grid { grid-template-columns:1fr 1fr; } }
+  @@media(max-width:500px){ .oy-form-grid { grid-template-columns:1fr; } }
+
+  .oy-field label { display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em; }
+  .oy-input {
+    width:100%;padding:10px 14px;
+    background:var(--surface-2);border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);font-family:'Sora',sans-serif;
+    font-size:13.5px;color:var(--text);outline:none;
+    transition:border-color .18s,box-shadow .18s;
+  }
+  .oy-input:focus { border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(74,112,196,.1); }
+
+  .oy-color-wrap { display:flex;align-items:center;gap:10px; }
+  .oy-color-preview { width:32px;height:32px;border-radius:8px;border:2px solid var(--border);flex-shrink:0; }
+
+  .oy-icon-grid { display:flex;flex-wrap:wrap;gap:6px;margin-top:6px; }
+  .oy-icon-btn {
+    width:36px;height:36px;border:1.5px solid var(--border);border-radius:8px;
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+    cursor:pointer;transition:all .15s;background:var(--surface-2);
+  }
+  .oy-icon-btn:hover { border-color:var(--accent);background:var(--accent-bg); }
+  .oy-icon-btn.selected { border-color:var(--accent);background:var(--accent);color:#fff; }
+
+  .oy-save-btn {
+    display:inline-flex;align-items:center;gap:7px;
+    padding:11px 24px;background:var(--brand-600);color:#fff;border:none;
+    border-radius:var(--radius-sm);font-family:'Sora',sans-serif;
+    font-size:13.5px;font-weight:700;cursor:pointer;transition:all .18s;
+    box-shadow:0 3px 10px rgba(26,43,76,.2);margin-top:16px;
+  }
+  .oy-save-btn:hover { background:var(--brand-700);transform:translateY(-1px); }
+
+  /* Ödül listesi */
+  .oy-list { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px; }
+
+  .oy-card {
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);overflow:hidden;transition:box-shadow .2s,transform .2s;
+  }
+  .oy-card:hover { box-shadow:var(--shadow);transform:translateY(-2px); }
+  .oy-card.pasif { opacity:.6; }
+
+  .oy-card-top {
+    padding:20px;display:flex;align-items:center;gap:14px;
+    border-bottom:1px solid var(--border);
+  }
+  .oy-card-icon {
+    width:52px;height:52px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;flex-shrink:0;
+    box-shadow:0 4px 12px rgba(0,0,0,.15);
+  }
+  .oy-card-name { font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px; }
+  .oy-card-desc { font-size:12px;color:var(--text-muted); }
+
+  .oy-card-stats {
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface-2);
+  }
+  .oy-min-puan {
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--yellow-bg);color:var(--yellow);
+    padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:700;
+  }
+  .oy-kazanan {
+    font-size:12px;color:var(--text-muted);
+    display:flex;align-items:center;gap:5px;
+  }
+
+  .oy-card-actions { padding:12px 20px;display:flex;gap:8px;border-top:1px solid var(--border); }
+  .oy-act-btn {
+    flex:1;padding:8px;border-radius:var(--radius-sm);border:none;
+    font-family:'Sora',sans-serif;font-size:12px;font-weight:700;
+    cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  }
+  .oy-act-toggle-on  { background:var(--gray-100);color:var(--text-muted); }
+  .oy-act-toggle-on:hover  { background:var(--yellow-bg);color:var(--yellow); }
+  .oy-act-toggle-off { background:var(--green-bg);color:var(--green); }
+  .oy-act-toggle-off:hover { background:var(--green);color:#fff; }
+  .oy-act-del { background:var(--red-bg);color:var(--red); }
+  .oy-act-del:hover { background:var(--red);color:#fff; }
+  body.dark-mode .oy-act-toggle-on { background:var(--gray-800);color:var(--text-muted); }
+
+  /* Alerts */
+  .oy-alert { display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600; }
+  .oy-alert-ok  { background:var(--green-bg);border:1px solid rgba(22,163,74,.25);color:var(--green); }
+  .oy-alert-err { background:var(--red-bg);border:1px solid rgba(220,38,38,.25);color:var(--red); }
+  .oy-alert-x   { margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:18px; }
+
+  .empty-state { padding:50px 20px;text-align:center;color:var(--text-muted); }
+  .empty-state i { font-size:40px;display:block;margin-bottom:14px;opacity:.3; }
+
+  /* Manuel ödül + verilen rozetler */
+  .oy-table { width:100%;border-collapse:separate;border-spacing:0; }
+  .oy-table th { text-align:left;padding:12px 20px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);background:var(--surface-2); }
+  .oy-table td { padding:12px 20px;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--text);vertical-align:middle; }
+  .oy-table tbody tr:last-child td { border-bottom:none; }
+  .oy-table tbody tr:hover { background:var(--surface-2); }
+  .oy-badge-chip { display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700; }
+  .oy-geri-btn { display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:1px solid rgba(220,38,38,.25);border-radius:var(--radius-sm);background:var(--red-bg);color:var(--red);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s; }
+  .oy-geri-btn:hover { background:var(--red);color:#fff;border-color:transparent; }
+  .empty-state i { font-size:40px;display:block;margin-bottom:14px;opacity:.3; }
+</style>
+
+<div class="oy-page">
+
+  @if (TempData["Mesaj"] != null)
+  {
+    <div class="oy-alert oy-alert-ok">
+      <i class="ti ti-circle-check" style="font-size:20px;"></i>
+      <span>@TempData["Mesaj"]</span>
+      <button class="oy-alert-x" onclick="this.parentElement.remove()">×</button>
+    </div>
+  }
+  @if (TempData["Hata"] != null)
+  {
+    <div class="oy-alert oy-alert-err">
+      <i class="ti ti-alert-circle" style="font-size:20px;"></i>
+      <span>@TempData["Hata"]</span>
+      <button class="oy-alert-x" onclick="this.parentElement.remove()">×</button>
+    </div>
+  }
+
+  <!-- Banner -->
+  <div class="oy-banner">
+    <div>
+      <h2>🏆 Ödül Yönetimi</h2>
+      <p>Puan eşiklerine göre otomatik verilecek ödülleri tanımlayın.</p>
+    </div>
+    <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px 22px;text-align:center;z-index:1;">
+      <div style="font-size:24px;font-weight:800;color:#fbbf24;">@Model.Count</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;">Tanımlı Ödül</div>
+    </div>
+  </div>
+
+  <!-- Yeni Ödül Formu -->
+  <div class="oy-form-panel">
+    <div class="oy-form-head">
+      <span><i class="ti ti-plus-circle" style="color:var(--accent);margin-right:7px;"></i>Yeni Ödül Tanımla</span>
+    </div>
+    <div class="oy-form-body">
+      <form asp-action="OdulEkle" method="post">
+        @Html.AntiForgeryToken()
+        <div class="oy-form-grid">
+          <div class="oy-field">
+            <label>Ödül Adı *</label>
+            <input type="text" name="Name" class="oy-input" placeholder="Altın Öğrenci" required>
+          </div>
+          <div class="oy-field">
+            <label>Minimum Puan *</label>
+            <input type="number" name="MinPoints" class="oy-input" placeholder="100" min="0" required>
+          </div>
+          <div class="oy-field">
+            <label>Açıklama</label>
+            <input type="text" name="Description" class="oy-input" placeholder="100 puana ulaşan öğrencilere verilir">
+          </div>
+          <div class="oy-field">
+            <label>İkon</label>
+            <input type="hidden" name="Icon" id="selectedIcon" value="ti-trophy">
+            <div class="oy-icon-grid">
+              @foreach (var icon in new[]{"ti-trophy","ti-medal","ti-star","ti-award","ti-certificate","ti-crown","ti-diamond","ti-rocket","ti-flame","ti-bolt","ti-heart","ti-sparkles"})
+              {
+                <div class="oy-icon-btn @(icon == "ti-trophy" ? "selected" : "")"
+                     onclick="selectIcon('@icon', this)">
+                  <i class="ti @icon"></i>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="oy-field">
+            <label>Renk</label>
+            <div class="oy-color-wrap">
+              <div class="oy-color-preview" id="colorPreview" style="background:#f59e0b;"></div>
+              <input type="color" name="Color" value="#f59e0b" class="oy-input" style="height:42px;padding:4px;"
+                     onchange="document.getElementById('colorPreview').style.background=this.value">
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="oy-save-btn">
+          <i class="ti ti-device-floppy"></i> Ödülü Kaydet
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Ödül Listesi -->
+  @if (!Model.Any())
+  {
+    <div class="oy-form-panel">
+      <div class="empty-state">
+        <i class="ti ti-trophy"></i>
+        Henüz ödül tanımlanmadı. Yukarıdan ilk ödülü ekleyin.
+      </div>
+    </div>
+  }
+  else
+  {
+    <div class="oy-list">
+      @foreach (var o in Model)
+      {
+        var kazananSayi = odulSayilari.GetValueOrDefault(o.Id, 0);
+        <div class="oy-card @(!o.IsActive ? "pasif" : "")">
+          <div class="oy-card-top">
+            <div class="oy-card-icon" style="background:@(o.Color ?? "#f59e0b")22;color:@(o.Color ?? "#f59e0b");">
+              <i class="ti @o.Icon"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="oy-card-name">@o.Name</div>
+              <div class="oy-card-desc">@(o.Description ?? "Açıklama yok")</div>
+            </div>
+            @if (!o.IsActive)
+            {
+              <span style="background:var(--gray-100);color:var(--text-muted);padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700;">Pasif</span>
+            }
+          </div>
+          <div class="oy-card-stats">
+            <span class="oy-min-puan"><i class="ti ti-star" style="font-size:13px;"></i> Min. @o.MinPoints Puan</span>
+            <span class="oy-kazanan"><i class="ti ti-users" style="font-size:14px;"></i> @kazananSayi öğrenci kazandı</span>
+          </div>
+          <div class="oy-card-actions">
+            <form asp-action="OdulDurumDegistir" method="post" style="flex:1;display:contents;">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id" value="@o.Id">
+              <button type="submit" class="oy-act-btn @(o.IsActive ? "oy-act-toggle-on" : "oy-act-toggle-off")">
+                @if (o.IsActive) { <i class="ti ti-eye-off"></i><span>Pasifleştir</span> }
+                else { <i class="ti ti-eye"></i><span>Aktifleştir</span> }
+              </button>
+            </form>
+            <form asp-action="OdulSil" method="post" style="flex:1;display:contents;"
+                  onsubmit="return confirm('@o.Name ödülünü silmek istediğinize emin misiniz?')">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id" value="@o.Id">
+              <button type="submit" class="oy-act-btn oy-act-del">
+                <i class="ti ti-trash"></i> Sil
+              </button>
+            </form>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Manuel Ödül Verme -->
+  <div class="oy-form-panel">
+    <div class="oy-form-head">
+      <span><i class="ti ti-user-star" style="color:var(--accent);margin-right:7px;"></i>Manuel Ödül Ver</span>
+      <span style="font-size:12px;color:var(--text-muted);">Öğrenciye doğrudan ödül ver</span>
+    </div>
+    <div class="oy-form-body">
+      @if (!Model.Any(r => r.IsActive))
+      {
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13.5px;">
+          <i class="ti ti-alert-circle" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4;"></i>
+          Önce aktif bir ödül tanımlayın.
+        </div>
+      }
+      else
+      {
+        <form asp-action="ManuelOdulVer" method="post">
+          @Html.AntiForgeryToken()
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:flex-end;">
+            <div class="oy-field">
+              <label>Öğrenci</label>
+              <select name="userId" class="oy-input" required>
+                <option value="">— Öğrenci seçin —</option>
+                @foreach (var o in ogrenciler)
+                {
+                  <option value="@o.Id">@o.FullName @(!string.IsNullOrEmpty(o.Department) ? $"({o.Department})" : "")</option>
+                }
+              </select>
+            </div>
+            <div class="oy-field">
+              <label>Ödül</label>
+              <select name="rewardId" class="oy-input" required>
+                <option value="">— Ödül seçin —</option>
+                @foreach (var r in Model.Where(r => r.IsActive))
+                {
+                  <option value="@r.Id">@r.Name (@r.MinPoints puan eşiği)</option>
+                }
+              </select>
+            </div>
+            <button type="submit" class="oy-save-btn" style="margin-top:0;height:44px;">
+              <i class="ti ti-gift"></i> Ver
+            </button>
+          </div>
+        </form>
+      }
+    </div>
+  </div>
+
+  <!-- Verilen Rozetler & Geri Alma -->
+  <div class="oy-form-panel">
+    <div class="oy-form-head">
+      <span><i class="ti ti-shield-check" style="color:var(--green);margin-right:7px;"></i>Verilen Rozetler</span>
+      <span style="font-size:12px;color:var(--text-muted);">Son 50 kayıt</span>
+    </div>
+    @if (!verilenRozetler.Any())
+    {
+      <div class="empty-state">
+        <i class="ti ti-medal"></i>
+        Henüz verilmiş rozet bulunmuyor.
+      </div>
+    }
+    else
+    {
+      <div style="overflow-x:auto;">
+        <table class="oy-table">
+          <thead>
+            <tr>
+              <th>Öğrenci</th>
+              <th>Rozet</th>
+              <th>Verilme Tarihi</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var b in verilenRozetler)
+            {
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:34px;height:34px;border-radius:9px;background:var(--brand-600);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">
+                      @(b.User?.FullName?.Length > 0 ? b.User.FullName[0].ToString().ToUpper() : "?")
+                    </div>
+                    <div>
+                      <div style="font-weight:700;color:var(--text);font-size:13.5px;">@b.User?.FullName</div>
+                      <div style="font-size:11.5px;color:var(--text-muted);">@(b.User?.Department ?? "—")</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="oy-badge-chip" style="background:@(b.Color ?? "#f59e0b")22;color:@(b.Color ?? "#f59e0b");">
+                    <i class="ti @(b.Icon ?? "ti-trophy")"></i> @b.BadgeName
+                  </span>
+                </td>
+                <td style="font-size:12.5px;color:var(--text-muted);">
+                  @b.EarnedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                </td>
+                <td>
+                  <form asp-action="OdulGeriAl" method="post" style="display:inline;"
+                        onsubmit="return confirm('@(b.User?.FullName) adlı öğrencinin @b.BadgeName rozetini geri almak istiyor musunuz?')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="badgeId" value="@b.Id">
+                    <button type="submit" class="oy-geri-btn">
+                      <i class="ti ti-x"></i> Geri Al
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+
+</div>
+
+<script>
+function selectIcon(icon, el) {
+  document.querySelectorAll('.oy-icon-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selectedIcon').value = icon;
+}
+</script>
