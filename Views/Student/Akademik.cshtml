@@ -5,23 +5,23 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 
     // Tüm çalışmaları birleştir → tarih sıralı
-    var tumCalisma = new List<(string Tur, string Baslik, string Detay, string Durum, DateTime? Tarih, string? Dosya, int? Puan)>();
+    var tumCalisma = new List<(string Tur, string Baslik, string Detay, string Durum, DateTime? Tarih, string? Dosya, int? Puan, string? RedNeden)>();
 
     foreach (var m in Model.Makaleler)
         tumCalisma.Add(("Makale", m.Title ?? "", m.Journal ?? "", m.Status ?? "OnayBekliyor",
-            m.Year.HasValue ? new DateTime(m.Year.Value, 1, 1) : (DateTime?)null, m.FilePath, m.Score));
+            m.Year.HasValue ? new DateTime(m.Year.Value, 1, 1) : (DateTime?)null, m.FilePath, m.Score, null));
 
     foreach (var p in Model.Projeler)
         tumCalisma.Add(("Proje", p.Title ?? "", p.Description ?? "", "OnayBekliyor",
-            p.StartDate, p.FilePath, null));
+            p.StartDate, p.FilePath, null, null));
 
     foreach (var b in Model.Bildiriler)
         tumCalisma.Add(("Sönum", b.Title ?? "", b.Conference ?? "", "OnayBekliyor",
-            b.Year.HasValue ? new DateTime(b.Year.Value, 1, 1) : (DateTime?)null, b.FilePath, null));
+            b.Year.HasValue ? new DateTime(b.Year.Value, 1, 1) : (DateTime?)null, b.FilePath, null, null));
 
     foreach (var pt in Model.Patentler)
         tumCalisma.Add(("Patent", pt.Title ?? "", pt.PatentNumber ?? "", "OnayBekliyor",
-            pt.Year.HasValue ? new DateTime(pt.Year.Value, 1, 1) : (DateTime?)null, pt.FilePath, null));
+            pt.Year.HasValue ? new DateTime(pt.Year.Value, 1, 1) : (DateTime?)null, pt.FilePath, null, null));
 
     tumCalisma = tumCalisma.OrderByDescending(x => x.Tarih ?? DateTime.MinValue).ToList();
 
@@ -225,9 +225,6 @@
       <option value="Onaylandi">Onaylandı</option>
       <option value="Reddedildi">Reddedildi</option>
     </select>
-    <a href="/Student/YeniCalisma" class="ak-new-btn">
-      <i class="ti ti-plus"></i> Yeni Ekle
-    </a>
   </div>
 
   <!-- List -->
@@ -258,7 +255,8 @@
           var durumClass = c.Durum == "Onaylandi" ? "onaylandi" : c.Durum == "Degerlendirmede" ? "degerlendirme" : c.Durum == "Reddedildi" ? "reddedildi" : "bekliyor";
           var durumText  = c.Durum == "Onaylandi" ? "Onaylandı" : c.Durum == "Degerlendirmede" ? "Değerlendirmede" : c.Durum == "Reddedildi" ? "Reddedildi" : "Onay Bekliyor";
 
-          <div class="ak-item" data-tur="@c.Tur" data-durum="@c.Durum" data-title="@c.Baslik.ToLower()" data-detay="@c.Detay.ToLower()">
+          <div class="ak-item-wrap" data-tur="@c.Tur" data-durum="@c.Durum" data-title="@c.Baslik.ToLower()" data-detay="@c.Detay.ToLower()">
+          <div class="ak-item @(c.Durum == "Reddedildi" ? "reddedildi" : "")" onclick="@(c.Durum == "Reddedildi" ? "toggleRedPanel(this)" : "")">
             <div class="ak-item-icon" style="background:@iconBg;">
               <i class="ti @iconClass"></i>
             </div>
@@ -292,7 +290,22 @@
               <span class="ak-status ak-status-@durumClass">
                 <span class="ak-status-dot"></span> @durumText
               </span>
+              @if (c.Durum == "Reddedildi")
+              {
+                <i class="ti ti-chevron-down" style="font-size:14px;color:var(--red);margin-left:8px;transition:transform .2s;" class="red-chevron"></i>
+              }
             </div>
+          </div>
+          @if (c.Durum == "Reddedildi")
+          {
+            <div class="ak-red-panel">
+              <i class="ti ti-message-x" style="font-size:18px;color:var(--red);flex-shrink:0;margin-top:1px;"></i>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Red Sebebi</div>
+                <div style="font-size:13.5px;color:var(--text);font-weight:500;line-height:1.5;">@(string.IsNullOrEmpty(c.RedNeden) ? "Yönetici tarafından red sebebi belirtilmemiş." : c.RedNeden)</div>
+              </div>
+            </div>
+          }
           </div>
         }
       </div>
@@ -306,11 +319,33 @@
 </div>
 
 <script>
+var _redTimers = {};
+function toggleRedPanel(item) {
+  var wrap  = item.closest('.ak-item-wrap');
+  if (!wrap) return;
+  var panel = wrap.querySelector('.ak-red-panel');
+  if (!panel) return;
+  var isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    panel.style.display = 'none';
+    if (_redTimers[panel]) { clearTimeout(_redTimers[panel]); }
+  } else {
+    panel.classList.add('open');
+    panel.style.display = 'flex';
+    // 10 saniye sonra otomatik kapat
+    _redTimers[panel] = setTimeout(function() {
+      panel.classList.remove('open');
+      panel.style.display = 'none';
+    }, 10000);
+  }
+}
+
 function akFilter() {
   var q      = document.getElementById('akSearch').value.toLowerCase().trim();
   var tur    = document.getElementById('akTurFilter').value;
   var durum  = document.getElementById('akDurumFilter').value;
-  var items  = document.querySelectorAll('#akItemList .ak-item');
+  var items  = document.querySelectorAll('#akItemList .ak-item-wrap');
   var vis    = 0;
 
   items.forEach(function(item) {

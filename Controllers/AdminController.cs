@@ -615,7 +615,7 @@ namespace RewardSystem.Controllers
                          && u.IsActive && u.Department == benimDept)
                 .Select(u => new RewardSystem.Models.RankingRow {
                     User  = u,
-                    Score = _db.Articles.Count(a => a.UserId == u.Id)      * 100
+                    Score = _db.Articles.Count(a => a.UserId == u.Id && a.Status == "Onaylandi") * 100
                           + _db.Projects.Count(p => p.UserId == u.Id)      * 80
                           + _db.Presentations.Count(b => b.UserId == u.Id) * 40
                           + _db.Patents.Count(c => c.UserId == u.Id)       * 50
@@ -719,7 +719,10 @@ namespace RewardSystem.Controllers
         public IActionResult KullaniciYonetimi()
         {
             var admins = _db.Users
-                .Where(u => u.UserType != null && u.UserType.ToLower() != "ogrenci")
+                .Where(u => u.UserType != null && 
+                    (u.UserType.ToLower() == "admin" || 
+                     u.UserType.ToLower() == "superadmin" || 
+                     u.UserType.ToLower() == "teacher"))
                 .OrderByDescending(u => u.IsActive)
                 .ThenBy(u => u.FirstName)
                 .ThenBy(u => u.LastName)
@@ -756,9 +759,6 @@ namespace RewardSystem.Controllers
                             .Select(u => u.Id)
                             .FirstOrDefault();
                     }
-
-                    TempData["DebugMessage"] = $"Authenticated={isAuthenticated}; UserIdClaim={userIdClaimValue}; " +
-                        $"ParsedClaimId={parsedClaimId}; UserId={UserId}; CurrentUserId={currentUserId}; Roles={roles}";
 
                     if (currentUserId <= 0)
                         throw new InvalidOperationException("Geçerli kullanıcı kimliği alınamadı.");

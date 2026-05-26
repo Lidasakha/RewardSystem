@@ -102,10 +102,10 @@ namespace RewardSystem.Controllers
                 ProjeSayisi    = projeSayisi,
                 BildiriSayisi  = bildiriSayisi,
                 PatentSayisi   = patentSayisi,
-                AkademikPuan   = makaleSayisi  * 100
-                               + projeSayisi   * 80
-                               + bildiriSayisi * 40
-                               + patentSayisi  * 50,
+                AkademikPuan   = _db.Articles.Count(a => a.UserId == KullaniciId && a.Status == "Onaylandi") * 100
+                               + _db.Projects.Count(p => p.UserId == KullaniciId) * 80
+                               + _db.Presentations.Count(b => b.UserId == KullaniciId) * 40
+                               + _db.Patents.Count(pt => pt.UserId == KullaniciId) * 50,
 
                 SonGonderiler = tumSonGonderiler,
 
@@ -349,7 +349,7 @@ namespace RewardSystem.Controllers
                          && u.IsActive)
                 .Select(u => new RankingRow {
                     User  = u,
-                    Score = _db.Articles.Count(a => a.UserId == u.Id)       * 100
+                    Score = _db.Articles.Count(a => a.UserId == u.Id && a.Status == "Onaylandi") * 100
                           + _db.Projects.Count(p => p.UserId == u.Id)       * 80
                           + _db.Presentations.Count(b => b.UserId == u.Id)  * 40
                           + _db.Certificates.Count(c => c.UserId == u.Id)   * 50
@@ -372,6 +372,8 @@ namespace RewardSystem.Controllers
         }
 
         [HttpPost]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult BildirimOkundu(long id)
         {
             var bildirim = _db.Notifications
@@ -381,6 +383,19 @@ namespace RewardSystem.Controllers
                 bildirim.IsRead = true;
                 _db.SaveChanges();
             }
+            return RedirectToAction("Bildirimler");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult TumunuOku()
+        {
+            var bildirimler = _db.Notifications
+                .Where(n => n.UserId == KullaniciId && !n.IsRead)
+                .ToList();
+            foreach (var b in bildirimler)
+                b.IsRead = true;
+            _db.SaveChanges();
             return RedirectToAction("Bildirimler");
         }
     }

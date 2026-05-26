@@ -238,11 +238,10 @@ namespace RewardSystem.Controllers
                 return View(model);
             }
 
-            var tokenRecord = _db.PasswordResetTokens.FirstOrDefault(t =>
-                t.PlatformUserId == user.Id &&
-                t.Token == model.Token &&
-                !t.IsUsed &&
-                t.ExpiresAt > DateTime.UtcNow);
+            // Token public şemasından okunuyor (yazıldığı yer)
+            var tokenRecord = _db.PasswordResetTokens
+                .FromSqlRaw("SELECT * FROM public.password_reset_tokens WHERE platform_user_id = {0} AND token = {1} AND is_used = false AND expires_at > NOW()", user.Id, model.Token)
+                .FirstOrDefault();
 
             if (tokenRecord == null)
             {

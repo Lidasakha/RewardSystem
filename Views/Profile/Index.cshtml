@@ -18,60 +18,20 @@
 
     @if (TempData["Mesaj"] != null)
     {
-        <div class="pnd-alert pnd-alert-success">
-            <span class="pnd-alert-icon">✅</span>
+        <div class="pnd-toast pnd-toast-success" id="profileToast">
+            <i class="ti ti-circle-check" style="font-size:22px;flex-shrink:0;"></i>
             <span>@TempData["Mesaj"]</span>
-            <button class="pnd-alert-close" onclick="this.parentElement.remove()">✕</button>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:inherit;opacity:.7;font-size:18px;margin-left:auto;">×</button>
         </div>
     }
-
     @if (TempData["Hata"] != null)
     {
-        <div class="pnd-alert pnd-alert-danger">
-            <span class="pnd-alert-icon">❌</span>
+        <div class="pnd-toast pnd-toast-danger" id="profileToast">
+            <i class="ti ti-alert-circle" style="font-size:22px;flex-shrink:0;"></i>
             <span>@TempData["Hata"]</span>
-            <button class="pnd-alert-close" onclick="this.parentElement.remove()">✕</button>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:inherit;opacity:.7;font-size:18px;margin-left:auto;">×</button>
         </div>
     }
-
-    <!-- Section 1: Identity Information -->
-    <div class="pnd-card" id="identity">
-        <div class="pnd-card-header">
-            <h2 class="pnd-card-title">
-                <span></span> Kimlik Bilgileri
-            </h2>
-        </div>
-        
-        <div class="pnd-info-grid">
-            <div class="pnd-form-group">
-                <label>Ad Soyad</label>
-                <input type="text" class="pnd-form-control" value="@Model.FullName" readonly />
-            </div>
-            <div class="pnd-form-group">
-                <label>Kullanıcı Adı</label>
-                <input type="text" class="pnd-form-control" value="@Model.Username" readonly />
-            </div>
-            <div class="pnd-form-group">
-                <label>E-posta Adresi</label>
-                <input type="email" class="pnd-form-control" value="@(Model.Email ?? "Belirtilmemiş")" readonly />
-            </div>
-            <div class="pnd-form-group">
-                <label>Rol</label>
-                <input type="text" class="pnd-form-control" value="@roleDisplay" readonly />
-            </div>
-            <div class="pnd-form-group">
-                <label>Bölüm / Ünvan</label>
-                <input type="text" class="pnd-form-control" value="@(Model.Department ?? "Belirtilmemiş")" readonly />
-            </div>
-            @if (Model.UserType?.ToLower() == "ogrenci")
-            {
-                <div class="pnd-form-group">
-                    <label>Öğrenci Numarası</label>
-                    <input type="text" class="pnd-form-control" value="@(Model.StudentNumber ?? "Belirtilmemiş")" readonly />
-                </div>
-            }
-        </div>
-    </div>
 
     <!-- Section 2: Security Settings -->
     <div class="pnd-card" id="security">
@@ -95,8 +55,15 @@
             <div class="pnd-form-group" style="max-width: 400px;">
                 <label>Yeni Şifre</label>
                 <div style="position: relative;">
-                    <input type="password" name="NewPassword" class="pnd-form-control" required placeholder="••••••••" style="padding-right: 40px;" />
+                    <input type="password" name="NewPassword" id="newPasswordInput" class="pnd-form-control" required placeholder="••••••••" style="padding-right: 40px;" oninput="checkStrength(this.value)" />
                     <i class="ti ti-eye" onclick="togglePassword(this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 18px;"></i>
+                </div>
+                <!-- Şifre güç göstergesi -->
+                <div id="strengthWrap" style="margin-top:8px;display:none;">
+                    <div style="height:5px;background:var(--gray-100);border-radius:20px;overflow:hidden;">
+                        <div id="strengthBar" style="height:100%;border-radius:20px;transition:width .3s,background .3s;width:0%;"></div>
+                    </div>
+                    <div id="strengthLabel" style="font-size:11.5px;font-weight:600;margin-top:4px;"></div>
                 </div>
                 @Html.ValidationMessage("NewPassword", new { @class = "text-danger" })
             </div>
@@ -118,19 +85,89 @@
 
 </div>
 
+<style>
+/* Toast notification */
+.pnd-toast {
+    display:flex; align-items:center; gap:12px;
+    padding:16px 20px; border-radius:var(--radius-sm);
+    font-size:14px; font-weight:600; margin-bottom:16px;
+    animation: slideInToast .3s ease;
+    box-shadow: var(--shadow);
+}
+.pnd-toast-success {
+    background:var(--green-bg); border:1px solid rgba(22,163,74,.3); color:var(--green);
+}
+.pnd-toast-danger {
+    background:var(--red-bg); border:1px solid rgba(220,38,38,.3); color:var(--red);
+}
+@@keyframes slideInToast {
+    from { transform:translateY(-10px); opacity:0; }
+    to   { transform:translateY(0);     opacity:1; }
+}
+
+/* Dark mode fix */
+body.dark-mode .pnd-card { background:var(--surface); border-color:var(--border); }
+body.dark-mode .pnd-form-control { background:var(--surface-2); border-color:var(--border); color:var(--text); }
+body.dark-mode .pnd-form-control[readonly] { background:var(--surface); opacity:.7; }
+body.dark-mode .pnd-card-header { border-color:var(--border); }
+body.dark-mode .pnd-profile-container { background:transparent; }
+body.dark-mode label { color:var(--text-muted); }
+</style>
+
 <script>
     function togglePassword(icon) {
-        // İkonun hemen öncesindeki input elementini buluyoruz
         var input = icon.previousElementSibling;
-        
         if (input.type === "password") {
             input.type = "text";
             icon.classList.remove("ti-eye");
-            icon.classList.add("ti-eye-off"); // Tabler Icons kapalı göz ikonu
+            icon.classList.add("ti-eye-off");
         } else {
             input.type = "password";
             icon.classList.remove("ti-eye-off");
-            icon.classList.add("ti-eye"); // Tabler Icons açık göz ikonu
+            icon.classList.add("ti-eye");
         }
     }
+
+    function checkStrength(val) {
+        var wrap  = document.getElementById('strengthWrap');
+        var bar   = document.getElementById('strengthBar');
+        var label = document.getElementById('strengthLabel');
+        if (!wrap) return;
+
+        if (!val) { wrap.style.display='none'; return; }
+        wrap.style.display = 'block';
+
+        var score = 0;
+        if (val.length >= 8)              score++;
+        if (val.length >= 12)             score++;
+        if (/[A-Z]/.test(val))            score++;
+        if (/[0-9]/.test(val))            score++;
+        if (/[^A-Za-z0-9]/.test(val))     score++;
+
+        var levels = [
+            { pct:'20%', color:'#ef4444', text:'Çok Zayıf' },
+            { pct:'40%', color:'#f97316', text:'Zayıf' },
+            { pct:'60%', color:'#eab308', text:'Orta' },
+            { pct:'80%', color:'#22c55e', text:'Güçlü' },
+            { pct:'100%',color:'#15803d', text:'Çok Güçlü ✓' }
+        ];
+
+        var lvl = levels[Math.min(score, 4)];
+        bar.style.width      = lvl.pct;
+        bar.style.background = lvl.color;
+        label.textContent    = lvl.text;
+        label.style.color    = lvl.color;
+    }
+
+    // Toast otomatik kapan (4sn)
+    document.addEventListener('DOMContentLoaded', function() {
+        var toast = document.getElementById('profileToast');
+        if (toast) {
+            setTimeout(function() {
+                toast.style.transition = 'opacity .4s';
+                toast.style.opacity = '0';
+                setTimeout(function() { toast.remove(); }, 400);
+            }, 4000);
+        }
+    });
 </script>

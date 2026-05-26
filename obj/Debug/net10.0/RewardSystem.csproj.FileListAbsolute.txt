@@ -106,4 +106,4 @@ D:\workspace\payanname-sale4\RewardSystem\bin\Debug\net10.0\zh-Hant\Microsoft.Co
 D:\workspace\payanname-sale4\RewardSystem\bin\Debug\net10.0\BCrypt.Net-Next.dll
 D:\workspace\payanname-sale4\RewardSystem\obj\Debug\net10.0\RewardSystem.sourcelink.json
 D:\workspace\payanname-sale4\RewardSystem\obj\Debug\net10.0\compressed\gvxd18p0xp-{0}-sdkf9hi1az-sdkf9hi1az.gz
-D:\workspace\payanname-sale4\RewardSystem\obj\Debug\net10.0\compressed\uym9cbfn94-{0}-hyp92cpk8a-hyp92cpk8a.gz
+D:\workspace\payanname-sale4\RewardSystem\obj\Debug\net10.0\compressed\uym9cbfn94-{0}-1x125gf25s-1x125gf25s.gz
