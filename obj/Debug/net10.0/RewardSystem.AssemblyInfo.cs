@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RewardSystem")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+72de41e8712f7f0bcf1fac101472959c44b4cba8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ee49c17c0d436bcb560b4cdced0ae751926cf20f")]
 [assembly: System.Reflection.AssemblyProductAttribute("RewardSystem")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RewardSystem")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
