@@ -1,4 +1,4 @@
-﻿@model List<RewardSystem.Models.RankingRow>
+@model List<RewardSystem.Models.RankingRow>
 @{
     ViewData["Title"] = "Sıralama";
     ViewData["Active"] = "Siralama";
@@ -7,18 +7,19 @@
 }
 
 <div class="panel">
+    @{ var displayModel = Model.Where(m => m.User.FullName?.ToLower() != "test user").ToList(); }
     <div class="panel-head">
         <span>Akademik Puan Sıralaması</span>
-        <span style="font-size:12px;color:var(--text-muted)">@Model.Count öğrenci</span>
+        <span style="font-size:12px;color:var(--text-muted)">@displayModel.Count öğrenci</span>
     </div>
 
-    @if (!Model.Any())
+    @if (!displayModel.Any())
     {
         <p class="empty">Henüz sıralama verisi yok.</p>
     }
     else
     {
-        @foreach (var (s, i) in Model.Select((s, i) => (s, i)))
+        @foreach (var (s, i) in displayModel.Select((s, i) => (s, i)))
         {
             <div class="siralama-row @(s.User.Id == benimId ? "highlight" : "")">
                 <div class="siralama-no">

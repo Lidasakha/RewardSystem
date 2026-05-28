@@ -103,9 +103,9 @@ namespace RewardSystem.Controllers
                 BildiriSayisi  = bildiriSayisi,
                 PatentSayisi   = patentSayisi,
                 AkademikPuan   = _db.Articles.Count(a => a.UserId == KullaniciId && a.Status == "Onaylandi") * 100
-                               + _db.Projects.Count(p => p.UserId == KullaniciId) * 80
-                               + _db.Presentations.Count(b => b.UserId == KullaniciId) * 40
-                               + _db.Patents.Count(pt => pt.UserId == KullaniciId) * 50,
+                               + _db.Projects.Count(p => p.UserId == KullaniciId && p.Status == "Onaylandi") * 80
+                               + _db.Presentations.Count(b => b.UserId == KullaniciId && b.Status == "Onaylandi") * 40
+                               + _db.Patents.Count(pt => pt.UserId == KullaniciId && pt.Status == "Onaylandi") * 50,
 
                 SonGonderiler = tumSonGonderiler,
 
@@ -124,10 +124,10 @@ namespace RewardSystem.Controllers
                              && u.IsActive)
                     .Select(u => new RankingRow {
                         User  = u,
-                        Score = _db.Articles.Count(a => a.UserId == u.Id)       * 100
-                              + _db.Projects.Count(p => p.UserId == u.Id)       * 80
-                              + _db.Presentations.Count(b => b.UserId == u.Id)  * 40
-                              + _db.Certificates.Count(c => c.UserId == u.Id)   * 50
+                        Score = _db.Articles.Count(a => a.UserId == u.Id && a.Status == "Onaylandi")      * 100
+                              + _db.Projects.Count(p => p.UserId == u.Id && p.Status == "Onaylandi")      * 80
+                              + _db.Presentations.Count(b => b.UserId == u.Id && b.Status == "Onaylandi") * 40
+                              + _db.Certificates.Count(c => c.UserId == u.Id)                             * 50
                     })
                     .OrderByDescending(r => r.Score)
                     .Take(5)
@@ -225,7 +225,9 @@ namespace RewardSystem.Controllers
             var (pPath, pErr) = await SaveFileAsync(file);
             if (pErr != null) { TempData["Hata"] = pErr; return RedirectToAction("YeniCalisma"); }
             model.UserId   = KullaniciId;
+            model.Status   = "OnayBekliyor";
             model.FilePath = pPath;
+            model.CreatedAt = DateTime.UtcNow;
             _db.Projects.Add(model);
             await _db.SaveChangesAsync();
             _db.Notifications.Add(new RewardSystem.Models.Notification {
@@ -245,7 +247,9 @@ namespace RewardSystem.Controllers
             var (bPath, bErr) = await SaveFileAsync(file);
             if (bErr != null) { TempData["Hata"] = bErr; return RedirectToAction("YeniCalisma"); }
             model.UserId   = KullaniciId;
+            model.Status   = "OnayBekliyor";
             model.FilePath = bPath;
+            model.CreatedAt = DateTime.UtcNow;
             _db.Presentations.Add(model);
             await _db.SaveChangesAsync();
             _db.Notifications.Add(new RewardSystem.Models.Notification {
@@ -265,7 +269,9 @@ namespace RewardSystem.Controllers
             var (ptPath, ptErr) = await SaveFileAsync(file);
             if (ptErr != null) { TempData["Hata"] = ptErr; return RedirectToAction("YeniCalisma"); }
             model.UserId   = KullaniciId;
+            model.Status   = "OnayBekliyor";
             model.FilePath = ptPath;
+            model.CreatedAt = DateTime.UtcNow;
             _db.Patents.Add(model);
             await _db.SaveChangesAsync();
             _db.Notifications.Add(new RewardSystem.Models.Notification {

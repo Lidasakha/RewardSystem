@@ -27,11 +27,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Ana içerik alanı tıklama — sidebar açıksa kapat
+  // Ama hamburger butonuna tıklamayı hariç tut!
   var main = document.querySelector('.main');
   if (main) {
-    main.addEventListener('click', function () {
+    main.addEventListener('click', function (e) {
       var sidebar = document.getElementById('sidebar');
       if (sidebar && sidebar.classList.contains('open')) {
+        // Hamburger veya sidebar içine tıklandıysa kapatma
+        var hamburger = document.querySelector('.hamburger');
+        if (hamburger && hamburger.contains(e.target)) return;
+        if (sidebar.contains(e.target)) return;
         closeSidebar();
       }
     });

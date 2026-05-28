@@ -1,17 +1,42 @@
 @model List<RewardSystem.Models.Article>
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@functions {
+    public class UnifiedWork {
+        public long Id { get; set; }
+        public string Tur { get; set; }
+        public string Title { get; set; }
+        public string Status { get; set; }
+        public int? Year { get; set; }
+        public string FilePath { get; set; }
+        public int? Score { get; set; }
+        public RewardSystem.Models.User User { get; set; }
+        public string OnayAction { get; set; }
+        public string RedAction { get; set; }
+        public string ParamName { get; set; }
+    }
+}
 @{
     ViewData["Title"] = "Akademik Yönetim";
     ViewData["Active"] = "AdminYonetimi";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var hocalar         = ViewBag.Hocalar as List<RewardSystem.Models.User> ?? new();
     var atamalar        = ViewBag.Atamalar as List<RewardSystem.Models.ArticleTeacherAssignment> ?? new();
+    var projeler        = ViewBag.Projeler as List<RewardSystem.Models.Project> ?? new();
+    var bildiriler      = ViewBag.Bildiriler as List<RewardSystem.Models.Presentation> ?? new();
+    var patentler       = ViewBag.Patentler as List<RewardSystem.Models.Patent> ?? new();
 
-    var bekleyenler     = Model.Where(m => m.Status == "OnayBekliyor").ToList();
-    var hocaBekleyenler = Model.Where(m => m.Status == "OnaylandiBekliyor").ToList();
-    var degerlendirme   = Model.Where(m => m.Status == "Degerlendirmede").ToList();
-    var reddedilenler   = Model.Where(m => m.Status == "Reddedildi").ToList();
-    var yayinlananlar   = Model.Where(m => m.Status == "Onaylandi").ToList();
+    var tumu = new List<UnifiedWork>();
+    foreach(var m in Model) tumu.Add(new UnifiedWork { Id=m.Id, Tur="Makale", Title=m.Title, Status=m.Status, Year=m.Year, FilePath=m.FilePath, Score=m.Score, User=m.User, OnayAction="MakaleOnayVer", RedAction="MakaleReddet", ParamName="makaleId" });
+    foreach(var p in projeler) tumu.Add(new UnifiedWork { Id=p.Id, Tur="Proje", Title=p.Title, Status=p.Status, Year=p.StartDate?.Year, FilePath=p.FilePath, Score=null, User=p.User, OnayAction="ProjeOnayla", RedAction="ProjeReddet", ParamName="id" });
+    foreach(var b in bildiriler) tumu.Add(new UnifiedWork { Id=b.Id, Tur="Bildiri", Title=b.Title, Status=b.Status, Year=b.Year, FilePath=b.FilePath, Score=null, User=b.User, OnayAction="BildiriOnayla", RedAction="BildiriReddet", ParamName="id" });
+    foreach(var pt in patentler) tumu.Add(new UnifiedWork { Id=pt.Id, Tur="Patent", Title=pt.Title, Status=pt.Status, Year=pt.Year, FilePath=pt.FilePath, Score=null, User=pt.User, OnayAction="PatentOnayla", RedAction="PatentReddet", ParamName="id" });
+
+    var bekleyenler     = tumu.Where(m => m.Status == "OnayBekliyor").ToList();
+    var hocaBekleyenler = tumu.Where(m => m.Status == "OnaylandiBekliyor").ToList();
+    var degerlendirme   = tumu.Where(m => m.Status == "Degerlendirmede").ToList();
+    var reddedilenler   = tumu.Where(m => m.Status == "Reddedildi").ToList();
+    var yayinlananlar   = tumu.Where(m => m.Status == "Onaylandi").ToList();
+    var allCount        = tumu.Count;
 }
 
 <style>
@@ -156,14 +181,6 @@ body.dark-mode .aym-banner{background:var(--brand-700);}
 
 <div class="aym">
 
-  @if (TempData["Mesaj"] != null)
-  {
-    <div class="aym-alert aym-alert-ok">
-      <i class="ti ti-circle-check" style="font-size:20px;"></i>
-      <span>@TempData["Mesaj"]</span>
-      <button class="aym-alert-x" onclick="this.parentElement.remove()">×</button>
-    </div>
-  }
   @if (TempData["Hata"] != null)
   {
     <div class="aym-alert aym-alert-err">
@@ -173,33 +190,7 @@ body.dark-mode .aym-banner{background:var(--brand-700);}
     </div>
   }
 
-    <div class="aym-stats">
-      <div class="aym-stat" onclick="setFilter('OnayBekliyor')" title="Onay Bekliyor">
-        <div class="aym-stat-num" style="color:#fbbf24;">@bekleyenler.Count</div>
-        <div class="aym-stat-lbl">Onay</div>
-      </div>
-      <div class="aym-stat" onclick="setFilter('OnaylandiBekliyor')" title="Hoca Ataması Bekliyor">
-        <div class="aym-stat-num" style="color:#60a5fa;">@hocaBekleyenler.Count</div>
-        <div class="aym-stat-lbl">Hoca</div>
-      </div>
-      <div class="aym-stat" onclick="setFilter('Degerlendirmede')" title="Değerlendirmede">
-        <div class="aym-stat-num" style="color:#a78bfa;">@degerlendirme.Count</div>
-        <div class="aym-stat-lbl">Değerl.</div>
-      </div>
-      <div class="aym-stat" onclick="setFilter('Onaylandi')" title="Yayınlanan">
-        <div class="aym-stat-num" style="color:#34d399;">@yayinlananlar.Count</div>
-        <div class="aym-stat-lbl">Yayında</div>
-      </div>
-      <div class="aym-stat" onclick="setFilter('Reddedildi')" title="Reddedilen">
-        <div class="aym-stat-num" style="color:#f87171;">@reddedilenler.Count</div>
-        <div class="aym-stat-lbl">Red</div>
-      </div>
-      <div class="aym-stat" onclick="setFilter('')" title="Tümü">
-        <div class="aym-stat-num" style="color:#fff;">@Model.Count</div>
-        <div class="aym-stat-lbl">Tümü</div>
-      </div>
-    </div>
-  </div>
+
 
   <!-- Toolbar -->
   <div class="aym-toolbar">
@@ -208,7 +199,7 @@ body.dark-mode .aym-banner{background:var(--brand-700);}
       <input type="text" id="aymQ" placeholder="Öğrenci adı veya çalışma başlığı ile ara..." oninput="doFilter()">
     </div>
     <select class="aym-sel" id="aymSel" onchange="doFilter()">
-      <option value="">Tüm Durumlar (@Model.Count)</option>
+      <option value="">Tüm Durumlar (@allCount)</option>
       <option value="OnayBekliyor">Onay Bekliyor (@bekleyenler.Count)</option>
       <option value="OnaylandiBekliyor">Hoca Ataması Bekliyor (@hocaBekleyenler.Count)</option>
       <option value="Degerlendirmede">Değerlendirmede (@degerlendirme.Count)</option>
@@ -221,10 +212,10 @@ body.dark-mode .aym-banner{background:var(--brand-700);}
   <div class="aym-panel">
     <div class="aym-head">
       <span><i class="ti ti-files" style="color:var(--accent);margin-right:7px;"></i>Tüm Çalışmalar</span>
-      <span style="font-size:12px;color:var(--text-muted);" id="aymCnt">@Model.Count çalışma</span>
+      <span style="font-size:12px;color:var(--text-muted);" id="aymCnt">@allCount çalışma</span>
     </div>
 
-    @if (!Model.Any())
+    @if (allCount == 0)
     {
       <div class="aym-empty"><i class="ti ti-inbox"></i>Henüz çalışma bulunmuyor.</div>
     }
@@ -258,12 +249,12 @@ body.dark-mode .aym-banner{background:var(--brand-700);}
                 <td><span style="font-size:12px;color:var(--text-light);">—</span></td>
                 <td>
                   <div class="aym-actions">
-                    <form asp-action="MakaleOnayVer" method="post" style="display:inline;">
+                    <form asp-action="@m.OnayAction" method="post" style="display:inline;">
                       @Html.AntiForgeryToken()
-                      <input type="hidden" name="makaleId" value="@m.Id">
+                      <input type="hidden" name="@m.ParamName" value="@m.Id">
                       <button type="submit" class="aym-btn btn-ok"><i class="ti ti-check"></i> Onayla</button>
                     </form>
-                    <button class="aym-btn btn-rd" onclick="openRM('@m.Id','@(m.Title?.Replace("'","\\'")??"")','@(m.User?.FullName?.Replace("'","\\'")??"")' )">
+                    <button class="aym-btn btn-rd" onclick="openRM('@m.Id','@(m.Title?.Replace("'","\\'")??"")','@(m.User?.FullName?.Replace("'","\\'")??"")', '@m.RedAction', '@m.ParamName')">
                       <i class="ti ti-x"></i> Reddet
                     </button>
                   </div>
@@ -459,7 +450,7 @@ function removeH(id,e){e.stopPropagation();sel=sel.filter(s=>s.id!==id);redist()
 function openHM(id,title,student){document.getElementById('hmMakaleId').value=id;document.getElementById('hmTitle').textContent=title;document.getElementById('hmSub').textContent=student+' — çalışması';document.getElementById('hmQ').value='';sel=[];document.getElementById('hmOv').classList.add('open');document.body.style.overflow='hidden';renderHocas('');renderChips();}
 function closeHM(){document.getElementById('hmOv').classList.remove('open');document.body.style.overflow='';}
 function submitHM(){const c=document.getElementById('hmHiddens');c.innerHTML='';sel.forEach(s=>{const a=document.createElement('input');a.type='hidden';a.name='hocaIds';a.value=s.id;const b=document.createElement('input');b.type='hidden';b.name='yuzdeler';b.value=s.pct;c.appendChild(a);c.appendChild(b);});document.getElementById('hmForm').submit();}
-function openRM(id,title,student){document.getElementById('rmId').value=id;document.getElementById('rmSub').textContent=student+' — '+title;document.querySelector('#rmForm textarea').value='';document.getElementById('rmOv').classList.add('open');document.body.style.overflow='hidden';}
+function openRM(id,title,student,actionStr,paramName){document.getElementById('rmId').value=id;document.getElementById('rmId').name=paramName;document.getElementById('rmForm').action='/Admin/'+actionStr;document.getElementById('rmSub').textContent=student+' — '+title;document.querySelector('#rmForm textarea').value='';document.getElementById('rmOv').classList.add('open');document.body.style.overflow='hidden';}
 function closeRM(){document.getElementById('rmOv').classList.remove('open');document.body.style.overflow='';}
 function setFilter(val){document.getElementById('aymSel').value=val;doFilter();}
 function doFilter(){

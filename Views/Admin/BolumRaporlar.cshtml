@@ -65,10 +65,7 @@
 
   <!-- KPI -->
   <div class="br-kpi">
-    <div class="br-kc">
-      <div class="br-ki" style="background:var(--blue-bg);color:var(--blue);"><i class="ti ti-school"></i></div>
-      <div><div class="br-kn">@ViewBag.ToplamOgrenci</div><div class="br-kl">Bölüm Öğrencisi</div></div>
-    </div>
+
     <div class="br-kc">
       <div class="br-ki" style="background:var(--gray-100);color:var(--gray-600);"><i class="ti ti-files"></i></div>
       <div><div class="br-kn">@ViewBag.ToplamCalisma</div><div class="br-kl">Toplam Çalışma</div></div>
@@ -180,6 +177,10 @@ const textC  = isDark ? '#94a3b8' : '#64748b';
 let trendChart;
 function buildTrend(type) {
   if (trendChart) trendChart.destroy();
+  if (!yillikData || yillikData.length === 0) {
+    document.getElementById('trendChart').parentElement.innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--text-muted);font-size:13.5px;"><i class="ti ti-chart-bar" style="margin-right:8px;font-size:20px;opacity:0.5;"></i>Henüz çalışma verisi bulunmuyor.</div>';
+    return;
+  }
   trendChart = new Chart(document.getElementById('trendChart'), {
     type,
     data: {
@@ -215,6 +216,11 @@ function switchTrend(type, btn) {
 let durumChart;
 function buildDurum(type) {
   if (durumChart) durumChart.destroy();
+  const sum = (durumData || []).reduce((acc, curr) => acc + (curr.sayi || 0), 0);
+  if (sum === 0) {
+    document.getElementById('durumChart').parentElement.innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--text-muted);font-size:13.5px;"><i class="ti ti-chart-pie" style="margin-right:8px;font-size:20px;opacity:0.5;"></i>Henüz durum verisi bulunmuyor.</div>';
+    return;
+  }
   durumChart = new Chart(document.getElementById('durumChart'), {
     type,
     data: {
