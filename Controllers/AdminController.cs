@@ -65,7 +65,7 @@ namespace RewardSystem.Controllers
                     .Select(u => u.Id).ToList();
                 ViewBag.BolumOgrenci = deptStudentIds.Count;
 
-                // Son deÄŸerlendirdikleri
+                // Son değerlendirdikleri
                 ViewBag.SonDegerlendirmeler = _db.ArticleTeacherAssignments
                     .Include(a => a.Article).ThenInclude(art => art.User)
                     .Where(a => a.TeacherId == UserId && a.IsCompleted)
@@ -118,7 +118,7 @@ namespace RewardSystem.Controllers
                 .OrderByDescending(m => m.CreatedAt)
                 .ToList();
 
-            // AtamalarÄ± da Ã§ek â€” deÄŸerlendirme durumu iÃ§in
+            // Atamaları da çek â€” değerlendirme durumu için
             var atamalar = _db.ArticleTeacherAssignments
                 .Include(a => a.Article)
                 .ToList();
@@ -152,14 +152,14 @@ public IActionResult ProjeOnayla(long id)
         {
             _db.Notifications.Add(new Notification {
                 UserId    = (int)proje.UserId,
-                Message   = $"'{proje.Title}' baÅŸlÄ±klÄ± projeniz onaylandÄ± ve puanÄ±nÄ±za eklendi! ðŸŽ‰",
+                Message   = $"'{proje.Title}' başlıklı projeniz onaylandı ve puanınıza eklendi! 🎉",
                 IsRead    = false,
                 CreatedAt = DateTime.UtcNow
             });
             _db.SaveChanges();
             OdulKontrolEt((int)proje.UserId);
         }
-        TempData["Mesaj"] = "Proje onaylandÄ±.";
+        TempData["Mesaj"] = "Proje onaylandı.";
     }
     return RedirectToAction("AdminYonetimi");
 }
@@ -176,8 +176,8 @@ public IActionResult ProjeReddet(long id, string? red_neden)
         if (proje.UserId > 0)
         {
             var mesaj = string.IsNullOrEmpty(red_neden)
-                ? $"'{proje.Title}' baÅŸlÄ±klÄ± projeniz reddedildi."
-                : $"'{proje.Title}' baÅŸlÄ±klÄ± projeniz reddedildi. Sebep: {red_neden}";
+                ? $"'{proje.Title}' başlıklı projeniz reddedildi."
+                : $"'{proje.Title}' başlıklı projeniz reddedildi. Sebep: {red_neden}";
             _db.Notifications.Add(new Notification {
                 UserId    = (int)proje.UserId,
                 Message   = mesaj,
@@ -205,14 +205,14 @@ public IActionResult BildiriOnayla(long id)
         {
             _db.Notifications.Add(new Notification {
                 UserId    = (int)bildiri.UserId,
-                Message   = $"'{bildiri.Title}' baÅŸlÄ±klÄ± bildiriniz onaylandÄ± ve puanÄ±nÄ±za eklendi! ðŸŽ‰",
+                Message   = $"'{bildiri.Title}' başlıklı bildiriniz onaylandı ve puanınıza eklendi! 🎉",
                 IsRead    = false,
                 CreatedAt = DateTime.UtcNow
             });
             _db.SaveChanges();
             OdulKontrolEt((int)bildiri.UserId);
         }
-        TempData["Mesaj"] = "Bildiri onaylandÄ±.";
+        TempData["Mesaj"] = "Bildiri onaylandı.";
     }
     return RedirectToAction("AdminYonetimi");
 }
@@ -229,8 +229,8 @@ public IActionResult BildiriReddet(long id, string? red_neden)
         if (bildiri.UserId > 0)
         {
             var mesaj = string.IsNullOrEmpty(red_neden)
-                ? $"'{bildiri.Title}' baÅŸlÄ±klÄ± bildiriniz reddedildi."
-                : $"'{bildiri.Title}' baÅŸlÄ±klÄ± bildiriniz reddedildi. Sebep: {red_neden}";
+                ? $"'{bildiri.Title}' başlıklı bildiriniz reddedildi."
+                : $"'{bildiri.Title}' başlıklı bildiriniz reddedildi. Sebep: {red_neden}";
             _db.Notifications.Add(new Notification {
                 UserId    = (int)bildiri.UserId,
                 Message   = mesaj,
@@ -258,14 +258,14 @@ public IActionResult PatentOnayla(long id)
         {
             _db.Notifications.Add(new Notification {
                 UserId    = (int)patent.UserId,
-                Message   = $"'{patent.Title}' baÅŸlÄ±klÄ± patentiniz onaylandÄ± ve puanÄ±nÄ±za eklendi! ðŸŽ‰",
+                Message   = $"'{patent.Title}' başlıklı patentiniz onaylandı ve puanınıza eklendi! 🎉",
                 IsRead    = false,
                 CreatedAt = DateTime.UtcNow
             });
             _db.SaveChanges();
             OdulKontrolEt((int)patent.UserId);
         }
-        TempData["Mesaj"] = "Patent onaylandÄ±.";
+        TempData["Mesaj"] = "Patent onaylandı.";
     }
     return RedirectToAction("AdminYonetimi");
 }
@@ -282,8 +282,8 @@ public IActionResult PatentReddet(long id, string? red_neden)
         if (patent.UserId > 0)
         {
             var mesaj = string.IsNullOrEmpty(red_neden)
-                ? $"'{patent.Title}' baÅŸlÄ±klÄ± patentiniz reddedildi."
-                : $"'{patent.Title}' baÅŸlÄ±klÄ± patentiniz reddedildi. Sebep: {red_neden}";
+                ? $"'{patent.Title}' başlıklı patentiniz reddedildi."
+                : $"'{patent.Title}' başlıklı patentiniz reddedildi. Sebep: {red_neden}";
             _db.Notifications.Add(new Notification {
                 UserId    = (int)patent.UserId,
                 Message   = mesaj,
@@ -305,21 +305,21 @@ public IActionResult PatentReddet(long id, string? red_neden)
             var makale = _db.Articles.Include(a => a.User).FirstOrDefault(a => a.Id == makaleId);
             if (makale != null)
             {
-                makale.Status = "OnaylandiBekliyor"; // OnaylandÄ± ama hoca atanmayÄ± bekliyor
+                makale.Status = "OnaylandiBekliyor"; // Onaylandı ama hoca atanmayı bekliyor
                 _db.SaveChanges();
 
-                // Ã–ÄŸrenciye bildirim
+                // Öğrenciye bildirim
                 if (makale.UserId > 0)
                 {
                     _db.Notifications.Add(new Notification {
                         UserId = (int)makale.UserId,
-                        Message = $"'{makale.Title}' baÅŸlÄ±klÄ± Ã§alÄ±ÅŸmanÄ±z onaylandÄ± ve hoca atamasÄ± bekleniyor.",
+                        Message = $"'{makale.Title}' başlıklı çalışmanız onaylandı ve hoca ataması bekleniyor.",
                         IsRead = false,
                         CreatedAt = DateTime.UtcNow
                     });
                     _db.SaveChanges();
                 }
-                TempData["Mesaj"] = "Ã‡alÄ±ÅŸma onaylandÄ±. ArtÄ±k hoca atayabilirsiniz.";
+                TempData["Mesaj"] = "Çalışma onaylandı. Artık hoca atayabilirsiniz.";
 
             }
             return RedirectToAction("AdminYonetimi");
@@ -336,12 +336,12 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 makale.Status = "Reddedildi";
                 _db.SaveChanges();
 
-                // Ã–ÄŸrenciye bildirim
+                // Öğrenciye bildirim
                 if (makale.UserId > 0)
                 {
                     var mesaj = string.IsNullOrEmpty(red_neden)
-                        ? $"'{makale.Title}' baÅŸlÄ±klÄ± Ã§alÄ±ÅŸmanÄ±z reddedildi."
-                        : $"'{makale.Title}' baÅŸlÄ±klÄ± Ã§alÄ±ÅŸmanÄ±z reddedildi. Sebep: {red_neden}";
+                        ? $"'{makale.Title}' başlıklı çalışmanız reddedildi."
+                        : $"'{makale.Title}' başlıklı çalışmanız reddedildi. Sebep: {red_neden}";
                     _db.Notifications.Add(new Notification {
                         UserId = (int)makale.UserId,
                         Message = mesaj,
@@ -350,7 +350,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                     });
                     _db.SaveChanges();
                 }
-                TempData["Mesaj"] = "Ã‡alÄ±ÅŸma reddedildi ve Ã¶ÄŸrenciye bildirim gÃ¶nderildi.";
+                TempData["Mesaj"] = "Çalışma reddedildi ve öğrenciye bildirim gönderildi.";
 
             }
             return RedirectToAction("AdminYonetimi");
@@ -363,7 +363,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
         {
             if (yuzdeler == null || !yuzdeler.Any() || yuzdeler.Sum() != 100)
             {
-                TempData["Hata"] = "Toplam puan aÄŸÄ±rlÄ±ÄŸÄ± %100 olmalÄ±dÄ±r!";
+                TempData["Hata"] = "Toplam puan ağırlığı %100 olmalıdır!";
                 return RedirectToAction("AdminYonetimi");
             }
             var makale = _db.Articles.Find(makaleId);
@@ -382,18 +382,18 @@ public IActionResult PatentReddet(long id, string? red_neden)
                         IsCompleted = false
                     });
                 }
-                // Ã–ÄŸrenciye bildirim
+                // Öğrenciye bildirim
                 if (makale.UserId > 0)
                 {
                     _db.Notifications.Add(new Notification {
                         UserId = (int)makale.UserId,
-                        Message = $"'{makale.Title}' baÅŸlÄ±klÄ± Ã§alÄ±ÅŸmanÄ±z deÄŸerlendirme sÃ¼recine alÄ±ndÄ±. SonuÃ§ bildirilecektir.",
+                        Message = $"'{makale.Title}' başlıklı çalışmanız değerlendirme sürecine alındı. Sonuç bildirilecektir.",
                         IsRead = false,
                         CreatedAt = DateTime.UtcNow
                     });
                 }
                 _db.SaveChanges();
-                TempData["Mesaj"] = "Hocalar baÅŸarÄ±yla atandÄ±.";
+                TempData["Mesaj"] = "Hocalar başarıyla atandı.";
             }
             return RedirectToAction("AdminYonetimi");
         }
@@ -441,18 +441,18 @@ public IActionResult PatentReddet(long id, string? red_neden)
                         makale.Status = "Onaylandi";
                         _db.SaveChanges();
 
-                        // Ã–ÄŸrenciye puan bildirimi
+                        // Öğrenciye puan bildirimi
                         if (makale.UserId > 0)
                         {
                             _db.Notifications.Add(new Notification {
                                 UserId = (int)makale.UserId,
-                                Message = $"'{makale.Title}' baÅŸlÄ±klÄ± Ã§alÄ±ÅŸmanÄ±z deÄŸerlendirildi ve {makale.Score} puan aldÄ±! ðŸŽ‰",
+                                Message = $"'{makale.Title}' başlıklı çalışmanız değerlendirildi ve {makale.Score} puan aldı! 🎉",
                                 IsRead = false,
                                 CreatedAt = DateTime.UtcNow
                             });
                             _db.SaveChanges();
 
-                            // Ã–dÃ¼l kontrolÃ¼ â€” yeni puana gÃ¶re Ã¶dÃ¼l kazanÄ±ldÄ± mÄ±?
+                            // Ödül kontrolÃ¼ â€” yeni puana gÃ¶re ödül kazanÄ±ldÄ± mÄ±?
                             OdulKontrolEt(makale.UserId);
                         }
                     }
@@ -467,7 +467,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
         {
             ViewBag.ToplamOgrenci       = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive);
             ViewBag.ToplamHoca          = _db.Users.Count(u => u.UserType != null && (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin") && u.IsActive);
-            // GerÃ§ek Ã§alÄ±ÅŸma sayÄ±sÄ±: sadece aktif olanlar (Reddedilenler hariÃ§)
+            // Gerçek çalışma sayÄ±sÄ±: sadece aktif olanlar (Reddedilenler hariÃ§)
             ViewBag.ToplamMakale        = _db.Articles.Count(a => a.Status != "Reddedildi");
             ViewBag.ToplamOnaylanan     = _db.Articles.Count(a => a.Status == "Onaylandi");
             ViewBag.ToplamBekleyen      = _db.Articles.Count(a => a.Status == "OnayBekliyor");
@@ -475,10 +475,10 @@ public IActionResult PatentReddet(long id, string? red_neden)
             ViewBag.ToplamReddedilen    = _db.Articles.Count(a => a.Status == "Reddedildi");
 
             var durumlar = new[] {
-                new { durum = "OnaylandÄ±",          sayi = _db.Articles.Count(a => a.Status == "Onaylandi") },
+                new { durum = "Onaylandı",          sayi = _db.Articles.Count(a => a.Status == "Onaylandi") },
                 new { durum = "Onay Bekliyor",      sayi = _db.Articles.Count(a => a.Status == "OnayBekliyor") },
-                new { durum = "Hoca AtamasÄ± Bekl.",  sayi = _db.Articles.Count(a => a.Status == "OnaylandiBekliyor") },
-                new { durum = "DeÄŸerlendirmede",    sayi = _db.Articles.Count(a => a.Status == "Degerlendirmede") },
+                new { durum = "Hoca Ataması Bekl.",  sayi = _db.Articles.Count(a => a.Status == "OnaylandiBekliyor") },
+                new { durum = "Değerlendirmede",    sayi = _db.Articles.Count(a => a.Status == "Degerlendirmede") },
                 new { durum = "Reddedildi",         sayi = _db.Articles.Count(a => a.Status == "Reddedildi") }
             };
             ViewBag.DurumDagilimi = durumlar;
@@ -553,7 +553,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 .ToList();
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("Ad Soyad,BÃ¶lÃ¼m,Toplam Ã‡alÄ±ÅŸma,Onaylanan,Bekleyen,Toplam Puan");
+            sb.AppendLine("Ad Soyad,Bölüm,Toplam Çalışma,Onaylanan,Bekleyen,Toplam Puan");
 
             foreach (var o in ogrenciler)
             {
@@ -576,7 +576,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
         public IActionResult BolumExcelIndir()
         {
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("BÃ¶lÃ¼m,Ã–ÄŸrenci SayÄ±sÄ±,Toplam Ã‡alÄ±ÅŸma,Onaylanan,Reddedilen");
+            sb.AppendLine("Bölüm,Öğrenci Sayısı,Toplam Çalışma,Onaylanan,Reddedilen");
 
             var bolumler = _db.Users
                 .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive && u.Department != null)
@@ -603,7 +603,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
 
 
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        // Ã–DÃœL YÃ–NETÄ°MÄ°
+        // ÖDÜL YÖNETİMİ
         // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
         [Authorize(Roles = "superadmin")]
@@ -619,13 +619,13 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 r => _db.Badges.Count(b => b.BadgeName == r.Name)
             );
 
-            // Aktif Ã¶ÄŸrenciler (manuel Ã¶dÃ¼l verme iÃ§in)
+            // Aktif öğrenciler (manuel ödül verme için)
             ViewBag.Ogrenciler = _db.Users
                 .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive)
                 .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
                 .ToList();
 
-            // Verilen tÃ¼m rozetler (geri alma iÃ§in)
+            // Verilen tÃ¼m rozetler (geri alma için)
             ViewBag.VerilenRozetler = _db.Badges
                 .Include(b => b.User)
                 .OrderByDescending(b => b.EarnedAt)
@@ -642,14 +642,14 @@ public IActionResult PatentReddet(long id, string? red_neden)
         {
             if (string.IsNullOrWhiteSpace(model.Name) || model.MinPoints < 0)
             {
-                TempData["Hata"] = "Ã–dÃ¼l adÄ± ve minimum puan zorunludur.";
+                TempData["Hata"] = "Ödül adı ve minimum puan zorunludur.";
                 return RedirectToAction("OdulYonetimi");
             }
             model.IsActive  = true;
             model.CreatedAt = DateTime.UtcNow;
             _db.Rewards.Add(model);
             _db.SaveChanges();
-            TempData["Mesaj"] = $"'{model.Name}' Ã¶dÃ¼lÃ¼ baÅŸarÄ±yla eklendi.";
+            TempData["Mesaj"] = $"'{model.Name}' ödülü başarıyla eklendi.";
             return RedirectToAction("OdulYonetimi");
         }
 
@@ -663,7 +663,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
             {
                 odul.IsActive = !odul.IsActive;
                 _db.SaveChanges();
-                TempData["Mesaj"] = $"'{odul.Name}' Ã¶dÃ¼lÃ¼ {(odul.IsActive ? "aktifleÅŸtirildi" : "pasifleÅŸtirildi")}.";
+                TempData["Mesaj"] = $"'{odul.Name}' ödülü {(odul.IsActive ? "aktifleştirildi" : "pasifleştirildi")}.";
             }
             return RedirectToAction("OdulYonetimi");
         }
@@ -678,7 +678,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
             {
                 _db.Rewards.Remove(odul);
                 _db.SaveChanges();
-                TempData["Mesaj"] = $"'{odul.Name}' Ã¶dÃ¼lÃ¼ silindi.";
+                TempData["Mesaj"] = $"'{odul.Name}' ödülü silindi.";
             }
             return RedirectToAction("OdulYonetimi");
         }
@@ -693,14 +693,14 @@ public IActionResult PatentReddet(long id, string? red_neden)
             var ogrenci = _db.Users.Find(userId);
             if (odul == null || ogrenci == null)
             {
-                TempData["Hata"] = "Ã–ÄŸrenci veya Ã¶dÃ¼l bulunamadÄ±.";
+                TempData["Hata"] = "Öğrenci veya ödül bulunamadı.";
                 return RedirectToAction("OdulYonetimi");
             }
 
             var almisMi = _db.Badges.Any(b => b.UserId == userId && b.BadgeName == odul.Name);
             if (almisMi)
             {
-                TempData["Hata"] = $"{ogrenci.FullName} zaten '{odul.Name}' Ã¶dÃ¼lÃ¼ne sahip.";
+                TempData["Hata"] = $"{ogrenci.FullName} zaten '{odul.Name}' ödülüne sahip.";
                 return RedirectToAction("OdulYonetimi");
             }
 
@@ -715,13 +715,13 @@ public IActionResult PatentReddet(long id, string? red_neden)
 
             _db.Notifications.Add(new Notification {
                 UserId    = userId,
-                Message   = $"ðŸ† Tebrikler! Dekan tarafÄ±ndan '{odul.Name}' Ã¶dÃ¼lÃ¼ size verildi!",
+                Message   = $"🏆 Tebrikler! Dekan tarafından '{odul.Name}' ödülü size verildi!",
                 IsRead    = false,
                 CreatedAt = DateTime.UtcNow
             });
 
             _db.SaveChanges();
-            TempData["Mesaj"] = $"'{odul.Name}' Ã¶dÃ¼lÃ¼ {ogrenci.FullName} adlÄ± Ã¶ÄŸrenciye verildi.";
+            TempData["Mesaj"] = $"'{odul.Name}' ödülü {ogrenci.FullName} adlı öğrenciye verildi.";
             return RedirectToAction("OdulYonetimi");
         }
 
@@ -733,24 +733,24 @@ public IActionResult PatentReddet(long id, string? red_neden)
             var badge = _db.Badges.Include(b => b.User).FirstOrDefault(b => b.Id == badgeId);
             if (badge != null)
             {
-                var adSoyad   = badge.User?.FullName ?? "Ã–ÄŸrenci";
+                var adSoyad   = badge.User?.FullName ?? "Öğrenci";
                 var odulAdi   = badge.BadgeName;
 
                 _db.Notifications.Add(new Notification {
                     UserId    = badge.UserId,
-                    Message   = $"'{odulAdi}' rozeti hesabÄ±nÄ±zdan kaldÄ±rÄ±ldÄ±.",
+                    Message   = $"'{odulAdi}' rozeti hesabınızdan kaldırıldı.",
                     IsRead    = false,
                     CreatedAt = DateTime.UtcNow
                 });
 
                 _db.Badges.Remove(badge);
                 _db.SaveChanges();
-                TempData["Mesaj"] = $"{adSoyad} adlÄ± Ã¶ÄŸrencinin '{odulAdi}' rozeti geri alÄ±ndÄ±.";
+                TempData["Mesaj"] = $"{adSoyad} adlı öğrencinin '{odulAdi}' rozeti geri alındı.";
             }
             return RedirectToAction("OdulYonetimi");
         }
 
-        // Puan gÃ¼ncellenince otomatik Ã¶dÃ¼l kontrolÃ¼
+        // Puan gÃ¼ncellenince otomatik ödül kontrolÃ¼
         private void OdulKontrolEt(int userId)
         {
         // Makale puanÄ± (Score alanÄ± â€” hoca ortalamasÄ±)
@@ -787,7 +787,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
             });
             _db.Notifications.Add(new Notification {
                 UserId    = userId,
-                Message   = $"ðŸ† Tebrikler! '{odul.Name}' Ã¶dÃ¼lÃ¼nÃ¼ kazandÄ±nÄ±z! {toplamPuan} puana ulaÅŸtÄ±nÄ±z.",
+                Message   = $"🏆 Tebrikler! '{odul.Name}' ödülünü kazandınız! {toplamPuan} puana ulaştınız.",
                 IsRead    = false,
                 CreatedAt = DateTime.UtcNow
             });
@@ -841,9 +841,9 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 .Select(a => (double?)a.GivenScore).Average() ?? 0;
 
             var durumlar = new[] {
-                new { durum = "OnaylandÄ±",       sayi = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "Onaylandi") },
+                new { durum = "Onaylandı",       sayi = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "Onaylandi") },
                 new { durum = "Onay Bekliyor",   sayi = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "OnayBekliyor") },
-                new { durum = "DeÄŸerlendirmede", sayi = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "Degerlendirmede") }
+                new { durum = "Değerlendirmede", sayi = _db.Articles.Count(a => deptStudentIds.Contains(a.UserId) && a.Status == "Degerlendirmede") }
             };
             ViewBag.DurumDagilimi = durumlar;
 
@@ -901,8 +901,8 @@ public IActionResult PatentReddet(long id, string? red_neden)
             {
                 user.IsActive = !user.IsActive;
                 _db.SaveChanges();
-                var durum = user.IsActive ? "aktifleÅŸtirildi" : "pasifleÅŸtirildi";
-                TempData["Mesaj"] = $"{user.FullName} baÅŸarÄ±yla {durum}.";
+                var durum = user.IsActive ? "aktifleştirildi" : "pasifleştirildi";
+                TempData["Mesaj"] = $"{user.FullName} başarıyla {durum}.";
             }
             return RedirectToAction("KullaniciYonetimi");
         }
@@ -933,7 +933,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
 
                 if (_db.Users.Any(u => u.Username == model.Username))
                 {
-                    TempData["Hata"] = "Bu kullanÄ±cÄ± adÄ± zaten mevcut!";
+                    TempData["Hata"] = "Bu kullanıcı adı zaten mevcut!";
                     return RedirectToAction("KullaniciYonetimi");
                 }
 
@@ -953,7 +953,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                     }
 
                     if (currentUserId <= 0)
-                        throw new InvalidOperationException("GeÃ§erli kullanÄ±cÄ± kimliÄŸi alÄ±namadÄ±.");
+                        throw new InvalidOperationException("Geçerli kullanıcı kimliği alınamadı.");
 
                     _db.Database.ExecuteSqlRaw(
                     $"SET LOCAL app.current_user_id = '{currentUserId}'");
@@ -986,11 +986,11 @@ public IActionResult PatentReddet(long id, string? red_neden)
                          _db.SaveChanges();
                     }
 
-                    TempData["Mesaj"] = "KullanÄ±cÄ± baÅŸarÄ±yla eklendi.";
+                    TempData["Mesaj"] = "Kullanıcı başarıyla eklendi.";
             }
             catch (Exception ex)
             {
-                TempData["Hata"] = "Hata oluÅŸtu: " + ex.Message +
+                TempData["Hata"] = "Hata oluştu: " + ex.Message +
                     (ex.InnerException != null ? " | Detay: " + ex.InnerException.Message : "");
             }
 
@@ -1017,11 +1017,11 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 }
 
                 _db.SaveChanges();
-                TempData["Mesaj"] = "KullanÄ±cÄ± baÅŸarÄ±yla gÃ¼ncellendi.";
+                TempData["Mesaj"] = "Kullanıcı başarıyla güncellendi.";
             }
             else
             {
-                TempData["Hata"] = "KullanÄ±cÄ± bulunamadÄ±.";
+                TempData["Hata"] = "Kullanıcı bulunamadı.";
             }
             return RedirectToAction("KullaniciYonetimi");
         }
@@ -1064,16 +1064,16 @@ public IActionResult PatentReddet(long id, string? red_neden)
 
                     _db.Users.Remove(user);
                     _db.SaveChanges();
-                    TempData["Mesaj"] = user.FullName + " baÅŸarÄ±yla silindi.";
+                    TempData["Mesaj"] = user.FullName + " başarıyla silindi.";
                 }
                 catch (Exception)
                 {
-                    TempData["Hata"] = "KullanÄ±cÄ± silinirken bir hata oluÅŸtu. LÃ¼tfen tekrar deneyin.";
+                    TempData["Hata"] = "Kullanıcı silinirken bir hata oluştu. Lütfen tekrar deneyin.";
                 }
             }
             else
             {
-                TempData["Hata"] = "KullanÄ±cÄ± bulunamadÄ±.";
+                TempData["Hata"] = "Kullanıcı bulunamadı.";
             }
             return RedirectToAction("KullaniciYonetimi");
         }
