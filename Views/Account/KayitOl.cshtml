@@ -57,24 +57,22 @@
     .fg label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.02em;}
     .input-wrap{position:relative;}
     .input-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--light);pointer-events:none;}
-    .fg input, .fg select {
+    .fg input{
       width:100%;padding:10px 12px 10px 36px;
       border:1.5px solid var(--border);border-radius:10px;
       font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);
       background:#fafcfb;outline:none;transition:border-color .18s,box-shadow .18s;
     }
-    .fg select {
-      cursor: pointer;
-      -webkit-appearance: none;
-      appearance: none;
-      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      background-size: 16px;
-      padding-right: 32px;
-    }
-    .fg input:focus, .fg select:focus {border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(26,43,76,.08);}
+    .fg input:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(26,43,76,.08);}
     .fg input::placeholder{color:var(--light);}
+    .fg select{
+      width:100%;padding:10px 12px 10px 36px;
+      border:1.5px solid var(--border);border-radius:10px;
+      font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);
+      background:#fafcfb;outline:none;transition:border-color .18s;
+      -webkit-appearance:none;appearance:none;cursor:pointer;
+    }
+    .fg select:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(26,43,76,.08);}
 
     /* Section divider */
     .section-head{
@@ -130,12 +128,22 @@
         <!-- Kişisel Bilgiler -->
         <div class="section-head">Kişisel Bilgiler</div>
 
-        <div class="fg full">
-          <label>Ad Soyad</label>
+        <div class="fg">
+          <label>Ad</label>
           <div class="input-wrap">
             <i class="ti ti-user"></i>
-            <input asp-for="FullName" placeholder="Adınız ve soyadınız" autocomplete="name">
+            <input asp-for="FirstName" placeholder="Adınız" autocomplete="given-name">
           </div>
+          <span asp-validation-for="FirstName" style="color:#dc2626;font-size:12px;"></span>
+        </div>
+
+        <div class="fg">
+          <label>Soyad</label>
+          <div class="input-wrap">
+            <i class="ti ti-user"></i>
+            <input asp-for="LastName" placeholder="Soyadınız" autocomplete="family-name">
+          </div>
+          <span asp-validation-for="LastName" style="color:#dc2626;font-size:12px;"></span>
         </div>
 
         <div class="fg">
@@ -158,26 +166,28 @@
         <div class="section-head">Akademik Bilgiler</div>
 
         <div class="fg">
+          <label>Fakülte</label>
+          <div class="input-wrap">
+            <i class="ti ti-school"></i>
+            <select asp-for="Faculty" id="facultySelect" onchange="updateDepartments()" required>
+              <option value="">— Fakülte seçin —</option>
+              <option>Mühendislik Fakültesi</option>
+              <option>Fen-Edebiyat Fakültesi</option>
+              <option>İktisadi ve İdari Bilimler Fakültesi</option>
+              <option>Hukuk Fakültesi</option>
+              <option>Tıp Fakültesi</option>
+              <option>Diğer</option>
+            </select>
+          </div>
+          <span asp-validation-for="Faculty" style="color:#dc2626;font-size:12px;"></span>
+        </div>
+
+        <div class="fg">
           <label>Bölüm</label>
           <div class="input-wrap">
             <i class="ti ti-building-community"></i>
-            <select asp-for="Department">
-              <option value="">— Bölüm seçin —</option>
-              <option>Bilgisayar Mühendisliği</option>
-              <option>Elektrik-Elektronik Mühendisliği</option>
-              <option>Makine Mühendisliği</option>
-              <option>İnşaat Mühendisliği</option>
-              <option>Endüstri Mühendisliği</option>
-              <option>Kimya Mühendisliği</option>
-              <option>Biyomedikal Mühendisliği</option>
-              <option>Yazılım Mühendisliği</option>
-              <option>Matematik</option>
-              <option>Fizik</option>
-              <option>İşletme</option>
-              <option>Uluslararası İlişkiler</option>
-              <option>Hukuk</option>
-              <option>Tıp</option>
-              <option>Diğer</option>
+            <select asp-for="Department" id="departmentSelect" disabled required>
+              <option value="">— Önce fakülte seçin —</option>
             </select>
           </div>
         </div>
@@ -199,7 +209,7 @@
           </div>
         </div>
 
-        <div class="fg full">
+        <div class="fg">
           <label>Öğrenci Numarası</label>
           <div class="input-wrap">
             <i class="ti ti-id-badge"></i>
@@ -239,5 +249,40 @@
 
   <div class="footer">© 2025 Teşvik ve Ödüllendirme Sistemi · Tüm hakları saklıdır.</div>
 </div>
+<script>
+const fakulteBolumleri = {
+  "Mühendislik Fakültesi": [
+    "Bilgisayar Mühendisliği","Yazılım Mühendisliği","Elektrik-Elektronik Mühendisliği",
+    "Makine Mühendisliği","İnşaat Mühendisliği","Endüstri Mühendisliği",
+    "Kimya Mühendisliği","Biyomedikal Mühendisliği"
+  ],
+  "Fen-Edebiyat Fakültesi": [
+    "Matematik","Fizik","Kimya","Biyoloji","Türk Dili ve Edebiyatı","Tarih","Coğrafya"
+  ],
+  "İktisadi ve İdari Bilimler Fakültesi": [
+    "İşletme","İktisat","Kamu Yönetimi","Uluslararası İlişkiler","Maliye"
+  ],
+  "Hukuk Fakültesi": ["Hukuk"],
+  "Tıp Fakültesi": ["Tıp","Hemşirelik","Eczacılık"],
+  "Diğer": ["Diğer"]
+};
+
+function updateDepartments() {
+  const fakulte = document.getElementById('facultySelect').value;
+  const bolumSelect = document.getElementById('departmentSelect');
+  bolumSelect.innerHTML = '<option value="">— Bölüm seçin —</option>';
+  if (fakulte && fakulteBolumleri[fakulte]) {
+    bolumSelect.disabled = false;
+    fakulteBolumleri[fakulte].forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b; opt.textContent = b;
+      bolumSelect.appendChild(opt);
+    });
+  } else {
+    bolumSelect.disabled = true;
+    bolumSelect.innerHTML = '<option value="">— Önce fakülte seçin —</option>';
+  }
+}
+</script>
 </body>
 </html>

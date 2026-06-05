@@ -1,252 +1,142 @@
 ﻿@model List<RewardSystem.Models.User>
 @{
-    ViewData["Title"] = "Öğrenci Onayları";
+    ViewData["Title"] = "Öğrenci Yönetimi";
     ViewData["Active"] = "OnayBekleyenOgrenciler";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var aktifOgrenciler = ViewBag.AktifOgrenciler as List<RewardSystem.Models.User> ?? new();
+    var tumOgrenciler = Model.Concat(aktifOgrenciler).ToList();
 }
 
 <style>
-  .ob-page { display:flex; flex-direction:column; gap:20px; }
+.og-page { display:flex;flex-direction:column;gap:20px; }
 
-  /* Banner */
-  .ob-banner {
-    background:linear-gradient(135deg,var(--brand-600) 0%,#0a1e3d 100%);
-    border-radius:var(--radius-lg); padding:24px 28px; color:#fff;
-    display:flex; align-items:center; justify-content:space-between;
-    position:relative; overflow:hidden;
-  }
-  .ob-banner::before {
-    content:''; position:absolute; top:-50px; right:-50px;
-    width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,.05);
-  }
-  .ob-banner-left { display:flex; align-items:center; gap:16px; z-index:1; }
-  .ob-banner-icon {
-    width:52px; height:52px; border-radius:14px;
-    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2);
-    display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0;
-  }
-  .ob-banner-left h2 { font-size:19px; font-weight:700; margin-bottom:3px; }
-  .ob-banner-left p  { font-size:13px; color:rgba(255,255,255,.65); }
-  .ob-banner-stat {
-    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18);
-    border-radius:14px; padding:14px 24px; text-align:center; z-index:1;
-  }
-  .ob-banner-num { font-size:30px; font-weight:800; color:#fbbf24; line-height:1; }
-  .ob-banner-lbl { font-size:11px; color:rgba(255,255,255,.6); margin-top:3px; }
+/* Banner */
+.og-banner {
+  background:linear-gradient(135deg,#111827 0%,#1a2b4c 100%);
+  border-radius:var(--radius-lg);padding:24px 28px;color:#fff;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  position:relative;overflow:hidden;
+}
+.og-banner::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.05);}
+.og-banner-left{display:flex;align-items:center;gap:16px;z-index:1;}
+.og-banner-icon{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+.og-banner-left h2{font-size:19px;font-weight:700;margin-bottom:3px;}
+.og-banner-left p{font-size:13px;color:rgba(255,255,255,.65);}
+.og-banner-stats{display:flex;gap:12px;z-index:1;}
+.og-stat{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:12px 20px;text-align:center;}
+.og-stat-num{font-size:24px;font-weight:800;line-height:1;}
+.og-stat-lbl{font-size:10px;color:rgba(255,255,255,.6);margin-top:3px;text-transform:uppercase;letter-spacing:.4px;}
 
-  /* Toolbar */
-  .ob-toolbar {
-    display:flex; align-items:center; gap:12px;
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); padding:12px 16px;
-    box-shadow:var(--shadow-sm);
-  }
-  .ob-search {
-    flex:1; display:flex; align-items:center; gap:10px;
-    background:var(--surface-2); border:1.5px solid var(--border);
-    border-radius:var(--radius-sm); padding:0 14px;
-    transition:border-color .18s, box-shadow .18s;
-  }
-  .ob-search:focus-within { border-color:var(--border-focus); box-shadow:0 0 0 3px rgba(74,112,196,.1); }
-  .ob-search i { font-size:17px; color:var(--text-muted); flex-shrink:0; }
-  .ob-search input {
-    flex:1; border:none; outline:none; padding:10px 0;
-    font-family:'Sora',sans-serif; font-size:13.5px; color:var(--text);
-    background:transparent;
-  }
-  .ob-search input::placeholder { color:var(--text-light); }
+/* Alerts */
+.og-alert{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;}
+.og-alert-success{background:var(--green-bg);border:1px solid rgba(22,163,74,.25);color:var(--green);}
+.og-alert-danger{background:var(--red-bg);border:1px solid rgba(220,38,38,.25);color:var(--red);}
+.og-alert-x{margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:18px;}
 
-  .ob-approve-all {
-    display:inline-flex; align-items:center; gap:7px;
-    padding:10px 18px; border-radius:var(--radius-sm);
-    background:var(--green); color:#fff; border:none;
-    font-family:'Sora',sans-serif; font-size:13px; font-weight:700;
-    cursor:pointer; transition:all .18s; white-space:nowrap;
-    box-shadow:0 2px 8px rgba(22,163,74,.25);
-  }
-  .ob-approve-all:hover { transform:translateY(-1px); box-shadow:0 5px 16px rgba(22,163,74,.35); }
+/* Toolbar */
+.og-toolbar{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow-sm);}
+.og-search{flex:1;display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 14px;transition:border-color .18s;}
+.og-search:focus-within{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(74,112,196,.1);}
+.og-search i{font-size:17px;color:var(--text-muted);}
+.og-search input{flex:1;border:none;outline:none;padding:10px 0;font-family:'Sora',sans-serif;font-size:13.5px;color:var(--text);background:transparent;}
+.og-search input::placeholder{color:var(--text-light);}
+.og-sel{padding:10px 14px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:13px;color:var(--text);outline:none;cursor:pointer;}
 
-  /* Table */
-  .ob-table-wrap {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm);
-  }
+/* Table */
+.og-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);}
+.og-table{width:100%;border-collapse:separate;border-spacing:0;}
+.og-table th{text-align:left;padding:13px 20px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border);background:var(--surface-2);white-space:nowrap;}
+.og-table td{padding:13px 20px;font-size:13.5px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:middle;}
+.og-table tbody tr:last-child td{border-bottom:none;}
+.og-table tbody tr{transition:background .15s;}
+.og-table tbody tr:hover{background:var(--surface-2);}
 
-  .ob-table { width:100%; border-collapse:separate; border-spacing:0; }
+.og-user{display:flex;align-items:center;gap:12px;}
+.og-av{width:40px;height:40px;border-radius:11px;color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.og-name{font-weight:700;font-size:13.5px;color:var(--text);}
+.og-uname{font-size:11.5px;color:var(--text-muted);margin-top:1px;}
 
-  .ob-table th {
-    text-align:left; padding:13px 20px;
-    font-size:11px; font-weight:700; color:var(--text-muted);
-    text-transform:uppercase; letter-spacing:.6px;
-    border-bottom:2px solid var(--border);
-    background:var(--surface-2); white-space:nowrap;
-  }
+.og-badge-bekl{display:inline-flex;align-items:center;gap:5px;background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(217,119,6,.2);padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;}
+.og-badge-aktif{display:inline-flex;align-items:center;gap:5px;background:var(--green-bg);color:var(--green);border:1px solid rgba(22,163,74,.2);padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;}
+.og-pulse{width:6px;height:6px;border-radius:50%;background:var(--yellow);animation:ogPulse 2s ease-in-out infinite;}
+@@keyframes ogPulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-  .ob-table td {
-    padding:14px 20px; font-size:13.5px; color:var(--text);
-    border-bottom:1px solid var(--border); vertical-align:middle;
-  }
+.og-actions{display:flex;gap:8px;}
+.og-btn-ok{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:none;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--green);color:#fff;transition:all .15s;}
+.og-btn-ok:hover{opacity:.85;}
+.og-btn-red{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:1px solid rgba(220,38,38,.25);border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--red-bg);color:var(--red);transition:all .15s;}
+.og-btn-red:hover{background:var(--red);color:#fff;border-color:transparent;}
 
-  .ob-table tbody tr:last-child td { border-bottom:none; }
-  .ob-table tbody tr { transition:background .15s; }
-  .ob-table tbody tr:hover { background:var(--surface-2); }
-
-  /* User cell */
-  .ob-user { display:flex; align-items:center; gap:12px; }
-  .ob-av {
-    width:42px; height:42px; border-radius:12px;
-    background:var(--brand-600); color:#fff;
-    font-weight:800; font-size:16px;
-    display:flex; align-items:center; justify-content:center; flex-shrink:0;
-  }
-  .ob-name { font-weight:700; font-size:14px; color:var(--text); }
-  .ob-username { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
-
-  /* Info cells */
-  .ob-info-label { font-size:10.5px; color:var(--text-muted); margin-bottom:2px; }
-  .ob-info-val   { font-size:13px; font-weight:600; color:var(--text); }
-
-  /* Status badge */
-  .ob-status {
-    display:inline-flex; align-items:center; gap:6px;
-    background:var(--yellow-bg); color:var(--yellow);
-    border:1px solid rgba(217,119,6,.2);
-    padding:4px 12px; border-radius:20px;
-    font-size:11px; font-weight:700; white-space:nowrap;
-  }
-  .ob-pulse {
-    width:6px; height:6px; border-radius:50%; background:var(--yellow);
-    animation:obPulse 2s ease-in-out infinite;
-  }
-  @@keyframes obPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
-
-  /* Actions */
-  .ob-actions { display:flex; gap:8px; }
-  .ob-btn-approve {
-    display:inline-flex; align-items:center; gap:6px;
-    padding:8px 16px; border:none; border-radius:var(--radius-sm);
-    font-family:'Sora',sans-serif; font-size:12.5px; font-weight:700;
-    cursor:pointer; transition:all .18s;
-    background:var(--green); color:#fff;
-    box-shadow:0 2px 8px rgba(22,163,74,.25);
-  }
-  .ob-btn-approve:hover { transform:translateY(-1px); box-shadow:0 5px 14px rgba(22,163,74,.35); }
-
-  .ob-btn-reject {
-    display:inline-flex; align-items:center; gap:6px;
-    padding:8px 16px; border:1px solid rgba(220,38,38,.25); border-radius:var(--radius-sm);
-    font-family:'Sora',sans-serif; font-size:12.5px; font-weight:700;
-    cursor:pointer; transition:all .18s;
-    background:var(--red-bg); color:var(--red);
-  }
-  .ob-btn-reject:hover { background:var(--red); color:#fff; border-color:transparent; transform:translateY(-1px); }
-
-  /* Alerts */
-  .ob-alert {
-    display:flex; align-items:center; gap:12px;
-    padding:14px 18px; border-radius:var(--radius-sm);
-    font-size:13.5px; font-weight:600;
-  }
-  .ob-alert-success { background:var(--green-bg); border:1px solid rgba(22,163,74,.25); color:var(--green); }
-  .ob-alert-danger  { background:var(--red-bg);   border:1px solid rgba(220,38,38,.25);  color:var(--red); }
-  .ob-alert-close { margin-left:auto; background:none; border:none; cursor:pointer; color:inherit; opacity:.6; font-size:18px; }
-  .ob-alert-close:hover { opacity:1; }
-
-  /* Empty */
-  .ob-empty {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:var(--radius-lg); padding:60px 40px;
-    text-align:center; box-shadow:var(--shadow-sm);
-  }
-  .ob-empty-icon {
-    width:80px; height:80px; border-radius:20px;
-    background:var(--green-bg); color:var(--green);
-    display:flex; align-items:center; justify-content:center;
-    font-size:38px; margin:0 auto 20px;
-  }
-  .ob-empty h3 { font-size:20px; font-weight:800; color:var(--text); margin-bottom:8px; }
-  .ob-empty p  { font-size:13.5px; color:var(--text-muted); max-width:320px; margin:0 auto 22px; line-height:1.6; }
-
-  /* No results */
-  .ob-no-results { text-align:center; padding:40px; color:var(--text-muted); font-size:13.5px; display:none; }
-
-  /* Responsive */
-  @@media(max-width:900px){
-    .ob-banner { flex-direction:column; align-items:flex-start; gap:14px; }
-    .ob-table thead th:nth-child(3),
-    .ob-table tbody td:nth-child(3),
-    .ob-table thead th:nth-child(4),
-    .ob-table tbody td:nth-child(4) { display:none; }
-  }
-  @@media(max-width:600px){
-    .ob-toolbar { flex-direction:column; }
-    .ob-table thead th:nth-child(5),
-    .ob-table tbody td:nth-child(5) { display:none; }
-  }
+.og-empty{padding:50px 20px;text-align:center;color:var(--text-muted);}
+.og-empty i{font-size:44px;display:block;margin-bottom:14px;opacity:.2;}
 </style>
 
-<div class="ob-page">
+<div class="og-page">
 
   @if (TempData["Mesaj"] != null)
   {
-    <div class="ob-alert ob-alert-success">
+    <div class="og-alert og-alert-success">
       <i class="ti ti-circle-check" style="font-size:20px;"></i>
       <span>@TempData["Mesaj"]</span>
-      <button class="ob-alert-close" onclick="this.parentElement.remove()">×</button>
+      <button class="og-alert-x" onclick="this.parentElement.remove()">×</button>
     </div>
   }
   @if (TempData["Hata"] != null)
   {
-    <div class="ob-alert ob-alert-danger">
+    <div class="og-alert og-alert-danger">
       <i class="ti ti-alert-circle" style="font-size:20px;"></i>
       <span>@TempData["Hata"]</span>
-      <button class="ob-alert-close" onclick="this.parentElement.remove()">×</button>
+      <button class="og-alert-x" onclick="this.parentElement.remove()">×</button>
     </div>
   }
 
-  @if (!Model.Any())
-  {
-    <div class="ob-empty">
-      <div class="ob-empty-icon"><i class="ti ti-checks"></i></div>
-      <h3>Tüm kayıtlar onaylandı!</h3>
-      <p>Şu anda onay bekleyen öğrenci kaydı bulunmuyor. Yeni kayıtlar geldiğinde burada görünecek.</p>
-      <a href="/Admin/Ogrenciler" class="btn-primary" style="text-decoration:none;">
-        <i class="ti ti-users"></i> Tüm Öğrencileri Gör
-      </a>
-    </div>
-  }
-  else
-  {
-    <!-- Banner -->
-    <div class="ob-banner">
-      <div class="ob-banner-left">
-        <div class="ob-banner-icon"><i class="ti ti-user-check"></i></div>
-        <div>
-          <h2>Onay Bekleyen Kayıtlar</h2>
-          <p>Sisteme kayıt olmuş ancak henüz onaylanmamış öğrenciler.</p>
-        </div>
-      </div>
-      <div class="ob-banner-stat">
-        <div class="ob-banner-num">@Model.Count</div>
-        <div class="ob-banner-lbl">Bekleyen</div>
+  <!-- Banner -->
+  <div class="og-banner">
+    <div class="og-banner-left">
+      <div class="og-banner-icon"><i class="ti ti-users"></i></div>
+      <div>
+        <h2>Öğrenci Yönetimi</h2>
+        <p>Tüm öğrencileri yönetin, onaylayın veya reddedin.</p>
       </div>
     </div>
+    <div class="og-banner-stats">
+      <div class="og-stat">
+        <div class="og-stat-num" style="color:#fbbf24;">@Model.Count</div>
+        <div class="og-stat-lbl">Bekleyen</div>
+      </div>
+      <div class="og-stat">
+        <div class="og-stat-num" style="color:#34d399;">@aktifOgrenciler.Count</div>
+        <div class="og-stat-lbl">Aktif</div>
+      </div>
+    </div>
+  </div>
 
-    <!-- Toolbar -->
-    <div class="ob-toolbar">
-      <div class="ob-search">
-        <i class="ti ti-search"></i>
-        <input type="text" id="obSearchInput" placeholder="İsim, e-posta veya bölüm ile ara..." oninput="filterStudents(this.value)">
-      </div>
-      <button class="ob-approve-all" onclick="approveAll()">
-        <i class="ti ti-checks"></i> Tümünü Onayla
-      </button>
+  <!-- Toolbar -->
+  <div class="og-toolbar">
+    <div class="og-search">
+      <i class="ti ti-search"></i>
+      <input type="text" id="ogSearch" placeholder="İsim, e-posta veya bölüm ile ara..." oninput="filterOg(this.value)">
     </div>
+    <select class="og-sel" id="ogDurumSel" onchange="filterOg(document.getElementById('ogSearch').value)">
+      <option value="">Tüm Durumlar (@tumOgrenciler.Count)</option>
+      <option value="bekliyor">Bekleyen (@Model.Count)</option>
+      <option value="aktif">Aktif (@aktifOgrenciler.Count)</option>
+    </select>
+  </div>
 
-    <!-- Table -->
-    <div class="ob-table-wrap">
+  <!-- Tek Tablo -->
+  <div class="og-table-wrap">
+    @if (!tumOgrenciler.Any())
+    {
+      <div class="og-empty">
+        <i class="ti ti-users"></i>
+        <p>Henüz kayıtlı öğrenci yok.</p>
+      </div>
+    }
+    else
+    {
       <div style="overflow-x:auto;">
-        <table class="ob-table" id="obTable">
+        <table class="og-table" id="ogTable">
           <thead>
             <tr>
               <th>Öğrenci</th>
@@ -258,92 +148,85 @@
               <th>İşlem</th>
             </tr>
           </thead>
-          <tbody id="obTableBody">
+          <tbody>
             @foreach (var s in Model)
             {
-              <tr data-name="@s.FullName?.ToLower()" data-email="@s.Email?.ToLower()" data-dept="@s.Department?.ToLower()">
+              <tr data-name="@s.FullName?.ToLower()" data-email="@s.Email?.ToLower()" data-dept="@s.Department?.ToLower()" data-durum="bekliyor">
                 <td>
-                  <div class="ob-user">
-                    <div class="ob-av">@(s.FullName?.Length > 0 ? s.FullName[0].ToString().ToUpper() : "?")</div>
+                  <div class="og-user">
+                    <div class="og-av" style="background:#f59e0b;">@(s.FullName?.Length > 0 ? s.FullName[0].ToString().ToUpper() : "?")</div>
                     <div>
-                      <div class="ob-name">@s.FullName</div>
-                      <div class="ob-username">@s.Username</div>
+                      <div class="og-name">@s.FullName</div>
+                      <div class="og-uname">@s.Username</div>
                     </div>
                   </div>
                 </td>
+                <td>@(s.Email ?? "—")</td>
+                <td>@(s.Department ?? "—")</td>
+                <td>@(s.Grade ?? "—")</td>
+                <td>@(s.CreateDate == default(DateTime) ? "—" : s.CreateDate.ToLocalTime().ToString("dd MMM yyyy"))</td>
                 <td>
-                  <div class="ob-info-label">E-posta</div>
-                  <div class="ob-info-val">@(s.Email ?? "—")</div>
+                  <span class="og-badge-bekl"><span class="og-pulse"></span> Bekliyor</span>
                 </td>
                 <td>
-                  <div class="ob-info-label">Bölüm</div>
-                  <div class="ob-info-val">@(s.Department ?? "—")</div>
-                </td>
-                <td>
-                  <div class="ob-info-label">Sınıf</div>
-                  <div class="ob-info-val">@(s.Grade ?? "—")</div>
-                </td>
-                <td>
-                  <div class="ob-info-label">Tarih</div>
-                  <div class="ob-info-val">@(s.CreateDate == default(DateTime) ? "—" : s.CreateDate.ToLocalTime().ToString("dd MMM yyyy"))</div>
-                </td>
-                <td>
-                  <span class="ob-status">
-                    <span class="ob-pulse"></span> Bekliyor
-                  </span>
-                </td>
-                <td>
-                  <div class="ob-actions">
+                  <div class="og-actions">
                     <form asp-action="OgrenciOnayla" method="post" onsubmit="return confirm('Bu öğrenciyi onaylamak istiyor musunuz?');">
                       @Html.AntiForgeryToken()
                       <input type="hidden" name="id" value="@s.Id" />
-                      <button type="submit" class="ob-btn-approve">
-                        <i class="ti ti-check"></i> Onayla
-                      </button>
+                      <button type="submit" class="og-btn-ok"><i class="ti ti-check"></i> Onayla</button>
                     </form>
                     <form asp-action="OgrenciReddet" method="post" onsubmit="return confirm('@s.FullName adlı öğrenciyi reddetmek istiyor musunuz?');">
                       @Html.AntiForgeryToken()
                       <input type="hidden" name="id" value="@s.Id" />
-                      <button type="submit" class="ob-btn-reject">
-                        <i class="ti ti-x"></i> Reddet
-                      </button>
+                      <button type="submit" class="og-btn-red"><i class="ti ti-x"></i> Reddet</button>
                     </form>
                   </div>
                 </td>
               </tr>
             }
+            @foreach (var s in aktifOgrenciler)
+            {
+              <tr data-name="@s.FullName?.ToLower()" data-email="@s.Email?.ToLower()" data-dept="@s.Department?.ToLower()" data-durum="aktif">
+                <td>
+                  <div class="og-user">
+                    <div class="og-av" style="background:var(--green);">@(s.FullName?.Length > 0 ? s.FullName[0].ToString().ToUpper() : "?")</div>
+                    <div>
+                      <div class="og-name">@s.FullName</div>
+                      <div class="og-uname">@s.Username</div>
+                    </div>
+                  </div>
+                </td>
+                <td>@(s.Email ?? "—")</td>
+                <td>@(s.Department ?? "—")</td>
+                <td>@(s.Grade ?? "—")</td>
+                <td>@(s.CreateDate == default(DateTime) ? "—" : s.CreateDate.ToLocalTime().ToString("dd MMM yyyy"))</td>
+                <td>
+                  <span class="og-badge-aktif"><i class="ti ti-circle-check" style="font-size:12px;"></i> Aktif</span>
+                </td>
+                <td>—</td>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
-      <div class="ob-no-results" id="obNoResults">
-        <i class="ti ti-search-off" style="font-size:36px;display:block;margin-bottom:10px;opacity:.4;"></i>
-        Aramanızla eşleşen öğrenci bulunamadı.
-      </div>
-    </div>
-  }
+    }
+  </div>
 
 </div>
 
 <script>
-  function filterStudents(query) {
-    const rows = document.querySelectorAll('#obTableBody tr');
-    const noResults = document.getElementById('obNoResults');
-    const q = query.toLowerCase().trim();
-    let visible = 0;
-    rows.forEach(row => {
-      const name  = row.getAttribute('data-name')  || '';
-      const email = row.getAttribute('data-email') || '';
-      const dept  = row.getAttribute('data-dept')  || '';
-      const match = name.includes(q) || email.includes(q) || dept.includes(q);
-      row.style.display = match ? '' : 'none';
-      if (match) visible++;
-    });
-    if (noResults) noResults.style.display = visible === 0 && q.length > 0 ? 'block' : 'none';
-  }
-
-  function approveAll() {
-    if (!confirm('Tüm bekleyen öğrencileri onaylamak istiyor musunuz?')) return;
-    const firstApprove = document.querySelector('.ob-btn-approve');
-    if (firstApprove) firstApprove.closest('form').submit();
-  }
+function filterOg(query) {
+  const q = query.toLowerCase().trim();
+  const durum = document.getElementById('ogDurumSel').value;
+  const rows = document.querySelectorAll('#ogTable tbody tr');
+  rows.forEach(row => {
+    const name  = row.getAttribute('data-name')  || '';
+    const email = row.getAttribute('data-email') || '';
+    const dept  = row.getAttribute('data-dept')  || '';
+    const d     = row.getAttribute('data-durum') || '';
+    const textMatch  = !q || name.includes(q) || email.includes(q) || dept.includes(q);
+    const durumMatch = !durum || d === durum;
+    row.style.display = textMatch && durumMatch ? '' : 'none';
+  });
+}
 </script>

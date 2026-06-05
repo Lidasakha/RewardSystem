@@ -99,11 +99,22 @@ namespace RewardSystem.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            if (_db.Users.Any(u => u.Username == model.Username))
+            // Kullanıcı adını otomatik oluştur: ad + soyad (küçük harf, Türkçe karakter temizle)
+            var baseUsername = (model.FirstName + model.LastName)
+                .ToLower()
+                .Replace("ı", "i").Replace("ğ", "g").Replace("ü", "u")
+                .Replace("ş", "s").Replace("ö", "o").Replace("ç", "c")
+                .Replace(" ", "");
+            
+            // Çakışma varsa sonuna sayı ekle
+            var username = baseUsername;
+            var counter = 1;
+            while (_db.Users.Any(u => u.Username == username))
             {
-                ModelState.AddModelError("", "Bu kullanıcı adı zaten kullanımda.");
-                return View(model);
+                username = baseUsername + counter;
+                counter++;
             }
+            model.Username = username;
 
             if (!string.IsNullOrEmpty(model.Email) && _db.Users.Any(u => u.Email == model.Email))
             {
@@ -113,9 +124,11 @@ namespace RewardSystem.Controllers
 
             var newUser = new User
             {
-                FullName = model.FullName,
-                Username = model.Username,
+                FirstName = model.FirstName,
+                LastName  = model.LastName,
+                Username  = model.Username,
                 Email = model.Email,
+                Faculty = model.Faculty,
                 Department = model.Department,
                 StudentNumber = model.StudentNumber,
                 PasswordHash = RewardSystemDbContext.HashPassword(model.Password),
@@ -132,8 +145,8 @@ namespace RewardSystem.Controllers
                 newUser.PasswordHash,
                 newUser.Role,
                 newUser.IsActive,
-                newUser.FirstName ?? "",
-                newUser.LastName ?? "",
+                model.FirstName ?? "",
+                model.LastName ?? "",
                 newUser.Department ?? "",
                 newUser.StudentNumber ?? "",
                 newUser.CreatedAt);

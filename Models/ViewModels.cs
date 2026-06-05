@@ -15,15 +15,21 @@ namespace RewardSystem.Models
     }
     public class RegisterViewModel
     {
-        [Required(ErrorMessage = "Ad Soyad gerekli")]
-        public string FullName { get; set; } = "";
+        [Required(ErrorMessage = "Ad gerekli")]
+        public string FirstName { get; set; } = "";
 
-        [Required(ErrorMessage = "Kullanıcı adı gerekli")]
+        [Required(ErrorMessage = "Soyad gerekli")]
+        public string LastName { get; set; } = "";
+
+        // Username otomatik oluşturulur
         public string Username { get; set; } = "";
 
         [Required(ErrorMessage = "E-posta gerekli")]
         [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi giriniz")]
         public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Fakülte gerekli")]
+        public string Faculty { get; set; } = "";
 
         [Required(ErrorMessage = "Bölüm gerekli")]
         public string Department { get; set; } = "";

@@ -111,9 +111,6 @@
         <a href="/Admin/Index" class="nav-item @(ViewData["Active"]?.ToString()=="Home"?"active":"")">
           <i class="ti ti-layout-dashboard"></i><span>Ana Sayfa</span>
         </a>
-        <a href="/Admin/Ogrenciler" class="nav-item @(ViewData["Active"]?.ToString()=="Ogrenciler"?"active":"")">
-          <i class="ti ti-users"></i><span>Öğrenciler</span>
-        </a>
 
         @if (rol != "superadmin")
         {

@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using RewardSystem.Data;
 using RewardSystem.Models;
 using System.Linq;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using System.Security.Claims;
 
 namespace RewardSystem.Controllers
@@ -16,27 +18,11 @@ namespace RewardSystem.Controllers
 
         private int UserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
 
-        [AllowAnonymous]
-        public IActionResult TempDeleteTestUser()
-        {
-            var user = _db.Users.FirstOrDefault(u => u.Email.Contains("test_28ba78d0") || (u.FirstName == "Test" && u.LastName == "User"));
-            if (user != null)
-            {
-                _db.Users.Remove(user);
-                _db.SaveChanges();
-                return Content("Deleted: " + user.Email);
-            }
-            return Content("Not found");
-        }
-
         public IActionResult Index()
         {
             var rol = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value?.ToLower();
 
             ViewBag.PendingArticles     = _db.Articles.Count(m => m.Status == "OnayBekliyor");
-            ViewBag.PendingProjects      = _db.Projects.Count(p => p.Status == "OnayBekliyor");
-            ViewBag.PendingPresentations = _db.Presentations.Count(b => b.Status == "OnayBekliyor");
-            ViewBag.PendingPatents       = _db.Patents.Count(c => c.Status == "OnayBekliyor");
             ViewBag.PendingStudents     = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && !u.IsActive);
             ViewBag.TotalActiveStudents = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive);
 
@@ -52,9 +38,7 @@ namespace RewardSystem.Controllers
                 var benimDept = _db.Users.Where(u => u.Id == UserId).Select(u => u.Department).FirstOrDefault() ?? "";
                 ViewBag.BenimDept = benimDept;
                 ViewBag.BenimDegerlendirme = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && a.IsCompleted);
-                ViewBag.BekleyenDegerlendirme = _db.ArticleTeacherAssignments
-                    .Include(a => a.Article)
-                    .Count(a => a.TeacherId == UserId && !a.IsCompleted && a.Article != null && a.Article.Status == "Degerlendirmede");
+                ViewBag.BekleyenDegerlendirme = _db.ArticleTeacherAssignments.Count(a => a.TeacherId == UserId && !a.IsCompleted);
                 ViewBag.OrtPuan = _db.ArticleTeacherAssignments
                     .Where(a => a.TeacherId == UserId && a.IsCompleted && a.GivenScore > 0)
                     .Select(a => (double?)a.GivenScore)
@@ -93,6 +77,12 @@ namespace RewardSystem.Controllers
                 .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && !u.IsActive)
                 .OrderByDescending(u => u.CreateDate)
                 .ToList();
+
+            ViewBag.AktifOgrenciler = _db.Users
+                .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive)
+                .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+                .ToList();
+
             return View(students);
         }
 
@@ -118,7 +108,7 @@ namespace RewardSystem.Controllers
                 .OrderByDescending(m => m.CreatedAt)
                 .ToList();
 
-            // Atamaları da çek â€” değerlendirme durumu için
+            // Atamaları da çek — değerlendirme durumu için
             var atamalar = _db.ArticleTeacherAssignments
                 .Include(a => a.Article)
                 .ToList();
@@ -129,173 +119,8 @@ namespace RewardSystem.Controllers
                     (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin" || u.UserType.ToLower() == "superadmin") 
                     && u.IsActive)
                 .OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ToList();
-
-            ViewBag.Projeler = _db.Projects.Include(p => p.User).Where(p => p.Status != null).ToList();
-            ViewBag.Bildiriler = _db.Presentations.Include(b => b.User).Where(b => b.Status != null).ToList();
-            ViewBag.Patentler = _db.Patents.Include(p => p.User).Where(p => p.Status != null).ToList();
-
             return View(tumCalismalar);
         }
-
-
-// â”€â”€ PROJE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-[Authorize(Roles = "admin,superadmin")]
-[HttpPost, ValidateAntiForgeryToken]
-public IActionResult ProjeOnayla(long id)
-{
-    var proje = _db.Projects.Include(p => p.User).FirstOrDefault(p => p.Id == id);
-    if (proje != null)
-    {
-        proje.Status = "Onaylandi";
-        _db.SaveChanges();
-        if (proje.UserId > 0)
-        {
-            _db.Notifications.Add(new Notification {
-                UserId    = (int)proje.UserId,
-                Message   = $"'{proje.Title}' başlıklı projeniz onaylandı ve puanınıza eklendi! 🎉",
-                IsRead    = false,
-                CreatedAt = DateTime.UtcNow
-            });
-            _db.SaveChanges();
-            OdulKontrolEt((int)proje.UserId);
-        }
-        TempData["Mesaj"] = "Proje onaylandı.";
-    }
-    return RedirectToAction("AdminYonetimi");
-}
-
-[Authorize(Roles = "admin,superadmin")]
-[HttpPost, ValidateAntiForgeryToken]
-public IActionResult ProjeReddet(long id, string? red_neden)
-{
-    var proje = _db.Projects.Include(p => p.User).FirstOrDefault(p => p.Id == id);
-    if (proje != null)
-    {
-        proje.Status = "Reddedildi";
-        _db.SaveChanges();
-        if (proje.UserId > 0)
-        {
-            var mesaj = string.IsNullOrEmpty(red_neden)
-                ? $"'{proje.Title}' başlıklı projeniz reddedildi."
-                : $"'{proje.Title}' başlıklı projeniz reddedildi. Sebep: {red_neden}";
-            _db.Notifications.Add(new Notification {
-                UserId    = (int)proje.UserId,
-                Message   = mesaj,
-                IsRead    = false,
-                CreatedAt = DateTime.UtcNow
-            });
-            _db.SaveChanges();
-        }
-        TempData["Mesaj"] = "Proje reddedildi.";
-    }
-    return RedirectToAction("AdminYonetimi");
-}
-
-// â”€â”€ BÄ°LDÄ°RÄ° â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-[Authorize(Roles = "admin,superadmin")]
-[HttpPost, ValidateAntiForgeryToken]
-public IActionResult BildiriOnayla(long id)
-{
-    var bildiri = _db.Presentations.Include(b => b.User).FirstOrDefault(b => b.Id == id);
-    if (bildiri != null)
-    {
-        bildiri.Status = "Onaylandi";
-        _db.SaveChanges();
-        if (bildiri.UserId > 0)
-        {
-            _db.Notifications.Add(new Notification {
-                UserId    = (int)bildiri.UserId,
-                Message   = $"'{bildiri.Title}' başlıklı bildiriniz onaylandı ve puanınıza eklendi! 🎉",
-                IsRead    = false,
-                CreatedAt = DateTime.UtcNow
-            });
-            _db.SaveChanges();
-            OdulKontrolEt((int)bildiri.UserId);
-        }
-        TempData["Mesaj"] = "Bildiri onaylandı.";
-    }
-    return RedirectToAction("AdminYonetimi");
-}
-
-[Authorize(Roles = "admin,superadmin")]
-[HttpPost, ValidateAntiForgeryToken]
-public IActionResult BildiriReddet(long id, string? red_neden)
-{
-    var bildiri = _db.Presentations.Include(b => b.User).FirstOrDefault(b => b.Id == id);
-    if (bildiri != null)
-    {
-        bildiri.Status = "Reddedildi";
-        _db.SaveChanges();
-        if (bildiri.UserId > 0)
-        {
-            var mesaj = string.IsNullOrEmpty(red_neden)
-                ? $"'{bildiri.Title}' başlıklı bildiriniz reddedildi."
-                : $"'{bildiri.Title}' başlıklı bildiriniz reddedildi. Sebep: {red_neden}";
-            _db.Notifications.Add(new Notification {
-                UserId    = (int)bildiri.UserId,
-                Message   = mesaj,
-                IsRead    = false,
-                CreatedAt = DateTime.UtcNow
-            });
-            _db.SaveChanges();
-        }
-        TempData["Mesaj"] = "Bildiri reddedildi.";
-    }
-    return RedirectToAction("AdminYonetimi");
-}
-
-// â”€â”€ PATENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-[Authorize(Roles = "admin,superadmin")]
-[HttpPost, ValidateAntiForgeryToken]
-public IActionResult PatentOnayla(long id)
-{
-    var patent = _db.Patents.Include(p => p.User).FirstOrDefault(p => p.Id == id);
-    if (patent != null)
-    {
-        patent.Status = "Onaylandi";
-        _db.SaveChanges();
-        if (patent.UserId > 0)
-        {
-            _db.Notifications.Add(new Notification {
-                UserId    = (int)patent.UserId,
-                Message   = $"'{patent.Title}' başlıklı patentiniz onaylandı ve puanınıza eklendi! 🎉",
-                IsRead    = false,
-                CreatedAt = DateTime.UtcNow
-            });
-            _db.SaveChanges();
-            OdulKontrolEt((int)patent.UserId);
-        }
-        TempData["Mesaj"] = "Patent onaylandı.";
-    }
-    return RedirectToAction("AdminYonetimi");
-}
-
-[Authorize(Roles = "admin,superadmin")]
-[HttpPost, ValidateAntiForgeryToken]
-public IActionResult PatentReddet(long id, string? red_neden)
-{
-    var patent = _db.Patents.Include(p => p.User).FirstOrDefault(p => p.Id == id);
-    if (patent != null)
-    {
-        patent.Status = "Reddedildi";
-        _db.SaveChanges();
-        if (patent.UserId > 0)
-        {
-            var mesaj = string.IsNullOrEmpty(red_neden)
-                ? $"'{patent.Title}' başlıklı patentiniz reddedildi."
-                : $"'{patent.Title}' başlıklı patentiniz reddedildi. Sebep: {red_neden}";
-            _db.Notifications.Add(new Notification {
-                UserId    = (int)patent.UserId,
-                Message   = mesaj,
-                IsRead    = false,
-                CreatedAt = DateTime.UtcNow
-            });
-            _db.SaveChanges();
-        }
-        TempData["Mesaj"] = "Patent reddedildi.";
-    }
-    return RedirectToAction("AdminYonetimi");
-}
 
         [Authorize(Roles = "admin,superadmin")]
         [HttpPost]
@@ -452,7 +277,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                             });
                             _db.SaveChanges();
 
-                            // Ödül kontrolÃ¼ â€” yeni puana gÃ¶re ödül kazanÄ±ldÄ± mÄ±?
+                            // Ödül kontrolü — yeni puana göre ödül kazanıldı mı?
                             OdulKontrolEt(makale.UserId);
                         }
                     }
@@ -467,7 +292,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
         {
             ViewBag.ToplamOgrenci       = _db.Users.Count(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive);
             ViewBag.ToplamHoca          = _db.Users.Count(u => u.UserType != null && (u.UserType.ToLower() == "teacher" || u.UserType.ToLower() == "admin") && u.IsActive);
-            // Gerçek çalışma sayÄ±sÄ±: sadece aktif olanlar (Reddedilenler hariÃ§)
+            // Gerçek çalışma sayısı: sadece aktif olanlar (Reddedilenler hariç)
             ViewBag.ToplamMakale        = _db.Articles.Count(a => a.Status != "Reddedildi");
             ViewBag.ToplamOnaylanan     = _db.Articles.Count(a => a.Status == "Onaylandi");
             ViewBag.ToplamBekleyen      = _db.Articles.Count(a => a.Status == "OnayBekliyor");
@@ -475,11 +300,11 @@ public IActionResult PatentReddet(long id, string? red_neden)
             ViewBag.ToplamReddedilen    = _db.Articles.Count(a => a.Status == "Reddedildi");
 
             var durumlar = new[] {
-                new { durum = "Onaylandı",          sayi = _db.Articles.Count(a => a.Status == "Onaylandi") },
-                new { durum = "Onay Bekliyor",      sayi = _db.Articles.Count(a => a.Status == "OnayBekliyor") },
-                new { durum = "Hoca Ataması Bekl.",  sayi = _db.Articles.Count(a => a.Status == "OnaylandiBekliyor") },
-                new { durum = "Değerlendirmede",    sayi = _db.Articles.Count(a => a.Status == "Degerlendirmede") },
-                new { durum = "Reddedildi",         sayi = _db.Articles.Count(a => a.Status == "Reddedildi") }
+                new { durum = "Onaylandi",        sayi = _db.Articles.Count(a => a.Status == "Onaylandi") },
+                new { durum = "Onay Bekliyor",    sayi = _db.Articles.Count(a => a.Status == "OnayBekliyor") },
+                new { durum = "Hoca Atamasi",     sayi = _db.Articles.Count(a => a.Status == "OnaylandiBekliyor") },
+                new { durum = "Degerlendirmede",  sayi = _db.Articles.Count(a => a.Status == "Degerlendirmede") },
+                new { durum = "Reddedildi",       sayi = _db.Articles.Count(a => a.Status == "Reddedildi") }
             };
             ViewBag.DurumDagilimi = durumlar;
 
@@ -501,7 +326,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 .ToList<object>();
             ViewBag.BolumIstatistik = bolumIstatistik;
 
-            // Year null ise CreatedAt yÄ±lÄ±nÄ± kullan
+            // Year null ise CreatedAt yılını kullan
             var tumMakaleler = _db.Articles.ToList();
             var yillikTrend = tumMakaleler
                 .GroupBy(a => a.Year.HasValue ? a.Year.Value : a.CreatedAt.Year)
@@ -517,7 +342,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
             var topOgrenciler = tumOgrenciler
                 .Select(u => new {
                     ad     = (u.FirstName + " " + u.LastName).Trim(),
-                    bolum  = u.Department ?? "â€”",
+                    bolum  = u.Department ?? "—",
                     puan   = _db.Articles.Where(a => a.UserId == u.Id && a.Status == "Onaylandi").Sum(a => (int?)a.Score) ?? 0,
                     makale = _db.Articles.Count(a => a.UserId == u.Id)
                 })
@@ -562,7 +387,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 var bekleyen  = _db.Articles.Count(a => a.UserId == o.Id && a.Status == "OnayBekliyor");
                 var puan      = _db.Articles.Where(a => a.UserId == o.Id && a.Status == "Onaylandi").Sum(a => (int?)a.Score) ?? 0;
 
-                sb.AppendLine($"{o.FullName},{o.Department ?? "â€”"},{toplam},{onaylanan},{bekleyen},{puan}");
+                sb.AppendLine($"{o.FullName},{o.Department ?? "—"},{toplam},{onaylanan},{bekleyen},{puan}");
             }
 
             var bytes = System.Text.Encoding.UTF8.GetPreamble()
@@ -575,8 +400,20 @@ public IActionResult PatentReddet(long id, string? red_neden)
         [Authorize(Roles = "superadmin")]
         public IActionResult BolumExcelIndir()
         {
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("Bölüm,Öğrenci Sayısı,Toplam Çalışma,Onaylanan,Reddedilen");
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using var package = new ExcelPackage();
+            var ws = package.Workbook.Worksheets.Add("Bölüm Raporu");
+
+            var headers = new[] { "Bölüm", "Öğrenci Sayısı", "Toplam Çalışma", "Onaylanan", "Reddedilen" };
+            for (int i = 0; i < headers.Length; i++)
+            {
+                ws.Cells[1, i + 1].Value = headers[i];
+                ws.Cells[1, i + 1].Style.Font.Bold = true;
+                ws.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                ws.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(26, 43, 76));
+                ws.Cells[1, i + 1].Style.Font.Color.SetColor(System.Drawing.Color.White);
+            }
 
             var bolumler = _db.Users
                 .Where(u => u.UserType != null && u.UserType.ToLower() == "ogrenci" && u.IsActive && u.Department != null)
@@ -584,6 +421,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 .ToList()
                 .GroupBy(u => u.Department);
 
+            int row = 2;
             foreach (var g in bolumler)
             {
                 var ids       = g.Select(u => u.Id).ToList();
@@ -591,20 +429,24 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 var onaylanan = _db.Articles.Count(a => ids.Contains(a.UserId) && a.Status == "Onaylandi");
                 var reddedilen= _db.Articles.Count(a => ids.Contains(a.UserId) && a.Status == "Reddedildi");
 
-                sb.AppendLine($"{g.Key},{g.Count()},{toplam},{onaylanan},{reddedilen}");
+                ws.Cells[row, 1].Value = g.Key;
+                ws.Cells[row, 2].Value = g.Count();
+                ws.Cells[row, 3].Value = toplam;
+                ws.Cells[row, 4].Value = onaylanan;
+                ws.Cells[row, 5].Value = reddedilen;
+                row++;
             }
 
-            var bytes = System.Text.Encoding.UTF8.GetPreamble()
-                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
-                .ToArray();
+            ws.Cells[ws.Dimension.Address].AutoFitColumns();
 
-            return File(bytes, "text/csv", $"TOS_Bolum_Rapor_{DateTime.Now:yyyyMMdd}.csv");
+            var bytes = package.GetAsByteArray();
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"TOS_Bolum_Rapor_{DateTime.Now:yyyyMMdd}.xlsx");
         }
 
 
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ══════════════════════════════════════════════
         // ÖDÜL YÖNETİMİ
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // ══════════════════════════════════════════════
 
         [Authorize(Roles = "superadmin")]
         public IActionResult OdulYonetimi()
@@ -625,7 +467,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
                 .ToList();
 
-            // Verilen tÃ¼m rozetler (geri alma için)
+            // Verilen tüm rozetler (geri alma için)
             ViewBag.VerilenRozetler = _db.Badges
                 .Include(b => b.User)
                 .OrderByDescending(b => b.EarnedAt)
@@ -750,23 +592,12 @@ public IActionResult PatentReddet(long id, string? red_neden)
             return RedirectToAction("OdulYonetimi");
         }
 
-        // Puan gÃ¼ncellenince otomatik ödül kontrolÃ¼
+        // Puan güncellenince otomatik ödül kontrolü
         private void OdulKontrolEt(int userId)
         {
-        // Makale puanÄ± (Score alanÄ± â€” hoca ortalamasÄ±)
-            var makalePuan = _db.Articles
-            .Where(a => a.UserId == userId && a.Status == "Onaylandi")
-            .Sum(a => (int?)a.Score) ?? 0;
-
-            // DiÄŸer tÃ¼rler: katsayÄ± Ã— onaylanan adet
-            var projePuan    = _db.Projects
-                .Count(p => p.UserId == userId && p.Status == "Onaylandi") * 80;
-            var bildiriPuan  = _db.Presentations
-                .Count(b => b.UserId == userId && b.Status == "Onaylandi") * 40;
-            var patentPuan   = _db.Patents
-                .Count(c => c.UserId == userId && c.Status == "Onaylandi") * 50;
-
-            var toplamPuan = makalePuan + projePuan + bildiriPuan + patentPuan;
+            var toplamPuan = _db.Articles
+                .Where(a => a.UserId == userId && a.Status == "Onaylandi")
+                .Sum(a => (int?)a.Score) ?? 0;
 
             var aktifOduller = _db.Rewards
                 .Where(r => r.IsActive && r.MinPoints <= toplamPuan)
@@ -774,6 +605,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
 
             foreach (var odul in aktifOduller)
             {
+                // Bu ödülü daha önce almış mı?
                 var almisMi = _db.Badges.Any(b => b.UserId == userId && b.BadgeName == odul.Name);
                 if (!almisMi)
                 {
@@ -784,17 +616,18 @@ public IActionResult PatentReddet(long id, string? red_neden)
                         Icon        = odul.Icon,
                         Color       = odul.Color,
                         EarnedAt    = DateTime.UtcNow
-            });
-            _db.Notifications.Add(new Notification {
-                UserId    = userId,
-                Message   = $"🏆 Tebrikler! '{odul.Name}' ödülünü kazandınız! {toplamPuan} puana ulaştınız.",
-                IsRead    = false,
-                CreatedAt = DateTime.UtcNow
-            });
+                    });
+
+                    _db.Notifications.Add(new Notification {
+                        UserId    = userId,
+                        Message   = $"🏆 Tebrikler! '{odul.Name}' ödülünü kazandınız! {toplamPuan} puana ulaştınız.",
+                        IsRead    = false,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+            _db.SaveChanges();
         }
-    }
-    _db.SaveChanges();
-}
 
         [Authorize(Roles = "teacher,admin")]
         public IActionResult BolumSiralama()
@@ -808,9 +641,9 @@ public IActionResult PatentReddet(long id, string? red_neden)
                 .Select(u => new RewardSystem.Models.RankingRow {
                     User  = u,
                     Score = _db.Articles.Count(a => a.UserId == u.Id && a.Status == "Onaylandi") * 100
-                          + _db.Projects.Count(p => p.UserId == u.Id && p.Status == "Onaylandi")      * 80
-                          + _db.Presentations.Count(b => b.UserId == u.Id && b.Status == "Onaylandi") * 40
-                          + _db.Patents.Count(c => c.UserId == u.Id && c.Status == "Onaylandi")       * 50
+                          + _db.Projects.Count(p => p.UserId == u.Id)      * 80
+                          + _db.Presentations.Count(b => b.UserId == u.Id) * 40
+                          + _db.Patents.Count(c => c.UserId == u.Id)       * 50
                 })
                 .OrderByDescending(r => r.Score)
                 .ToList();
@@ -1036,7 +869,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
             {
                 try
                 {
-                    // Makaleye baÄŸlÄ± atamalar
+                    // Makaleye bağlı atamalar
                     var makaleler = _db.Articles.Where(a => a.UserId == id).ToList();
                     if (makaleler.Any())
                     {
@@ -1058,7 +891,7 @@ public IActionResult PatentReddet(long id, string? red_neden)
                     var bildirimler = _db.Notifications.Where(n => n.UserId == id).ToList();
                     if (bildirimler.Any()) _db.Notifications.RemoveRange(bildirimler);
 
-                    // Ã–ÄŸretmen olarak atanmÄ±ÅŸsa onlarÄ± da sil
+                    // Öğretmen olarak atanmışsa onları da sil
                     var ogretmenAta = _db.ArticleTeacherAssignments.Where(a => a.TeacherId == id).ToList();
                     if (ogretmenAta.Any()) _db.ArticleTeacherAssignments.RemoveRange(ogretmenAta);
 
